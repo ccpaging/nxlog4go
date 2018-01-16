@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"os"
 	"sync"
-	"fmt"
 )
 
 var (
@@ -51,7 +50,6 @@ func (fbw *FileBufWriter) Close() error {
 	}()
 
 	if fbw.file != nil {
-		fmt.Println("Close %s", fbw.name)
 		fbw.file.Close()
 	}
 	return nil

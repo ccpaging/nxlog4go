@@ -41,10 +41,11 @@ func (flw *FileLogWriter) LogWrite(rec *l4g.LogRecord) {
 
 func (flw *FileLogWriter) Close() {
 	close(flw.messages)
+	close(flw.loopReset)
 	// Loop may not running if no message write yet
 	if flw.loopRunning {
 		// Waiting at most one second and let go routine exit
-		for i := 10; i > 0 && flw.loopRunning == false; i-- {
+		for i := 10; i > 0 && flw.loopRunning; i-- {
 			// Must call Sleep here, otherwise, may panic send on closed channel
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -52,7 +53,6 @@ func (flw *FileLogWriter) Close() {
 	if flw.out != nil {
 		flw.out.Close()
 	}
-	close(flw.loopReset)
 }
 
 // NewFileLogWriter creates a new LogWriter which writes to the given file and

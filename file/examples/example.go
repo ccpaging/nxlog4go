@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	filename = "_cflw.log"
-	oldfiles = "_cflw.*.log"
+	filename = "_flw.log"
+	oldfiles = "_flw.*.log"
 )
 
 func CheckTimer(cycle int64, delay0 int64) {
@@ -68,7 +68,10 @@ func main() {
 
 	PrintFile(filename)
 	// Remove the file so it's not lying around
-	os.Remove(filename)
+	err := os.Remove(filename)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	flw := filelog.NewFileLogWriter(filename, 10)

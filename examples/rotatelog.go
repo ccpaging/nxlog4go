@@ -33,8 +33,8 @@ func PrintFile(fn string) {
 
 func main() {
 	// Can also specify manually via the following: (these are the defaults)
-	frw := l4g.NewRotateFileWriter(filename).SetMaxSize(1024 * 5).SetMaxBackup(10)
-	ww := io.MultiWriter(os.Stderr, frw)
+	rfw := l4g.NewRotateFileWriter(filename).SetMaxSize(1024 * 5).SetMaxBackup(10)
+	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
 	log := l4g.New(l4g.FINEST).SetOutput(ww).SetFormat("[%D %T] [%L] (%s) %M")
 
@@ -47,7 +47,7 @@ func main() {
 		}
 	}
 
-	frw.Close()
+	rfw.Close()
 	fmt.Printf("Remove %s\n", filename)
 	os.Remove(filename)
 

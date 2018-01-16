@@ -96,7 +96,7 @@ func (frw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 			fmtSlice := bytes.Split([]byte(frw.footer), []byte{'%'})
 			frw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
 		}
-		fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", frw.FileBufWriter.Name())
+		// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", frw.FileBufWriter.Name())
 		frw.FileBufWriter.Close() 
 		
 		frw.intRotate()

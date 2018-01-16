@@ -149,11 +149,11 @@ func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 }
 
 // Benchmark results (darwin amd64 6g)
-//elog.BenchmarkConsoleLog           100000       22819 ns/op
-//elog.BenchmarkConsoleNotLogged    2000000         879 ns/op
-//elog.BenchmarkConsoleUtilLog        50000       34380 ns/op
-//elog.BenchmarkConsoleUtilNotLog   1000000        1339 ns/op
-//elog.BenchmarkFileLog              100000       26497 ns/op
-//elog.BenchmarkFileNotLogged       2000000         821 ns/op
-//elog.BenchmarkFileUtilLog           50000       33945 ns/op
-//elog.BenchmarkFileUtilNotLog      1000000        1258 ns/op
+// BenchmarkFileLog-4                        200000              7639 ns/op
+// BenchmarkFileNotLogged-4                20000000               118 ns/op
+// BenchmarkFileUtilLog-4                    300000              6449 ns/op
+// BenchmarkFileUtilNotLog-4               20000000               118 ns/op
+// BenchmarkCacheFileLog-4                  1000000              1771 ns/op
+// BenchmarkCacheFileNotLogged-4           20000000               119 ns/op
+// BenchmarkCacheFileUtilLog-4               300000              4056 ns/op
+// BenchmarkCacheFileUtilNotLog-4          10000000               121 ns/op
