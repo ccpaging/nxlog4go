@@ -91,15 +91,7 @@ func (frw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 	if ((frw.maxsize > 0 && frw.cursize >= frw.maxsize) ||
 		(frw.daily && now.Day() != frw.currtime.Day())) {
 
-		// Write footer
-		if len(frw.footer) > 0 && frw.cursize > 0 {
-			fmtSlice := bytes.Split([]byte(frw.footer), []byte{'%'})
-			frw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
-		}
-		// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", frw.FileBufWriter.Name())
-		frw.FileBufWriter.Close() 
-		
-		frw.intRotate()
+		frw.Rotate()
 	}
 
 	// Write header
@@ -114,12 +106,20 @@ func (frw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 	return n, err
 }
 
-func (frw *RotateFileWriter) intRotate() {
+func (frw *RotateFileWriter) Rotate() {
 	defer func() {
 		frw.cursize = 0
 		frw.currtime = time.Now()
 	}()
 
+	// Write footer
+	if len(frw.footer) > 0 && frw.cursize > 0 {
+		fmtSlice := bytes.Split([]byte(frw.footer), []byte{'%'})
+		frw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
+	}
+	// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", frw.FileBufWriter.Name())
+	frw.FileBufWriter.Close() 
+	
 	name := frw.FileBufWriter.Name()
 	if frw.maxbackup <= 0 {
 		os.Remove(name)
