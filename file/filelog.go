@@ -13,6 +13,21 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
+// Get first rotate time
+func nextTime(cycle, clock int64) time.Time {
+	nrt := time.Now()
+	if clock < 0 {
+		// Now + cycle
+		return nrt.Add(time.Duration(cycle) * time.Second)
+	}
+	
+	// next cycle midnight + clock
+	nextDay := nrt.Add(time.Duration(cycle) * time.Second)
+	nrt = time.Date(nextDay.Year(), nextDay.Month(), nextDay.Day(), 
+					0, 0, 0, 0, nextDay.Location())
+	return nrt.Add(time.Duration(clock) * time.Second)
+}
+
 // This log writer sends output to a file
 type FileLogWriter struct {
 	mu  sync.Mutex // ensures atomic writes; protects the following fields
@@ -23,9 +38,9 @@ type FileLogWriter struct {
 	// 3nd cache, destination for output with buffered and rotated
 	out *l4g.RotateFileWriter
 	// Rotate at size
-	maxsize int64
+	maxsize int
 	// Rotate cycle in seconds
-	cycle, delay0 int64	
+	cycle, clock int	
 	// write loop
 	loopRunning bool
 	loopReset chan time.Time
@@ -42,12 +57,12 @@ func (flw *FileLogWriter) LogWrite(rec *l4g.LogRecord) {
 func (flw *FileLogWriter) Close() {
 	close(flw.messages)
 	close(flw.loopReset)
-	// Loop may not running if no message write yet
-	if flw.loopRunning {
-		// Waiting at most one second and let go routine exit
-		for i := 10; i > 0 && flw.loopRunning; i-- {
-			// Must call Sleep here, otherwise, may panic send on closed channel
-			time.Sleep(100 * time.Millisecond)
+	// drain the log channel before closing
+	for i := 10; i > 0; i-- {
+		// Must call Sleep here, otherwise, may panic send on closed channel
+		time.Sleep(100 * time.Millisecond)
+		if len(flw.messages) <= 0 {
+			break
 		}
 	}
 	if flw.out != nil {
@@ -143,6 +158,40 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 			return l4g.ErrBadValue
 		}
 		flw.out.SetMaxBackup(maxbackup)
+	case "cycle":
+		switch value := v.(type) {
+		case int:
+			flw.cycle = value
+		case string:
+			// Each with optional fraction and a unit suffix, 
+			// such as "300ms", "-1.5h" or "2h45m". 
+			// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+			dur, _ := time.ParseDuration(value)
+			flw.cycle = int(dur/time.Millisecond)
+		default:
+			return l4g.ErrBadValue
+		}
+		if flw.cycle <= 0 {
+			flw.out.SetMaxSize(flw.maxsize)
+		} else {
+			flw.out.SetMaxSize(0)
+		}
+		if flw.loopRunning {
+			flw.loopReset <- time.Now()
+		}
+	case "clock":
+		switch value := v.(type) {
+		case int:
+			flw.clock = value
+		case string:
+			dur, _ := time.ParseDuration(value)
+			flw.clock = int(dur/time.Millisecond)
+		default:
+			return l4g.ErrBadValue
+		}
+		if flw.loopRunning {
+			flw.loopReset <- time.Now()
+		}
 	case "maxsize":
 		var maxsize int
 		switch value := v.(type) {
@@ -153,6 +202,7 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 		default:
 			return l4g.ErrBadValue
 		}
+		flw.maxsize = maxsize
 		flw.out.SetMaxSize(maxsize)
 	case "format":
 		if format, ok := v.(string); ok {

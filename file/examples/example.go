@@ -89,7 +89,7 @@ func main() {
 			log.Info("%d. The time is now: %s", j, time.Now().Format("15:04:05 MST 2006/01/02"))
 			log.Critical("Time to close out!")
 		}
-		time.Sleep(4 * time.Second)
+		//time.Sleep(1 * time.Second)
 	}
 	// Close the log filters
 	log.CloseFilters()
