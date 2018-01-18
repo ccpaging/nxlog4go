@@ -16,21 +16,6 @@ const (
 	oldfiles = "_flw.*.log"
 )
 
-func CheckTimer(cycle int64, delay0 int64) {
-	fmt.Println("cycle:", cycle, "delay0:", delay0)
-	nrt := time.Now()
-	if delay0 < 0 { // Now + cycle
-		nrt = nrt.Add(time.Duration(cycle) * time.Second)
-	} else { // tomorrow midnight (Clock 0) + delay0
-		tomorrow := nrt.Add(24 * time.Hour)
-        nrt = time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 
-						0, 0, 0, 0, tomorrow.Location())
-		nrt = nrt.Add(time.Duration(delay0) * time.Second)
-	}
-	fmt.Println("nrt:", nrt, "now:", time.Now())
-	fmt.Println("First timer:", nrt.Sub(time.Now()))
-}
-
 // Print what was logged to the file (yes, I know I'm skipping error checking)
 func PrintFile(fn string) {
 	fd, _ := os.Open(fn)
@@ -47,15 +32,6 @@ func PrintFile(fn string) {
 }
 
 func main() {
-	fmt.Println("Every 10 minutes")
-	CheckTimer(600, -1)
-	fmt.Println("---\nEvery midnight")
-	CheckTimer(86400, 0)
-	fmt.Println("---\nEvery 3:00am")
-	CheckTimer(86400, 10800)
-	fmt.Println("---\nEvery weekly midnight")
-	CheckTimer(86400 * 7, 0)
-
 	// Get a new logger instance
 	log := l4g.New(l4g.FINE)
 
@@ -75,9 +51,8 @@ func main() {
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	flw := filelog.NewFileLogWriter(filename, 10)
-	flw.Set("cycle", 5)
-	flw.Set("delay0", -1)
 	flw.Set("format", "[%D %T] [%L] (%x) %M")
+	flw.Set("cycle", 0)
 	flw.Set("maxsize", "5k")
 	log.AddFilter("file", l4g.FINE, flw)
 

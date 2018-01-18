@@ -5,16 +5,17 @@ package filelog
 import (
 	"sync"
 	"bytes"
-	"os"
 	"time"
-	"path"
 	"strings"
 	
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
 // Get first rotate time
-func nextTime(cycle, clock int64) time.Time {
+func nextTime(cycle, clock int) time.Time {
+	if cycle <= 0 {
+		cycle = 86400
+	}
 	nrt := time.Now()
 	if clock < 0 {
 		// Now + cycle
@@ -22,9 +23,9 @@ func nextTime(cycle, clock int64) time.Time {
 	}
 	
 	// next cycle midnight + clock
-	nextDay := nrt.Add(time.Duration(cycle) * time.Second)
-	nrt = time.Date(nextDay.Year(), nextDay.Month(), nextDay.Day(), 
-					0, 0, 0, 0, nextDay.Location())
+	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
+	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
+					0, 0, 0, 0, nextCycle.Location())
 	return nrt.Add(time.Duration(clock) * time.Second)
 }
 
@@ -40,7 +41,7 @@ type FileLogWriter struct {
 	// Rotate at size
 	maxsize int
 	// Rotate cycle in seconds
-	cycle, clock int	
+	cycle, clock int
 	// write loop
 	loopRunning bool
 	loopReset chan time.Time
@@ -87,6 +88,8 @@ func (flw *FileLogWriter) writeLoop() {
 		flw.loopRunning = false
 	}()
 
+	nrt := nextTime(flw.cycle, flw.clock)
+	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
 	for {
 		select {
 		case bb, ok := <-flw.messages:
@@ -106,7 +109,15 @@ func (flw *FileLogWriter) writeLoop() {
 				flw.mu.Unlock()
 				return
 			}
+		case <-rotTimer.C:
+			nrt = nextTime(flw.cycle, flw.clock)
+			rotTimer.Reset(nrt.Sub(time.Now()))
+			if flw.cycle > 0 && flw.out.Size() > flw.maxsize {
+				flw.out.Rotate()
+			}
 		case <-flw.loopReset:
+			nrt = nextTime(flw.cycle, flw.clock)
+			rotTimer.Reset(nrt.Sub(time.Now()))
 		}
 	}
 }
@@ -123,19 +134,6 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 	defer flw.mu.Unlock()
 
 	switch name {
-	case "filename":
-		if filename, ok := v.(string); ok {
-			if len(filename) <= 0 {
-				return l4g.ErrBadValue
-			}
-			err := os.MkdirAll(path.Dir(filename), l4g.DefaultFilePerm)
-			if err != nil {
-				return err
-			}
-			// flw.out.SetFileName(filename)
-		} else {
-			return l4g.ErrBadValue
-		}
 	case "flush":
 		var flush int
 		switch value := v.(type) {
@@ -203,7 +201,9 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 			return l4g.ErrBadValue
 		}
 		flw.maxsize = maxsize
-		flw.out.SetMaxSize(maxsize)
+		if flw.cycle <= 0 {
+			flw.out.SetMaxSize(flw.maxsize)
+		}
 	case "format":
 		if format, ok := v.(string); ok {
 			flw.formatSlice = bytes.Split([]byte(format), []byte{'%'})

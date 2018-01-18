@@ -81,6 +81,10 @@ func NewRotateFileWriter(path string) *RotateFileWriter {
 	return frw
 }
 
+func (frw *RotateFileWriter) Size() int {
+	return frw.cursize
+}
+
 // Write binaries to the file.
 // It will rotate files if necessary
 func (frw *RotateFileWriter) Write(bb []byte) (n int, err error) {
