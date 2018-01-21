@@ -1,0 +1,52 @@
+<logging>
+	<filter enabled="true">
+	    <tag>stdout</tag>
+	    <type>color</type>
+	    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
+	    <level>DEBUG</level>
+		<property name="format">[%D %T] [%L] (%s) %M</property>
+	</filter>
+	<filter enabled="true">
+		<tag>file</tag>
+		<type>file</type>
+		<level>FINEST</level>
+		<property name="filename">_test.log</property>
+		<!--
+			%T - Time (15:04:05 MST)
+			%t - Time (15:04)
+			%D - Date (2006/01/02)
+			%d - Date (01/02/06)
+			%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+			%S - Source
+			%s - Short Source
+			%x - Extra Short Source: just file without .go suffix
+			%M - Message
+			It ignores unknown format strings (and removes them)
+			Recommended: "[%D %T] [%L] (%S) %M"
+		-->
+		<property name="format">[%D %T] [%L] (%s) %M</property>
+		<property name="flush">0</property> <!-- no bufio write -->
+		<property name="maxbackup">0</property> <!-- enables log rotation. 0, append -->
+		<property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
+		<property name="cycle">24h</property> <!-- rotate cycle -->
+		<property name="clock">0h</property> <!-- rotate clock since midnight -->
+	</filter>
+	<filter enabled="true">
+		<tag>xml</tag>
+		<type>xml</type>
+		<level>TRACE</level>
+		<property name="filename">_trace.xml</property>
+		<property name="flush">4k</property> <!-- bufio flush size -->
+		<property name="maxbackup">10</property> <!-- enables log rotation. 0, append -->
+		<property name="maxsize">10M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->
+		<property name="cycle">24h</property> <!-- rotate cycle -->
+		<property name="clock">0h</property> <!-- rotate clock since midnight -->
+	</filter>
+	<filter enabled="false"><!-- enabled=false means this logger won't actually be created -->
+		<tag>donotopen</tag>
+		<type>socket</type>
+		<level>FINEST</level>
+		<property name="endpoint">192.168.1.255:12124</property> <!-- recommend UDP broadcast -->
+		<property name="protocol">udp</property> <!-- tcp or udp -->
+	</filter>
+</logging>

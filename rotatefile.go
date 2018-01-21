@@ -70,14 +70,7 @@ func NewRotateFileWriter(path string) *RotateFileWriter {
 		FileBufWriter: NewFileBufWriter(path),
 		daily: false,
 	}
-	fi, err := frw.FileBufWriter.Stat()
-	if err != nil {
-		frw.cursize = 0
-		frw.currtime = time.Now()
-	} else {
-		frw.cursize = int(fi.Size())
-		frw.currtime = fi.ModTime()
-	}
+	frw.timeSizeReset()
 	return frw
 }
 
@@ -139,6 +132,23 @@ func (frw *RotateFileWriter) Rotate() {
 	}
 	
 	Backup(newName, name, frw.maxbackup)
+}
+
+func (frw *RotateFileWriter) SetFileName(name string) *RotateFileWriter {
+	frw.FileBufWriter.SetFileName(name)
+	frw.timeSizeReset()
+	return frw
+}
+
+func (frw *RotateFileWriter) timeSizeReset() {
+	fi, err := frw.FileBufWriter.Stat()
+	if err != nil {
+		frw.cursize = 0
+		frw.currtime = time.Now()
+	} else {
+		frw.cursize = int(fi.Size())
+		frw.currtime = fi.ModTime()
+	}
 }
 
 // Set the file header(chainable).  Must be called before the first log

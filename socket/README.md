@@ -1,3 +1,3 @@
-# Changes from log4go
+# Changes from socket log
 
-- Add '\n' at the end of the logging package. The socket log writer support TCP.
+- Add '\n' at the end of the logging package for TCP.

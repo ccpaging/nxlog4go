@@ -12,11 +12,6 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var (
-	DefaultProt string = "udp"
-	DefaultHost string = "127.0.0.1:12124"
-)
-
 // This log writer sends output to a socket
 type SocketLogWriter struct {
 	mu   sync.Mutex // ensures atomic writes; protects the following fields
@@ -31,11 +26,11 @@ func (slw *SocketLogWriter) Close() {
 	}
 }
 
-func NewLogWriter() *SocketLogWriter {
+func NewLogWriter(prot, host string) *SocketLogWriter {
 	return &SocketLogWriter {
 		sock:	nil,
-		prot:	DefaultProt,
-		host:	DefaultHost,
+		prot:	prot,
+		host:	host,
 	}
 }
 

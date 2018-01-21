@@ -8,7 +8,7 @@ import (
 
 var (
 	// Default flush size of cache writing file
-	DefaultFileFlush = os.Getpagesize() * 2
+	FileFlushDefault = os.Getpagesize() * 2
 	// Default log file and directory permission
 	// permission to:  owner      group      other     
 	//                 /```\      /```\      /```\
@@ -20,7 +20,7 @@ var (
 	// permission to  - owner: the user that create the file/folder
 	//                  group: the users from group that owner is member
 	//                  other: all other users
-	DefaultFilePerm = os.FileMode(0660)
+	FilePermDefault = os.FileMode(0660)
 )
 
 // File buffer writer
@@ -35,7 +35,7 @@ type FileBufWriter struct {
 func NewFileBufWriter(name string) *FileBufWriter {
 	return &FileBufWriter {
 		name: name,
-		flush: DefaultFileFlush,
+		flush: FileFlushDefault,
 	}
 }
 
@@ -60,7 +60,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	defer fbw.Unlock()
 
 	if fbw.file == nil {
-		file, err := os.OpenFile(fbw.name, os.O_WRONLY|os.O_APPEND|os.O_CREATE, DefaultFilePerm)
+		file, err := os.OpenFile(fbw.name, os.O_WRONLY|os.O_APPEND|os.O_CREATE, FilePermDefault)
 		if err != nil {
 			return 0, err
 		}
@@ -104,7 +104,7 @@ func (fbw *FileBufWriter) Name() string {
 	return fbw.name
 }
 
-func (fbw *FileBufWriter) SetName(name string) *FileBufWriter {
+func (fbw *FileBufWriter) SetFileName(name string) *FileBufWriter {
 	fbw.Close()
 	fbw.name = name
 	return fbw

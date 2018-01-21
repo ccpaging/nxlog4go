@@ -7,7 +7,8 @@ import (
 	"bytes"
 	"time"
 	"strings"
-	
+	"os"
+	"path"
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
@@ -57,7 +58,7 @@ func (flw *FileLogWriter) LogWrite(rec *l4g.LogRecord) {
 
 func (flw *FileLogWriter) Close() {
 	close(flw.messages)
-	close(flw.loopReset)
+
 	// drain the log channel before closing
 	for i := 10; i > 0; i-- {
 		// Must call Sleep here, otherwise, may panic send on closed channel
@@ -69,11 +70,13 @@ func (flw *FileLogWriter) Close() {
 	if flw.out != nil {
 		flw.out.Close()
 	}
+
+	close(flw.loopReset)
 }
 
 // NewFileLogWriter creates a new LogWriter which writes to the given file and
 // has rotation enabled if maxrotate > 0.
-func NewFileLogWriter(path string, maxbackup int) *FileLogWriter {
+func NewLogWriter(path string, maxbackup int) *FileLogWriter {
 	return &FileLogWriter{
 		formatSlice: bytes.Split([]byte(l4g.FORMAT_DEFAULT), []byte{'%'}),	
 		messages: make(chan []byte,  l4g.DefaultBufferLength),
@@ -134,6 +137,19 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 	defer flw.mu.Unlock()
 
 	switch name {
+	case "filename":
+		if filename, ok := v.(string); ok {
+			if len(filename) <= 0 {
+				return l4g.ErrBadValue
+			}
+			err := os.MkdirAll(path.Dir(filename), l4g.FilePermDefault)
+			if err != nil {
+				return err
+			}
+			flw.out.SetFileName(filename)
+		} else {
+			return l4g.ErrBadValue
+		}
 	case "flush":
 		var flush int
 		switch value := v.(type) {
@@ -208,7 +224,7 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 		if format, ok := v.(string); ok {
 			flw.formatSlice = bytes.Split([]byte(format), []byte{'%'})
 		} else if format, ok := v.([]byte); ok {
-				flw.formatSlice = bytes.Split(format, []byte{'%'})
+			flw.formatSlice = bytes.Split(format, []byte{'%'})
 		} else {
 			return l4g.ErrBadValue
 		}

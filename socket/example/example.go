@@ -10,7 +10,7 @@ var	log = l4g.New(l4g.DEBUG)
 
 func main() {
 	// This makes sure the output stream buffer is written
-	slw := socketlog.NewLogWriter().Set("protocol", "udp").Set("endpoint", "127.0.0.1:12124")
+	slw := socketlog.NewLogWriter("udp", "127.0.0.1:12124")
 	// defer slw.Close()
 
 	log.AddFilter("network", l4g.FINEST, slw)

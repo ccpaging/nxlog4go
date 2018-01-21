@@ -27,7 +27,7 @@ func newLogRecord(lvl l4g.Level, src string, msg string) *l4g.LogRecord {
 }
 
 func TestFileLogWriter(t *testing.T) {
-	w := NewFileLogWriter(testLogFile, 0)
+	w := NewLogWriter(testLogFile, 0)
 	if w == nil {
 		t.Fatalf("Invalid return: w should not be nil")
 	}
@@ -47,7 +47,7 @@ func TestFileLogWriter(t *testing.T) {
 func BenchmarkFileLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 0))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 0))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Warn("This is a log message")
@@ -60,7 +60,7 @@ func BenchmarkFileLog(b *testing.B) {
 func BenchmarkFileNotLogged(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 0))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 0))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("This is a log message")
@@ -73,7 +73,7 @@ func BenchmarkFileNotLogged(b *testing.B) {
 func BenchmarkFileUtilLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 0))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 0))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -86,7 +86,7 @@ func BenchmarkFileUtilLog(b *testing.B) {
 func BenchmarkFileUtilNotLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 0))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 0))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
@@ -99,7 +99,7 @@ func BenchmarkFileUtilNotLog(b *testing.B) {
 func BenchmarkCacheFileLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 4096))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 4096))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Warn("This is a log message")
@@ -112,7 +112,7 @@ func BenchmarkCacheFileLog(b *testing.B) {
 func BenchmarkCacheFileNotLogged(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 4096))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 4096))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("This is a log message")
@@ -125,7 +125,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 func BenchmarkCacheFileUtilLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 4096))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 4096))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -138,7 +138,7 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 	sl := l4g.New(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	sl.AddFilter("file", l4g.INFO, NewFileLogWriter(benchLogFile, 0).Set("flush", 4096))
+	sl.AddFilter("file", l4g.INFO, NewLogWriter(benchLogFile, 0).Set("flush", 4096))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")

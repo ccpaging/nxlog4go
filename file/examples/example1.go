@@ -36,7 +36,7 @@ func main() {
 	log := l4g.New(l4g.FINE)
 
 	// Create a default logger that is logging messages of FINE or higher
-	log.AddFilter("file", l4g.FINE, filelog.NewFileLogWriter(filename, 0))
+	log.AddFilter("file", l4g.FINE, filelog.NewLogWriter(filename, 0))
 	log.Finest("Everything is created now (notice that I will not be printing to the file)")
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Critical("Time to close out!")
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	/* Can also specify manually via the following: (these are the defaults) */
-	flw := filelog.NewFileLogWriter(filename, 10)
+	flw := filelog.NewLogWriter(filename, 10)
 	flw.Set("format", "[%D %T] [%L] (%x) %M")
 	flw.Set("cycle", 5)
 	flw.Set("delay0", -1)

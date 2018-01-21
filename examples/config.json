@@ -1,0 +1,46 @@
+{
+	"LogConfig" : {
+		"filters": [
+		{
+		  "enabled": "true",
+		  "tag": "stdout",
+		  "type": "color",
+		  "level": "DEBUG",
+		  "properties": [
+			{
+			  "name": "format",
+			  "value": "[%D %T] [%L] (%S) %M"
+			}
+		  ]
+		},
+		{
+		  "enabled": "true",
+		  "tag": "file",
+		  "type": "file",
+		  "level": "FINEST",
+		  "properties": [
+			{
+			  "name": "filename",
+			  "value": "_test.log"
+			}
+		  ]
+		},
+		{
+		  "enabled": "true",
+		  "tag": "socket",
+		  "type": "socket",
+		  "level": "FINEST",
+		  "properties": [
+			{
+			  "name": "protocol",
+			  "value": "udp"
+			},
+			{
+			  "name": "endpoint",
+			  "value": "127.0.0.1:12124"
+			}
+		  ]
+		}
+		]
+	}
+}

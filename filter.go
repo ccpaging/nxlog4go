@@ -8,6 +8,7 @@ import (
 	"time"
 	"errors"
 	"strconv"
+	"strings"
 )
 
 // Various error codes.
@@ -15,7 +16,24 @@ var (
     ErrBadOption   = errors.New("invalid or unsupported option")
     ErrBadValue    = errors.New("invalid option value")
 )
-   
+
+type FilterProp struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:",chardata"`
+}
+
+type FilterConfig struct {
+	Enabled  string        `xml:"enabled,attr"`
+	Tag      string        `xml:"tag"`
+	Level    string        `xml:"level"`
+	Type     string        `xml:"type"`
+	Properties []FilterProp `xml:"property"`
+}
+
+type LoggerConfig struct {
+	Filters []FilterConfig `xml:"filter"`
+}
+
 /****** LogWriter ******/
 
 // This is an interface for anything that should be able to write logs
@@ -33,6 +51,24 @@ type LogWriter interface {
 	Close()
 }
 
+func ConfigLogWriter(lw LogWriter, props []FilterProp) (LogWriter, bool) {
+	good := true
+	for _, prop := range props {
+		err := lw.SetOption(prop.Name, strings.Trim(prop.Value, " \r\n"))
+		if err != nil {
+			switch err {
+			case ErrBadValue:
+				fmt.Fprintf(os.Stderr, "ConfigLogWriter: Bad value of \"%s\"\n", prop.Name)
+				good = false
+			case ErrBadOption:
+				fmt.Fprintf(os.Stderr, "ConfigLogWriter: Unknown property \"%s\"\n", prop.Name)
+			default:
+			}
+		}
+	}
+	return lw, good
+}
+
 /****** Filter ******/
 
 // A Filter represents the log level below which no log records are written to
@@ -42,7 +78,7 @@ type Filter struct {
 	LogWriter
 
 	rec 	chan *LogRecord	// write queue
-	closed 	bool	// true if Socket was closed at API level
+	closing	bool	// true if filter was closed at API level
 }
 
 func NewFilter(lvl Level, writer LogWriter) *Filter {
@@ -51,7 +87,7 @@ func NewFilter(lvl Level, writer LogWriter) *Filter {
 		LogWriter:	writer,
 
 		rec: 		make(chan *LogRecord, DefaultBufferLength),
-		closed: 	false,
+		closing: 	false,
 	}
 
 	go f.run()
@@ -61,8 +97,8 @@ func NewFilter(lvl Level, writer LogWriter) *Filter {
 // This is the filter's output method. This will block if the output
 // buffer is full. 
 func (f *Filter) writeToChan(rec *LogRecord) {
-	if f.closed {
-		fmt.Fprintf(os.Stderr, "LogWriter: channel has been closed. Message is [%s]\n", rec.Message)
+	if f.closing {
+		fmt.Fprintf(os.Stderr, "Filter: channel has been closed. Message is [%s]\n", rec.Message)
 		return
 	}
 	f.rec <- rec
@@ -81,13 +117,13 @@ func (f *Filter) run() {
 }
 
 func (f *Filter) Close() {
-	if f.closed {
+	if f.closing {
 		return
 	}
 	// sleep at most one second and let go routine running
 	// drain the log channel before closing
 	for i := 10; i > 0; i-- {
-		// Must call Sleep here, otherwise, may panic send on closed channel
+		// Must call Sleep here, otherwise, may panic send on closing channel
 		time.Sleep(100 * time.Millisecond)
 		if len(f.rec) <= 0 {
 			break
@@ -95,7 +131,7 @@ func (f *Filter) Close() {
 	}
 
 	// block write channel
-	f.closed = true
+	f.closing = true
 
 	defer f.LogWriter.Close()
 
@@ -129,4 +165,53 @@ func StrToNumSuffix(str string, mult int) int {
 	}
 	parsed, _ := strconv.Atoi(str)
 	return parsed * num
+}
+
+func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
+	bad, enabled, lvl = false, false, INFO
+
+	// Check required children
+	if len(fc.Enabled) == 0 {
+		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required attribute %s\n", "enabled")
+		bad = true
+	} else {
+		enabled = fc.Enabled != "false"
+	}
+	if len(fc.Tag) == 0 {
+		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "tag")
+		bad = true
+	}
+	if len(fc.Type) == 0 {
+		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "type")
+		bad = true
+	}
+	if len(fc.Level) == 0 {
+		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "level")
+		bad = true
+	}
+
+	switch fc.Level {
+	case "FINEST":
+		lvl = FINEST
+	case "FINE":
+		lvl = FINE
+	case "DEBUG":
+		lvl = DEBUG
+	case "TRACE":
+		lvl = TRACE
+	case "INFO":
+		lvl = INFO
+	case "WARNING":
+		lvl = WARNING
+	case "ERROR":
+		lvl = ERROR
+	case "CRITICAL":
+		lvl = CRITICAL
+	default:
+		fmt.Fprintf(os.Stderr, 
+			"CheckFilterConfig: Required child level for filter has unknown value. %s\n", 
+			fc.Level)
+		bad = true
+	}
+	return bad, enabled, lvl
 }

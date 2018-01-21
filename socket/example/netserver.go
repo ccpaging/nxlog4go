@@ -37,6 +37,6 @@ func main() {
 		e(err)
 
 		// log to standard output
-		fmt.Print(a, string(buffer[:size]))
+		fmt.Print(a, " ", string(buffer[:size]))
 	}
 }
