@@ -30,6 +30,7 @@ type FileBufWriter struct {
 	file *os.File
 	name   string
 	flush  int
+	cursize int
 }
 
 func NewFileBufWriter(name string) *FileBufWriter {
@@ -44,6 +45,7 @@ func (fbw *FileBufWriter) Close() error {
 
 	fbw.Lock()
 	defer func() {
+		fbw.cursize = 0
 		fbw.file = nil
 		fbw.Writer = nil
 		fbw.Unlock()
@@ -66,15 +68,25 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 		}
 	
 		fbw.file = file
+		fi, err := fbw.file.Stat()
+		if err == nil {
+			fbw.cursize = int(fi.Size())
+		}
+
 		if fbw.flush > 0 {
 			fbw.Writer = bufio.NewWriterSize(fbw.file, fbw.flush)
 		}
 	}
 
 	if fbw.Writer != nil {
-		return fbw.Writer.Write(b)
+		n, err = fbw.Writer.Write(b)
+	} else {
+		n, err = fbw.file.Write(b)
 	}
-	return fbw.file.Write(b)
+	if err == nil {
+		fbw.cursize += n
+	}
+	return n, err 
 }
 
 func (fbw *FileBufWriter) Flush() {
@@ -90,6 +102,10 @@ func (fbw *FileBufWriter) Flush() {
 	}
 }
 
+func (fbw *FileBufWriter) Size() int {
+	return fbw.cursize
+}
+
 func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 	fbw.Lock()
 	defer fbw.Unlock()
@@ -102,12 +118,6 @@ func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 
 func (fbw *FileBufWriter) Name() string {
 	return fbw.name
-}
-
-func (fbw *FileBufWriter) SetFileName(name string) *FileBufWriter {
-	fbw.Close()
-	fbw.name = name
-	return fbw
 }
 
 // flush <= 0, no bufio

@@ -9,8 +9,60 @@ import (
 	"path"
 )
 
+// Rotate File buffer writer
+type RotateFileWriter struct {
+	sync.RWMutex
+	// The opened file buffer writer
+	*FileBufWriter
+	// File header/trailer
+	header, footer string
+	// Rotate at size
+	maxsize   int
+	// Rotate daily
+	daily     bool
+	curtime   time.Time
+	// Keep old files (.1, .2, etc)
+	maxbackup int
+}
+
+// NewRotateFileWriter creates rotator which writes to the file buffer writer
+func NewRotateFileWriter(path string) *RotateFileWriter {
+	rfw := &RotateFileWriter {
+		FileBufWriter: NewFileBufWriter(path),
+		daily: false,
+	}
+	fi, err := rfw.FileBufWriter.Stat()
+	if err != nil {
+		rfw.curtime = time.Now()
+	} else {
+		rfw.curtime = fi.ModTime()
+	}
+	return rfw
+}
+
+// Write binaries to the file.
+// It will rotate files if necessary
+func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
+	rfw.Lock()
+	defer rfw.Unlock()
+
+	if ((rfw.maxsize > 0 && rfw.Size() >= rfw.maxsize) ||
+		(rfw.daily && rfw.curtime.Day() != time.Now().Day())) {
+
+		rfw.Rotate()
+	}
+
+	// Write header
+	if len(rfw.header) > 0 && rfw.Size() == 0 {
+		fmtSlice := bytes.Split([]byte(rfw.header), []byte{'%'})
+		rfw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
+	}
+
+	return rfw.FileBufWriter.Write(bb)
+}
+
 // Rename history log files to "<name>.???.<ext>"
-func Backup(newName string, name string, backup int) {
+func intBackup(newName string, name string, backup int) {
 	// May compress new log file here
 
 	ext := path.Ext(name) // like ".log"
@@ -47,78 +99,21 @@ func Backup(newName string, name string, backup int) {
 	os.Rename(newName, path + ".1" + ext)
 }
 
-// Rotate File buffer writer
-type RotateFileWriter struct {
-	sync.RWMutex
-	// The opened file buffer writer
-	*FileBufWriter
-	// File header/trailer
-	header, footer string
-	// Rotate at size
-	maxsize   int
-	cursize   int
-	// Rotate daily
-	daily     bool
-	currtime  time.Time
-	// Keep old files (.1, .2, etc)
-	maxbackup int
-}
-
-// NewRotateFileWriter creates rotator which writes to the file buffer writer
-func NewRotateFileWriter(path string) *RotateFileWriter {
-	frw := &RotateFileWriter {
-		FileBufWriter: NewFileBufWriter(path),
-		daily: false,
-	}
-	frw.timeSizeReset()
-	return frw
-}
-
-func (frw *RotateFileWriter) Size() int {
-	return frw.cursize
-}
-
-// Write binaries to the file.
-// It will rotate files if necessary
-func (frw *RotateFileWriter) Write(bb []byte) (n int, err error) {
-	frw.Lock()
-	defer frw.Unlock()
-
-	now := time.Now()
-	if ((frw.maxsize > 0 && frw.cursize >= frw.maxsize) ||
-		(frw.daily && now.Day() != frw.currtime.Day())) {
-
-		frw.Rotate()
-	}
-
-	// Write header
-	if len(frw.header) > 0 && frw.cursize == 0 {
-		fmtSlice := bytes.Split([]byte(frw.header), []byte{'%'})
-		n, _ = frw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
-		frw.cursize += n
-	}
-
-	n, err = frw.FileBufWriter.Write(bb)
-	frw.cursize += n
-	return n, err
-}
-
-func (frw *RotateFileWriter) Rotate() {
+func (rfw *RotateFileWriter) Rotate() {
 	defer func() {
-		frw.cursize = 0
-		frw.currtime = time.Now()
+		rfw.curtime = time.Now()
 	}()
 
 	// Write footer
-	if len(frw.footer) > 0 && frw.cursize > 0 {
-		fmtSlice := bytes.Split([]byte(frw.footer), []byte{'%'})
-		frw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
+	if len(rfw.footer) > 0 && rfw.Size() > 0 {
+		fmtSlice := bytes.Split([]byte(rfw.footer), []byte{'%'})
+		rfw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
 	}
-	// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", frw.FileBufWriter.Name())
-	frw.FileBufWriter.Close() 
+	// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", rfw.FileBufWriter.Name())
+	rfw.FileBufWriter.Close() 
 	
-	name := frw.FileBufWriter.Name()
-	if frw.maxbackup <= 0 {
+	name := rfw.FileBufWriter.Name()
+	if rfw.maxbackup <= 0 {
 		os.Remove(name)
 		return
 	}
@@ -131,74 +126,61 @@ func (frw *RotateFileWriter) Rotate() {
 		return
 	}
 	
-	Backup(newName, name, frw.maxbackup)
-}
-
-func (frw *RotateFileWriter) SetFileName(name string) *RotateFileWriter {
-	frw.FileBufWriter.SetFileName(name)
-	frw.timeSizeReset()
-	return frw
-}
-
-func (frw *RotateFileWriter) timeSizeReset() {
-	fi, err := frw.FileBufWriter.Stat()
-	if err != nil {
-		frw.cursize = 0
-		frw.currtime = time.Now()
-	} else {
-		frw.cursize = int(fi.Size())
-		frw.currtime = fi.ModTime()
-	}
+	intBackup(newName, name, rfw.maxbackup)
 }
 
 // Set the file header(chainable).  Must be called before the first log
 // message is written.  These are formatted similar to the FormatLogRecord (e.g.
 // you can use %D and %T in your header for date and time).
-func (frw *RotateFileWriter) SetHead(header string) *RotateFileWriter {
-	frw.Lock()
-	defer frw.Unlock()
+func (rfw *RotateFileWriter) SetHead(header string) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
 
-	frw.header = header
-	return frw
+	rfw.header = header
+	return rfw
 }
 
 // Set the file footer (chainable).  Must be called before the first log
 // message is written.  These are formatted similar to the FormatLogRecord (e.g.
 // you can use %D and %T in your footer for date and time).
-func (frw *RotateFileWriter) SetFoot(footer string) *RotateFileWriter {
-	frw.Lock()
-	defer frw.Unlock()
+func (rfw *RotateFileWriter) SetFoot(footer string) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
 
-	frw.footer = footer
-	return frw
+	rfw.footer = footer
+	return rfw
 }
 
 // Set rotate at size (chainable). Must be called before the first log message
 // is written.
-func (frw *RotateFileWriter) SetMaxSize(maxsize int) *RotateFileWriter {
-	frw.Lock()
-	defer frw.Unlock()
+func (rfw *RotateFileWriter) SetMaxSize(maxsize int) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
 
-	frw.maxsize = maxsize
-	return frw
+	rfw.maxsize = maxsize
+	return rfw
 }
 
 // Set rotate daily (chainable). Must be called before the first log message is
 // written.
-func (frw *RotateFileWriter) SetDaily(daily bool) *RotateFileWriter {
-	frw.Lock()
-	defer frw.Unlock()
+func (rfw *RotateFileWriter) SetDaily(daily bool) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
 
-	frw.daily = daily
-	return frw
+	rfw.daily = daily
+	return rfw
 }
 
 // Set max backup files. Must be called before the first log message
 // is written.
-func (frw *RotateFileWriter) SetMaxBackup(maxbackup int) *RotateFileWriter {
-	frw.Lock()
-	defer frw.Unlock()
+func (rfw *RotateFileWriter) SetMaxBackup(maxbackup int) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
 
-	frw.maxbackup = maxbackup
-	return frw
+	rfw.maxbackup = maxbackup
+	return rfw
+}
+
+func (rfw RotateFileWriter) GetMaxBackup() int {
+	return rfw.maxbackup
 }

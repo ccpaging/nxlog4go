@@ -12,24 +12,6 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-// Get first rotate time
-func nextTime(cycle, clock int) time.Time {
-	if cycle <= 0 {
-		cycle = 86400
-	}
-	nrt := time.Now()
-	if clock < 0 {
-		// Now + cycle
-		return nrt.Add(time.Duration(cycle) * time.Second)
-	}
-	
-	// next cycle midnight + clock
-	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
-	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
-					0, 0, 0, 0, nextCycle.Location())
-	return nrt.Add(time.Duration(clock) * time.Second)
-}
-
 // This log writer sends output to a file
 type FileLogWriter struct {
 	mu  sync.Mutex // ensures atomic writes; protects the following fields
@@ -76,14 +58,32 @@ func (flw *FileLogWriter) Close() {
 
 // NewFileLogWriter creates a new LogWriter which writes to the given file and
 // has rotation enabled if maxrotate > 0.
-func NewLogWriter(path string, maxbackup int) *FileLogWriter {
+func NewLogWriter(filename string, maxbackup int) *FileLogWriter {
 	return &FileLogWriter{
 		formatSlice: bytes.Split([]byte(l4g.FORMAT_DEFAULT), []byte{'%'}),	
-		messages: make(chan []byte,  l4g.DefaultBufferLength),
-		out: l4g.NewRotateFileWriter(path).SetMaxBackup(maxbackup),
+		messages: 	 make(chan []byte,  l4g.DefaultBufferLength),
+		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
 		loopRunning: false,
-		loopReset: make(chan time.Time, 5),
+		loopReset: 	 make(chan time.Time, 5),
 	}
+}
+
+func (flw *FileLogWriter) nextTime() time.Time {
+	cycle := flw.cycle
+	if cycle <= 0 {
+		cycle = 86400
+	}
+	nrt := time.Now()
+	if flw.clock < 0 {
+		// Now + cycle
+		return nrt.Add(time.Duration(cycle) * time.Second)
+	}
+	
+	// next cycle midnight + clock
+	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
+	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
+					0, 0, 0, 0, nextCycle.Location())
+	return nrt.Add(time.Duration(flw.clock) * time.Second)
 }
 
 func (flw *FileLogWriter) writeLoop() {
@@ -91,7 +91,7 @@ func (flw *FileLogWriter) writeLoop() {
 		flw.loopRunning = false
 	}()
 
-	nrt := nextTime(flw.cycle, flw.clock)
+	nrt := flw.nextTime()
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
 	for {
 		select {
@@ -113,13 +113,13 @@ func (flw *FileLogWriter) writeLoop() {
 				return
 			}
 		case <-rotTimer.C:
-			nrt = nextTime(flw.cycle, flw.clock)
+			nrt = flw.nextTime()
 			rotTimer.Reset(nrt.Sub(time.Now()))
 			if flw.cycle > 0 && flw.out.Size() > flw.maxsize {
 				flw.out.Rotate()
 			}
 		case <-flw.loopReset:
-			nrt = nextTime(flw.cycle, flw.clock)
+			nrt = flw.nextTime()
 			rotTimer.Reset(nrt.Sub(time.Now()))
 		}
 	}
@@ -146,7 +146,12 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 			if err != nil {
 				return err
 			}
-			flw.out.SetFileName(filename)
+			maxbackup := 0
+			if flw.out != nil {
+				maxbackup = flw.out.GetMaxBackup()
+				flw.out.Close()
+			}
+			flw.out = l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup)
 		} else {
 			return l4g.ErrBadValue
 		}

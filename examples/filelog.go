@@ -24,7 +24,7 @@ func PrintFile(fn string) {
 		if err == io.EOF {
 			break
 		}
-		fmt.Printf("%d: %s", lineno, line)
+		fmt.Printf("%3d:\t%s", lineno, line)
 	}
 	fd.Close()
 }
