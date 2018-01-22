@@ -124,7 +124,7 @@ type Logger struct {
 	caller bool  	  // runtime caller skip
 	prefix string     // prefix to write at beginning of each line
 	formatSlice [][]byte // Split the format into pieces by % signs
-	filters map[string]*Filter // a collection of Filters
+	filters *Filters // a collection of Filters
 }
 
 // New creates a new Logger. The out variable sets the
@@ -138,7 +138,7 @@ func NewLogger(out io.Writer, lvl Level, prefix string, format string) *Logger {
 		caller: true,
 		prefix: prefix,
 		formatSlice: bytes.Split([]byte(format), []byte{'%'}),
-		filters: make(map[string]*Filter),
+		filters: nil,
 	}
 }
 
@@ -146,23 +146,6 @@ func NewLogger(out io.Writer, lvl Level, prefix string, format string) *Logger {
 // or above lvl to standard output.
 func New(lvl Level) *Logger {
 	return NewLogger(os.Stderr, lvl, "", FORMAT_DEFAULT)
-}
-
-// Create a new logger copying from another logger 
-func NewCopy(src *Logger, prefix string) *Logger {
-	log := &Logger {
-		out: src.out,
-		level: src.level,
-		caller: src.caller,
-		prefix: src.prefix,
-		filters: make(map[string]*Filter),
-	
-	}
-	if len(prefix) > 0 {
-		log.prefix = prefix
-	}
-	log.formatSlice = append(log.formatSlice, src.formatSlice...) 
-	return log.CopyFilters(src)
 }
 
 // SetOutput sets the output destination for the logger.
@@ -234,46 +217,11 @@ func (log *Logger) SetPrefix(prefix string) *Logger {
 	return log
 }
 
-// Add a new filter to the Logger which will only log messages at lvl or
-// higher.  This function should not be called from multiple goroutines.
-// Returns the logger for chaining.
-func (log *Logger) AddFilter(name string, lvl Level, writer LogWriter) *Logger {
-	log.filters[name] = NewFilter(lvl, writer)
+func (log *Logger) SetFilters(filters *Filters) *Logger {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	log.filters = filters
 	return log
-}
-
-// Copy all filters from another logger which is always Global logger. 
-// Returns the logger for chaining.
-func (log *Logger) CopyFilters(src *Logger) *Logger {
-	log.RemoveFilters()
-	for name, filt := range src.filters {
-		log.AddFilter(name, filt.Level, filt.LogWriter)
-	}
-	return log
-}
-
-// Remove all filters writers in preparation for exiting the program or a
-// reconfiguration of logging.  This DO NOT CLOSE filters.
-// Returns the logger for chaining.
-func (log *Logger) RemoveFilters() *Logger {
-	// Close all filters
-	for name, _ := range log.filters {
-		delete(log.filters, name)
-	}
-	return log
-}
-
-// Close and remove all filters in preparation for exiting the program or a
-// reconfiguration of logging.  Calling this is not really imperative, unless
-// you want to guarantee that all log messages are written.  Close removes
-// all filters (and thus all LogWriters) from the logger.
-// Returns the logger for chaining.
-func (log Logger) CloseFilters() *Logger {
-	// Close all filters
-	for _, filt := range log.filters {
-		filt.Close()
-	}
-	return log.RemoveFilters()
 }
 
 /******* Logging *******/
@@ -284,9 +232,11 @@ func (log Logger) skip(lvl Level) bool {
         return false
     }
 
-	for _, filt := range log.filters {
-		if lvl >= filt.Level {
-			return false
+	if log.filters != nil {
+		for _, filt := range *log.filters {
+			if lvl >= filt.Level {
+				return false
+			}
 		}
 	}
 	return true
@@ -339,12 +289,14 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
         log.out.Write(FormatLogRecord(log.formatSlice, rec))
     }
 
-	// Dispatch the logs
-	for _, filt := range log.filters {
-		if lvl < filt.Level {
-			continue
+	if log.filters != nil {
+		// Dispatch the logs
+		for _, filt := range *log.filters {
+			if lvl < filt.Level {
+				continue
+			}
+			filt.LogWrite(rec)
 		}
-		filt.LogWrite(rec)
 	}
 }
 

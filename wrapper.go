@@ -17,7 +17,6 @@ func GetLogger() *Logger {
 func Crash(arg0 interface{}, args ...interface{}) {
 	msg := Global.intMsg(arg0, args...)
 	Global.intLog(CRITICAL, msg)
-	Global.CloseFilters() // so that hopefully the messages get logged
 	panic(msg)
 }
 
@@ -25,21 +24,18 @@ func Crash(arg0 interface{}, args ...interface{}) {
 func Crashf(format interface{}, args ...interface{}) {
 	msg := Global.intMsg(format, args...)
 	Global.intLog(CRITICAL, msg)
-	Global.CloseFilters() // so that hopefully the messages get logged
 	panic(msg)
 }
 
 // Compatibility with `log`
 func Exit(arg0 interface{}, args ...interface{}) {
 	Global.intLog(ERROR, arg0, args...)
-	Global.CloseFilters() // so that hopefully the messages get logged
 	os.Exit(0)
 }
 
 // Compatibility with `log`
 func Exitf(format interface{}, args ...interface{}) {
 	Global.intLog(ERROR, format, args...)
-	Global.CloseFilters() // so that hopefully the messages get logged
 	os.Exit(0)
 }
 

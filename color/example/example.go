@@ -17,7 +17,8 @@ func main() {
 	logger := log.GetLogger()
 	// disable default term output of logger
 	logger.SetOutput(nil)
-	logger.AddFilter("stdout", log.FINEST, colorlog.NewLogWriter())
+	fs := log.NewFilters().Add("color", log.FINEST, colorlog.NewLogWriter())
+	logger.SetFilters(fs)
 
 	log.Finest("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Fine("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -26,6 +27,6 @@ func main() {
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Warn("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
-	// This makes sure the filters is running
-	time.Sleep(200 * time.Millisecond)
+	logger.SetFilters(nil)
+	fs.Close()
 }

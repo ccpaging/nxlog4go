@@ -31,7 +31,7 @@ type FilterConfig struct {
 }
 
 type LoggerConfig struct {
-	Filters []FilterConfig `xml:"filter"`
+	FilterConfigs []FilterConfig `xml:"filter"`
 }
 
 /****** LogWriter ******/
@@ -214,4 +214,38 @@ func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
 		bad = true
 	}
 	return bad, enabled, lvl
+}
+
+
+/****** Filters map ******/
+
+type Filters map[string]*Filter
+
+func NewFilters() *Filters {
+	return &Filters{}
+}
+
+// Add a new filter to the filters map which will only log messages at lvl or
+// higher.  This function should not be called from multiple goroutines.
+// Returns the logger for chaining.
+func (fs Filters) Add(name string, lvl Level, writer LogWriter) *Filters {
+	if filt, isExist := fs[name]; isExist {
+		filt.Close()
+		delete(fs, name)
+	}
+	fs[name] = NewFilter(lvl, writer)
+	return &fs
+}
+
+// Close and remove all filters in preparation for exiting the program or a
+// reconfiguration of logging.  Calling this is not really imperative, unless
+// you want to guarantee that all log messages are written.  Close removes
+// all filters (and thus all LogWriters) from the logger.
+// Returns the logger for chaining.
+func (fs Filters) Close() {
+	// Close all filters
+	for name, filt := range fs {
+		filt.Close()
+		delete(fs, name)
+	}
 }

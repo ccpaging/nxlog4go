@@ -1,6 +1,6 @@
 {
 	"LogConfig" : {
-		"filters": [
+		"filterconfigs": [
 		{
 		  "enabled": "true",
 		  "tag": "stdout",

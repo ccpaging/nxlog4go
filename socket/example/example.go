@@ -13,8 +13,9 @@ func main() {
 	slw := socketlog.NewLogWriter("udp", "127.0.0.1:12124")
 	// defer slw.Close()
 
-	log.AddFilter("network", l4g.FINEST, slw)
-	defer log.CloseFilters()
+	fs := l4g.NewFilters().Add("network", l4g.FINEST, slw)
+	defer fs.Close()
+	log.SetFilters(fs)
 
 	// Run `nc -u -l -p 12124` or similar before you run this to see the following message
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -23,4 +24,5 @@ func main() {
 		time.Sleep(3 * time.Second)
 		log.Debug("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	}
+	log.SetFilters(nil)
 }

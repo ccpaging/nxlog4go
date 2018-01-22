@@ -55,8 +55,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	fs := l4g.NewFilters()
 	var	lw l4g.LogWriter
-	for _, fc := range xc.Filters {
+	for _, fc := range xc.FilterConfigs {
 		bad, enabled, lvl := l4g.CheckFilterConfig(fc)
 	
 		if bad {
@@ -101,16 +102,18 @@ func main() {
 		}
 		
 		fmt.Println("Add filter", fc.Tag, lvl)
-		log.AddFilter(fc.Tag, lvl, lw)
+		fs.Add(fc.Tag, lvl, lw)
 	}
 
+	log.SetFilters(fs)
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")
 	log.Debug("Oh no!  %d + %d = %d!", 2, 2, 2+2)
 	log.Trace("Oh no!  %d + %d = %d!", 2, 2, 2+2)
 	log.Info("About that time, eh chaps?")
 
-	log.CloseFilters()
+	log.SetFilters(nil)
+	fs.Close()
 
 	PrintFile("_test.log")
 	os.Remove("_test.log")
