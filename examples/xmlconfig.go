@@ -89,7 +89,7 @@ func main() {
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 
-		_, good := l4g.ConfigLogWriter(lw, fc.Properties)
+		good := l4g.SetLogWriter(lw, fc.Properties)
 		if !good {
 			fmt.Println(fc.Tag, "NOT good")
 			continue

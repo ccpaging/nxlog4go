@@ -51,7 +51,7 @@ type LogWriter interface {
 	Close()
 }
 
-func ConfigLogWriter(lw LogWriter, props []FilterProp) (LogWriter, bool) {
+func SetLogWriter(lw LogWriter, props []FilterProp) bool {
 	good := true
 	for _, prop := range props {
 		err := lw.SetOption(prop.Name, strings.Trim(prop.Value, " \r\n"))
@@ -66,7 +66,7 @@ func ConfigLogWriter(lw LogWriter, props []FilterProp) (LogWriter, bool) {
 			}
 		}
 	}
-	return lw, good
+	return good
 }
 
 /****** Filter ******/
