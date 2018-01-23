@@ -91,11 +91,10 @@ func (l Level) String() string {
 var (
 	// Default skip passed to runtime.Caller to get file name/line
 	// May require tweaking if you want to wrap the logger
-	DefaultCallerSkip = 2
-
-	// Default buffer length specifies how many log messages a particular log4go
+	LogCallerDepth = 2
+	// LogBufferLength specifies how many log messages a particular log4go
 	// logger can buffer at a time before writing them.
-	DefaultBufferLength = 32
+	LogBufferLength = 32
 )
 
 /****** LogRecord ******/
@@ -217,6 +216,14 @@ func (log *Logger) SetPrefix(prefix string) *Logger {
 	return log
 }
 
+// Filters returns the output filters for the logger.
+func (log *Logger) Filters() *Filters {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	return log.filters
+}
+
+// SetFilters sets the output filters for the logger.
 func (log *Logger) SetFilters(filters *Filters) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
@@ -276,7 +283,7 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
 		log.mu.Unlock()
 
 		var ok bool
-		_, rec.Source, rec.Line, ok = runtime.Caller(DefaultCallerSkip)
+		_, rec.Source, rec.Line, ok = runtime.Caller(LogCallerDepth)
 		if !ok {
 			rec.Source = "???"
 			rec.Line = 0

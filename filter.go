@@ -81,12 +81,13 @@ type Filter struct {
 	closing	bool	// true if filter was closed at API level
 }
 
+// Create a new filter
 func NewFilter(lvl Level, writer LogWriter) *Filter {
 	f := &Filter {
 		Level:		lvl,
 		LogWriter:	writer,
 
-		rec: 		make(chan *LogRecord, DefaultBufferLength),
+		rec: 		make(chan *LogRecord, LogBufferLength),
 		closing: 	false,
 	}
 
@@ -116,6 +117,7 @@ func (f *Filter) run() {
 	}
 }
 
+// Close the filter
 func (f *Filter) Close() {
 	if f.closing {
 		return
@@ -167,6 +169,7 @@ func StrToNumSuffix(str string, mult int) int {
 	return parsed * num
 }
 
+// Check filter's configuration
 func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
 	bad, enabled, lvl = false, false, INFO
 
@@ -221,6 +224,7 @@ func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
 
 type Filters map[string]*Filter
 
+// Make a new filters
 func NewFilters() *Filters {
 	return &Filters{}
 }

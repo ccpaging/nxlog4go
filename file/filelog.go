@@ -61,7 +61,7 @@ func (flw *FileLogWriter) Close() {
 func NewLogWriter(filename string, maxbackup int) *FileLogWriter {
 	return &FileLogWriter{
 		formatSlice: bytes.Split([]byte(l4g.FORMAT_DEFAULT), []byte{'%'}),	
-		messages: 	 make(chan []byte,  l4g.DefaultBufferLength),
+		messages: 	 make(chan []byte,  l4g.LogBufferLength),
 		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
 		loopRunning: false,
 		loopReset: 	 make(chan time.Time, 5),
