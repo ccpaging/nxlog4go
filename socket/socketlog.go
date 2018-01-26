@@ -3,7 +3,6 @@
 package socketlog
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -12,79 +11,77 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-// This log writer sends output to a socket
-type SocketLogWriter struct {
+// This log appender sends output to a socket
+type SocketAppender struct {
 	mu   sync.Mutex // ensures atomic writes; protects the following fields
 	sock net.Conn
 	prot string
 	host string
 }
 
-func (slw *SocketLogWriter) Close() {
-	if slw.sock != nil {
-		slw.sock.Close()
+func (sa *SocketAppender) Close() {
+	if sa.sock != nil {
+		sa.sock.Close()
 	}
 }
 
-func NewLogWriter(prot, host string) *SocketLogWriter {
-	return &SocketLogWriter {
+func NewAppender(prot, host string) *SocketAppender {
+	return &SocketAppender {
 		sock:	nil,
 		prot:	prot,
 		host:	host,
 	}
 }
 
-func (slw *SocketLogWriter) LogWrite(rec *l4g.LogRecord) {
-	slw.mu.Lock()
-	defer slw.mu.Unlock()
+// This is the SocketAppender's output method
+func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
 
-	js, err := json.Marshal(rec)
-	if err != nil {
-		fmt.Fprint(os.Stderr, "SocketLogWriter(%s): %s", slw.host, err)
-		return
-	}
-	js = append(js, '\n')
-
-	if slw.sock == nil {
-		slw.sock, err = net.Dial(slw.prot, slw.host)
+	var err error
+	if sa.sock == nil {
+		sa.sock, err = net.Dial(sa.prot, sa.host)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "SocketLogWriter(%s): %v\n", slw.host, err)
+			fmt.Fprintf(os.Stderr, "SocketAppender(%s): %v\n", sa.host, err)
 			return
 		}
 	}
 
-	_, err = slw.sock.Write(js)
+	js := l4g.NewJsonLayout().Format(rec)
+	js = append(js, '\n')
+
+	_, err = sa.sock.Write(js)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "SocketLogWriter(%s): %v\n", slw.host, err)
-		slw.sock.Close()
-		slw.sock = nil
+		fmt.Fprintf(os.Stderr, "SocketAppender(%s): %v\n", sa.host, err)
+		sa.sock.Close()
+		sa.sock = nil
 	}
 }
 
 // Set option. chainable
-func (slw *SocketLogWriter) Set(name string, v interface{}) *SocketLogWriter {
-	slw.SetOption(name, v)
-	return slw
+func (sa *SocketAppender) Set(name string, v interface{}) *SocketAppender {
+	sa.SetOption(name, v)
+	return sa
 }
 
 // Set option. checkable
-func (slw *SocketLogWriter) SetOption(name string, v interface{}) error {
-	slw.mu.Lock()
-	defer slw.mu.Unlock()
+func (sa *SocketAppender) SetOption(name string, v interface{}) error {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
 
 	switch name {
 	case "protocol":
 		if protocol, ok := v.(string); ok {
-			slw.Close()
-			slw.prot = protocol
+			sa.Close()
+			sa.prot = protocol
 		} else {
 			return l4g.ErrBadValue
 		}
 	case "endpoint":
 		if endpoint, ok := v.(string); ok {
 			if len(endpoint) > 0 {
-				slw.Close()
-				slw.host = endpoint
+				sa.Close()
+				sa.host = endpoint
 			} else {
 				return l4g.ErrBadValue
 			}

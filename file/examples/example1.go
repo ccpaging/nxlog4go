@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	filename = "_flw.log"
-	oldfiles = "_flw.*.log"
+	filename = "_fa.log"
+	oldfiles = "_fa.*.log"
 )
 
 // Print what was logged to the file (yes, I know I'm skipping error checking)
@@ -36,7 +36,7 @@ func main() {
 	log := l4g.New(l4g.FINE)
 
 	// Create a default logger that is logging messages of FINE or higher
-	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewLogWriter(filename, 0))
+	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewAppender(filename, 0))
 	log.SetFilters(fs0)
 	log.Finest("Everything is created now (notice that I will not be printing to the file)")
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -52,12 +52,12 @@ func main() {
 	}
 
 	/* Can also specify manually via the following: (these are the defaults) */
-	flw := filelog.NewLogWriter(filename, 10)
-	flw.Set("format", "[%D %T] [%L] (%x) %M")
-	flw.Set("cycle", 5)
-	flw.Set("delay0", -1)
-	flw.Set("maxsize", "5k")
-	fs1 := l4g.NewFilters().Add("file", l4g.FINE, flw)
+	fa := filelog.NewAppender(filename, 10)
+	fa.Set("format", "[%D %T] [%L] (%x) %M")
+	fa.Set("cycle", 5)
+	fa.Set("delay0", -1)
+	fa.Set("maxsize", "5k")
+	fs1 := l4g.NewFilters().Add("file", l4g.FINE, fa)
 	log.SetFilters(fs1)
 
 	// Log some experimental messages

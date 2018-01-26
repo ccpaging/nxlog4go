@@ -1,15 +1,51 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-// Package logs provides level-based and extendable logging.
+// Package nxlog4go provides simple, fast, low cost, and extensible logging.
+// It can be used in test, development, and production environment.
 //
-// The 3-layers
+// Logging Levels
 // 
-// - Catalogs, defined as package global, module global, and new loggers.
-//   Include: io.Witer, prefix, filter level, and filters  
-// - Filters / appenders / outputs
-//   Running as go routine.
-//   Include: filter level, channel to transfer log messages, log writer
-// - Filter Level and formatter, real output log writer
+// 	 FINEST
+//	 FINE
+//	 DEBUG
+//	 TRACE
+//	 INFO
+//	 WARNING
+//	 ERROR
+//	 CRITICAL
+//
+// Logger
+// 
+// - prefix, to write at beginning of each line
+// - Enable / disable caller func since it's expensive.
+// - The default console output compatibility with go log
+//	 level, the log level
+// 	 out, io.Writer / io.MultiWriter
+//   layout, specifies how the data will be written
+// - filters, point to filters map
+// 
+// Filters
+// 
+// - The filters map indexed with tag name
+// 
+// Filter
+// 
+// - level, the log level
+// - appender
+// 
+// Appender
+// 
+// - An interface for anything
+// - Write function should be able to write logs
+// - Close function clean up anything lingering about the Appender
+// - SetOption function. Configurable
+// - Extensible. Anyone can port own appender as part of nxlog4go.
+// 
+// Layout
+// 
+// - With time stamp cached
+// - fast byte convert
+// - The default PatternLayout is easy to use.
 // 
 // Enhanced Logging
 //
@@ -45,10 +81,10 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"bytes"
 	"time"
 	"sync"
 	"io"
+	"io/ioutil"
 )
 
 // Version information
@@ -118,25 +154,28 @@ type LogRecord struct {
 // multiple goroutines; it guarantees to serialize access to the Writer.
 type Logger struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
+
+	prefix string     // prefix to write at beginning of each line
+	caller bool  	  // runtime caller skip
+
 	out    io.Writer  // destination for output
 	level  Level      // The log level
-	caller bool  	  // runtime caller skip
-	prefix string     // prefix to write at beginning of each line
-	formatSlice [][]byte // Split the format into pieces by % signs
-	filters *Filters // a collection of Filters
+	layout Layout     // format record for output
+
+	filters *Filters  // a collection of Filters
 }
 
 // New creates a new Logger. The out variable sets the
 // destination to which log data will be written.
 // The prefix appears at the beginning of each generated log line.
 // The flag argument defines the logging properties.
-func NewLogger(out io.Writer, lvl Level, prefix string, format string) *Logger {
+func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger {
 	return &Logger{
 		out: out,
 		level: lvl,
 		caller: true,
 		prefix: prefix,
-		formatSlice: bytes.Split([]byte(format), []byte{'%'}),
+		layout: NewPatternLayout(PATTERN_DEFAULT),
 		filters: nil,
 	}
 }
@@ -144,7 +183,7 @@ func NewLogger(out io.Writer, lvl Level, prefix string, format string) *Logger {
 // Create a new logger with a "stderr" writer to send log messages at
 // or above lvl to standard output.
 func New(lvl Level) *Logger {
-	return NewLogger(os.Stderr, lvl, "", FORMAT_DEFAULT)
+	return NewLogger(os.Stderr, lvl, "", PATTERN_DEFAULT)
 }
 
 // SetOutput sets the output destination for the logger.
@@ -152,6 +191,9 @@ func (log *Logger) SetOutput(w io.Writer) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	log.out = w
+	if log.out == nil {
+		log.out = ioutil.Discard
+	}
 	return log
 }
 
@@ -186,18 +228,18 @@ func (log *Logger) SetCaller(caller bool) *Logger {
 	return log
 }
 
-// Format returns the output format for the logger.
-func (log *Logger) Format() string {
+// Pattern returns the output PatternLayout's pattern for the logger.
+func (log *Logger) Pattern() string {
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	return string(bytes.Join(log.formatSlice, []byte{'%'}))
+	return log.layout.Get("pattern")
 }
 
-// SetFormat sets the output flags for the logger.
-func (log *Logger) SetFormat(format string) *Logger {
+// SetPattern sets the output PatternLayout's pattern for the logger.
+func (log *Logger) SetPattern(pattern string) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	log.formatSlice = bytes.Split([]byte(format), []byte{'%'})
+	log.layout.Set("pattern", pattern)
 	return log
 }
 
@@ -235,7 +277,7 @@ func (log *Logger) SetFilters(filters *Filters) *Logger {
 
 // Determine if any logging will be done
 func (log Logger) skip(lvl Level) bool {
-	if log.out != nil && lvl >= log.level {
+	if lvl >= log.level {
         return false
     }
 
@@ -249,24 +291,8 @@ func (log Logger) skip(lvl Level) bool {
 	return true
 }
 
-func (log Logger) intMsg(arg0 interface{}, args ...interface{}) string {
-	var msg string
-	switch first := arg0.(type) {
-	case string:
-		// Use the string as a format string
-		msg = fmt.Sprintf(first, args...)
-	case func() string:
-		// Log the closure (no other arguments used)
-		msg = first()
-	default:
-		// Build a format string so that it will be similar to Sprint
-		msg = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
-	}
-	return msg
-}
-
 // Send a log message with manual level, source, and message.
-func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
+func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) string {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 
@@ -275,7 +301,18 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
 		Level:   lvl,
 		Created: time.Now(),
 		Prefix:  log.prefix,
-		Message: log.intMsg(arg0, args...),
+	}
+
+	switch first := arg0.(type) {
+	case string:
+		// Use the string as a format string
+		rec.Message = fmt.Sprintf(first, args...)
+	case func() string:
+		// Log the closure (no other arguments used)
+		rec.Message = first()
+	default:
+		// Build a format string so that it will be similar to Sprint
+		rec.Message = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
 	}
 
 	if log.caller {
@@ -292,9 +329,7 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
 		log.mu.Lock()
 	}
 	
-	if log.out != nil {
-        log.out.Write(FormatLogRecord(log.formatSlice, rec))
-    }
+    log.out.Write(log.layout.Format(rec))
 
 	if log.filters != nil {
 		// Dispatch the logs
@@ -302,9 +337,10 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
 			if lvl < filt.Level {
 				continue
 			}
-			filt.LogWrite(rec)
+			filt.Write(rec)
 		}
 	}
+	return rec.Message
 }
 
 // Finest logs a message at the finest log level.
@@ -368,25 +404,19 @@ func (log Logger) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
 func (log Logger) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := log.intMsg(arg0, args...)
-	log.intLog(WARNING, msg)
-	return errors.New(msg)
+	return errors.New(log.intLog(WARNING, arg0, args...))
 }
 
 // Error logs a message at the error log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Error(arg0 interface{}, args ...interface{}) error {
-	msg := log.intMsg(arg0, args...)
-	log.intLog(ERROR, msg)
-	return errors.New(msg)
+	return errors.New(log.intLog(ERROR, arg0, args...))
 }
 
 // Critical logs a message at the critical log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := log.intMsg(arg0, args...)
-	log.intLog(CRITICAL, msg)
-	return errors.New(msg)
+	return errors.New(log.intLog(CRITICAL, arg0, args...))
 }

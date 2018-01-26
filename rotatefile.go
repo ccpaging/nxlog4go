@@ -5,7 +5,6 @@ import (
 	"time"
 	"os"
 	"fmt"
-	"bytes"
 	"path"
 )
 
@@ -52,10 +51,9 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 		rfw.Rotate()
 	}
 
-	// Write header
 	if len(rfw.header) > 0 && rfw.Size() == 0 {
-		fmtSlice := bytes.Split([]byte(rfw.header), []byte{'%'})
-		rfw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
+		layout := NewPatternLayout(rfw.header)
+		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
 	}
 
 	return rfw.FileBufWriter.Write(bb)
@@ -106,11 +104,11 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	// Write footer
 	if len(rfw.footer) > 0 && rfw.Size() > 0 {
-		fmtSlice := bytes.Split([]byte(rfw.footer), []byte{'%'})
-		rfw.FileBufWriter.Write(FormatLogRecord(fmtSlice, &LogRecord{Created: time.Now()}))
+		layout := NewPatternLayout(rfw.footer)
+		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
 	}
 	// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", rfw.FileBufWriter.Name())
-	rfw.FileBufWriter.Close() 
+	rfw.FileBufWriter.Close()
 	
 	name := rfw.FileBufWriter.Name()
 	if rfw.maxbackup <= 0 {
@@ -130,12 +128,21 @@ func (rfw *RotateFileWriter) Rotate() {
 }
 
 // Set the file header(chainable).  Must be called before the first log
+// message is written.
+func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
+	rfw.Lock()
+	defer rfw.Unlock()
+	rfw.FileBufWriter.Close()
+	rfw.FileBufWriter = NewFileBufWriter(path)
+	return rfw
+}
+
+// Set the file header(chainable).  Must be called before the first log
 // message is written.  These are formatted similar to the FormatLogRecord (e.g.
 // you can use %D and %T in your header for date and time).
 func (rfw *RotateFileWriter) SetHead(header string) *RotateFileWriter {
 	rfw.Lock()
 	defer rfw.Unlock()
-
 	rfw.header = header
 	return rfw
 }

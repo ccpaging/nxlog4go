@@ -4,7 +4,6 @@ package filelog
 
 import (
 	"sync"
-	"bytes"
 	"time"
 	"strings"
 	"os"
@@ -12,11 +11,10 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-// This log writer sends output to a file
-type FileLogWriter struct {
-	mu  sync.Mutex // ensures atomic writes; protects the following fields
-	formatSlice [][]byte // Split the format into pieces by % signs
-
+// This log appender sends output to a file
+type FileAppender struct {
+	mu sync.Mutex 		 // ensures atomic writes; protects the following fields
+	layout l4g.Layout 	 // format record for output
 	// 2nd cache, formatted message
 	messages chan []byte
 	// 3nd cache, destination for output with buffered and rotated
@@ -30,37 +28,37 @@ type FileLogWriter struct {
 	loopReset chan time.Time
 }
 
-func (flw *FileLogWriter) LogWrite(rec *l4g.LogRecord) {
-	if !flw.loopRunning {
-		flw.loopRunning = true
-		go flw.writeLoop()
+func (fa *FileAppender) Write(rec *l4g.LogRecord) {
+	if !fa.loopRunning {
+		fa.loopRunning = true
+		go fa.writeLoop()
 	}
-	flw.messages <- l4g.FormatLogRecord(flw.formatSlice, rec)
+	fa.messages <- fa.layout.Format(rec)
 }
 
-func (flw *FileLogWriter) Close() {
-	close(flw.messages)
+func (fa *FileAppender) Close() {
+	close(fa.messages)
 
 	// drain the log channel before closing
 	for i := 10; i > 0; i-- {
 		// Must call Sleep here, otherwise, may panic send on closed channel
 		time.Sleep(100 * time.Millisecond)
-		if len(flw.messages) <= 0 {
+		if len(fa.messages) <= 0 {
 			break
 		}
 	}
-	if flw.out != nil {
-		flw.out.Close()
+	if fa.out != nil {
+		fa.out.Close()
 	}
 
-	close(flw.loopReset)
+	close(fa.loopReset)
 }
 
-// NewFileLogWriter creates a new LogWriter which writes to the given file and
+// NewFileAppender creates a new appender which writes to the given file and
 // has rotation enabled if maxrotate > 0.
-func NewLogWriter(filename string, maxbackup int) *FileLogWriter {
-	return &FileLogWriter{
-		formatSlice: bytes.Split([]byte(l4g.FORMAT_DEFAULT), []byte{'%'}),	
+func NewAppender(filename string, maxbackup int) *FileAppender {
+	return &FileAppender{
+		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
 		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
 		loopRunning: false,
@@ -68,13 +66,12 @@ func NewLogWriter(filename string, maxbackup int) *FileLogWriter {
 	}
 }
 
-func (flw *FileLogWriter) nextTime() time.Time {
-	cycle := flw.cycle
+func nextTime(cycle, clock int) time.Time {
 	if cycle <= 0 {
 		cycle = 86400
 	}
 	nrt := time.Now()
-	if flw.clock < 0 {
+	if clock < 0 {
 		// Now + cycle
 		return nrt.Add(time.Duration(cycle) * time.Second)
 	}
@@ -83,58 +80,58 @@ func (flw *FileLogWriter) nextTime() time.Time {
 	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
 	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
 					0, 0, 0, 0, nextCycle.Location())
-	return nrt.Add(time.Duration(flw.clock) * time.Second)
+	return nrt.Add(time.Duration(clock) * time.Second)
 }
 
-func (flw *FileLogWriter) writeLoop() {
+func (fa *FileAppender) writeLoop() {
 	defer func() {
-		flw.loopRunning = false
+		fa.loopRunning = false
 	}()
 
-	nrt := flw.nextTime()
+	nrt := nextTime(fa.cycle, fa.clock)
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
 	for {
 		select {
-		case bb, ok := <-flw.messages:
-			flw.mu.Lock()
-			flw.out.Write(bb)
-			if len(flw.messages) <= 0 {
-				flw.out.Flush()
+		case bb, ok := <-fa.messages:
+			fa.mu.Lock()
+			fa.out.Write(bb)
+			if len(fa.messages) <= 0 {
+				fa.out.Flush()
 			}
-			flw.mu.Unlock()
+			fa.mu.Unlock()
 			
 			if !ok {
  				// drain the log channel and write directly
-				flw.mu.Lock()
-				for bb := range flw.messages {
-					flw.out.Write(bb)
+				fa.mu.Lock()
+				for bb := range fa.messages {
+					fa.out.Write(bb)
 				}
-				flw.mu.Unlock()
+				fa.mu.Unlock()
 				return
 			}
 		case <-rotTimer.C:
-			nrt = flw.nextTime()
+			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
-			if flw.cycle > 0 && flw.out.Size() > flw.maxsize {
-				flw.out.Rotate()
+			if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
+				fa.out.Rotate()
 			}
-		case <-flw.loopReset:
-			nrt = flw.nextTime()
+		case <-fa.loopReset:
+			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
 		}
 	}
 }
 
 // Set option. chainable
-func (flw *FileLogWriter) Set(name string, v interface{}) *FileLogWriter {
-	flw.SetOption(name, v)
-	return flw
+func (fa *FileAppender) Set(name string, v interface{}) *FileAppender {
+	fa.SetOption(name, v)
+	return fa
 }
 
 // Set option. checkable. Must be set before the first log message is written.
-func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
-	flw.mu.Lock()
-	defer flw.mu.Unlock()
+func (fa *FileAppender) SetOption(name string, v interface{}) error {
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
 
 	switch name {
 	case "filename":
@@ -146,12 +143,7 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 			if err != nil {
 				return err
 			}
-			maxbackup := 0
-			if flw.out != nil {
-				maxbackup = flw.out.GetMaxBackup()
-				flw.out.Close()
-			}
-			flw.out = l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup)
+			fa.out.SetFileName(filename)
 		} else {
 			return l4g.ErrBadValue
 		}
@@ -165,7 +157,7 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 		default:
 			return l4g.ErrBadValue
 		}
-		flw.out.SetFlush(flush)
+		fa.out.SetFlush(flush)
 	case "maxbackup":
 		var maxbackup int
 		switch value := v.(type) {
@@ -176,40 +168,40 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 		default:
 			return l4g.ErrBadValue
 		}
-		flw.out.SetMaxBackup(maxbackup)
+		fa.out.SetMaxBackup(maxbackup)
 	case "cycle":
 		switch value := v.(type) {
 		case int:
-			flw.cycle = value
+			fa.cycle = value
 		case string:
 			// Each with optional fraction and a unit suffix, 
 			// such as "300ms", "-1.5h" or "2h45m". 
-			// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+			// Valid time units are "ns", "us", "ms", "s", "m", "h".
 			dur, _ := time.ParseDuration(value)
-			flw.cycle = int(dur/time.Millisecond)
+			fa.cycle = int(dur/time.Millisecond)
 		default:
 			return l4g.ErrBadValue
 		}
-		if flw.cycle <= 0 {
-			flw.out.SetMaxSize(flw.maxsize)
+		if fa.cycle <= 0 {
+			fa.out.SetMaxSize(fa.maxsize)
 		} else {
-			flw.out.SetMaxSize(0)
+			fa.out.SetMaxSize(0)
 		}
-		if flw.loopRunning {
-			flw.loopReset <- time.Now()
+		if fa.loopRunning {
+			fa.loopReset <- time.Now()
 		}
 	case "clock":
 		switch value := v.(type) {
 		case int:
-			flw.clock = value
+			fa.clock = value
 		case string:
 			dur, _ := time.ParseDuration(value)
-			flw.clock = int(dur/time.Millisecond)
+			fa.clock = int(dur/time.Millisecond)
 		default:
 			return l4g.ErrBadValue
 		}
-		if flw.loopRunning {
-			flw.loopReset <- time.Now()
+		if fa.loopRunning {
+			fa.loopReset <- time.Now()
 		}
 	case "maxsize":
 		var maxsize int
@@ -221,27 +213,27 @@ func (flw *FileLogWriter) SetOption(name string, v interface{}) error {
 		default:
 			return l4g.ErrBadValue
 		}
-		flw.maxsize = maxsize
-		if flw.cycle <= 0 {
-			flw.out.SetMaxSize(flw.maxsize)
+		fa.maxsize = maxsize
+		if fa.cycle <= 0 {
+			fa.out.SetMaxSize(fa.maxsize)
 		}
-	case "format":
-		if format, ok := v.(string); ok {
-			flw.formatSlice = bytes.Split([]byte(format), []byte{'%'})
-		} else if format, ok := v.([]byte); ok {
-			flw.formatSlice = bytes.Split(format, []byte{'%'})
+	case "pattern":
+		if pattern, ok := v.(string); ok {
+			fa.layout.Set("pattern", pattern)
+		} else if pattern, ok := v.([]byte); ok {
+			fa.layout.Set("pattern", pattern)
 		} else {
 			return l4g.ErrBadValue
 		}
 	case "head":
 		if header, ok := v.(string); ok {
-			flw.out.SetHead(header)
+			fa.out.SetHead(header)
 		} else {
 			return l4g.ErrBadValue
 		}
 	case "foot":
 		if footer, ok := v.(string); ok {
-			flw.out.SetFoot(footer)
+			fa.out.SetFoot(footer)
 		} else {
 			return l4g.ErrBadValue
 		}

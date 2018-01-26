@@ -5,7 +5,6 @@ package colorlog
 import (
 	"io"
 	"os"
-	"bytes"
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
@@ -15,7 +14,6 @@ var HasColor = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
 	 os.Getenv("ConEmuANSI") == "ON"
 
 // 0, Black; 1, Red; 2, Green; 3, Yellow; 4, Blue; 5, Purple; 6, Cyan; 7, White
-
 var ColorBytes = [...][]byte{
 	[]byte("\x1b[0;34m"),	   // FINEST, Blue
 	[]byte("\x1b[0;36m"),	   // FINE, Cyan
@@ -29,62 +27,62 @@ var ColorBytes = [...][]byte{
 var ColorReset = []byte("\x1b[0m")
 
 // This is the writer with ANSI color that prints to stderr.
-// Support ANSI term only. Use ConEmu in windows
-type ColorLogWriter struct {
+// Support ANSI term only includes ConEmu for windows.
+type ColorAppender struct {
 	mu		sync.Mutex // ensures atomic writes; protects the following fields
 	out		io.Writer  // destination for output
-	formatSlice [][]byte // Split the format into pieces by % signs
+	layout  l4g.Layout // format record for output
 }
 
-// This creates a new ColorLogWriter.
-func NewLogWriter() *ColorLogWriter {
-	return &ColorLogWriter {
+// This creates a new ColorAppender.
+func NewAppender() *ColorAppender {
+	return &ColorAppender {
 		out:	os.Stderr,
-		formatSlice: bytes.Split([]byte(l4g.FORMAT_DEFAULT), []byte{'%'}),
+		layout: l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),
 	}
 }
 
-// SetOutput sets the output destination for ColorLogWriter.
-func (clw *ColorLogWriter) SetOutput(w io.Writer) *ColorLogWriter {
-	clw.mu.Lock()
-	defer clw.mu.Unlock()
-	clw.out = w
-	return clw
+// SetOutput sets the output destination for ColorAppender.
+func (ca *ColorAppender) SetOutput(w io.Writer) *ColorAppender {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	ca.out = w
+	return ca
 }
 
-func (clw *ColorLogWriter) Close() {
+func (ca *ColorAppender) Close() {
 }
 
-func (clw *ColorLogWriter) LogWrite(rec *l4g.LogRecord) {
-	clw.mu.Lock()
-	defer clw.mu.Unlock()
+func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
 
 	if HasColor {
-		clw.out.Write(ColorBytes[rec.Level])
+		ca.out.Write(ColorBytes[rec.Level])
 	}
-	clw.out.Write(l4g.FormatLogRecord(clw.formatSlice, rec))
+	ca.out.Write(ca.layout.Format(rec))
 	if HasColor {
-		clw.out.Write(ColorReset)
+		ca.out.Write(ColorReset)
 	}
 }
 
 // Set option. chainable
-func (clw *ColorLogWriter) Set(name string, v interface{}) *ColorLogWriter {
-	clw.SetOption(name, v)
-	return clw
+func (ca *ColorAppender) Set(name string, v interface{}) *ColorAppender {
+	ca.SetOption(name, v)
+	return ca
 }
 
 // Set option. checkable
-func (clw *ColorLogWriter) SetOption(name string, v interface{}) error {
-	clw.mu.Lock()
-	defer clw.mu.Unlock()
+func (ca *ColorAppender) SetOption(name string, v interface{}) error {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
 
 	switch name {
-	case "format":
-		if format, ok := v.(string); ok {
-			clw.formatSlice = bytes.Split([]byte(format), []byte{'%'})
-		} else if format, ok := v.([]byte); ok {
-				clw.formatSlice = bytes.Split(format, []byte{'%'})
+	case "pattern":
+		if pattern, ok := v.(string); ok {
+			ca.layout.Set("parttern", pattern)
+		} else if pattern, ok := v.([]byte); ok {
+			ca.layout.Set("parttern", pattern)
 		} else {
 			return l4g.ErrBadValue
 		}

@@ -4,7 +4,7 @@
 	    <type>color</type>
 	    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
 	    <level>DEBUG</level>
-		<property name="format">[%D %T] [%L] (%s) %M</property>
+		<property name="pattern">[%D %T] [%L] (%s) %M</property>
 	</filter>
 	<filter enabled="true">
 		<tag>file</tag>
@@ -24,7 +24,7 @@
 			It ignores unknown format strings (and removes them)
 			Recommended: "[%D %T] [%L] (%S) %M"
 		-->
-		<property name="format">[%D %T] [%L] (%s) %M</property>
+		<property name="pattern">[%D %T] [%L] (%s) %M</property>
 		<property name="flush">0</property> <!-- no bufio write -->
 		<property name="maxbackup">0</property> <!-- enables log rotation. 0, append -->
 		<property name="maxsize">0M</property> <!-- \d+[KMG]? Suffixes are in terms of 2**10 -->

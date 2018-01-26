@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	filename = "_fw.log"
-	backups = "_fw.*"
+	filename = "_rfw.log"
+	backups = "_rfw.*"
 )
 
 // Print what was logged to the file (yes, I know I'm skipping error checking)
@@ -36,7 +36,7 @@ func main() {
 	rfw := l4g.NewRotateFileWriter(filename).SetMaxSize(1024 * 5).SetMaxBackup(10)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
-	log := l4g.New(l4g.FINEST).SetOutput(ww).SetFormat("[%D %T] [%L] (%s) %M")
+	log := l4g.New(l4g.FINEST).SetOutput(ww).SetPattern("[%D %T] [%L] (%s) %M")
 
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {

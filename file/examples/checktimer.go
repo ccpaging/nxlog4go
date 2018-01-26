@@ -10,7 +10,7 @@ const (
 	oldfiles = "_flw.*.log"
 )
 
-func CheckTimer(cycle, clock int64) {
+func CheckTimer(cycle, clock int) {
 	if cycle <= 0 {
 		cycle = 86400
 	}
@@ -24,7 +24,8 @@ func CheckTimer(cycle, clock int64) {
 						0, 0, 0, 0, tomorrow.Location())
 		nrt = nrt.Add(time.Duration(clock) * time.Second)
 	}
-	fmt.Println("nrt:", nrt, "now:", time.Now())
+	fmt.Println("now:", time.Now())
+	fmt.Println("nrt:", nrt)
 	fmt.Println("First timer:", nrt.Sub(time.Now()))
 }
 

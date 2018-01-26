@@ -8,7 +8,7 @@
 		  "level": "DEBUG",
 		  "properties": [
 			{
-			  "name": "format",
+			  "name": "pattern",
 			  "value": "[%D %T] [%L] (%S) %M"
 			}
 		  ]

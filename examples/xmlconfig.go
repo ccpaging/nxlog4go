@@ -56,41 +56,41 @@ func main() {
 	}
 
 	fs := l4g.NewFilters()
-	var	lw l4g.LogWriter
+	var	appender l4g.Appender
 	for _, fc := range xc.FilterConfigs {
-		bad, enabled, lvl := l4g.CheckFilterConfig(fc)
+		ok, enabled, lvl := l4g.CheckFilterConfig(fc)
 	
-		if bad {
+		if !ok {
 			os.Exit(1)
 		}
 	
 		switch fc.Type {
 		case "color":
-			lw = colorlog.NewLogWriter()
+			appender = colorlog.NewAppender()
 		case "file":
-			lw = filelog.NewLogWriter("_test.log", 0)
+			appender = filelog.NewAppender("_test.log", 0)
 		case "socket":
-			lw = socketlog.NewLogWriter("udp", "127.0.0.1:12124")
+			appender = socketlog.NewAppender("udp", "127.0.0.1:12124")
 		case "xml":
-			lw = filelog.NewLogWriter("_test.log", 0)
-			lw.SetOption("head","<log created=\"%D %T\">")
-			lw.SetOption("format", 
+			appender = filelog.NewAppender("_test.log", 0)
+			appender.SetOption("head","<log created=\"%D %T\">")
+			appender.SetOption("pattern", 
 `	<record level="%L">
 		<timestamp>%D %T</timestamp>
 		<source>%S</source>
 		<message>%M</message>
 	</record>`)
-			lw.SetOption("foot", "</log>")
+			appender.SetOption("foot", "</log>")
 		default:
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 	
-		if lw == nil {
+		if appender == nil {
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 
-		good := l4g.SetLogWriter(lw, fc.Properties)
-		if !good {
+		ok = l4g.SetAppender(appender, fc.Properties)
+		if !ok {
 			fmt.Println(fc.Tag, "NOT good")
 			continue
 		}
@@ -102,7 +102,7 @@ func main() {
 		}
 		
 		fmt.Println("Add filter", fc.Tag, lvl)
-		fs.Add(fc.Tag, lvl, lw)
+		fs.Add(fc.Tag, lvl, appender)
 	}
 
 	log.SetFilters(fs)

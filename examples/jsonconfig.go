@@ -60,31 +60,31 @@ func main() {
 	}
 
 	fs := l4g.NewFilters()
-	var	lw l4g.LogWriter
+	var	apd l4g.Appender
 	for _, fc := range lc.FilterConfigs {
-		bad, enabled, lvl := l4g.CheckFilterConfig(fc)
+		ok, enabled, lvl := l4g.CheckFilterConfig(fc)
 	
-		if bad {
+		if !ok {
 			os.Exit(1)
 		}
 	
 		switch fc.Type {
 		case "color":
-			lw = colorlog.NewLogWriter()
+			apd = colorlog.NewAppender()
 		case "file":
-			lw = filelog.NewLogWriter("_test.log", 0)
+			apd = filelog.NewAppender("_test.log", 0)
 		case "socket":
-			lw = socketlog.NewLogWriter("udp", "127.0.0.1:12124")
+			apd = socketlog.NewAppender("udp", "127.0.0.1:12124")
 		default:
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 	
-		if lw == nil {
+		if apd == nil {
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 
-		good := l4g.SetLogWriter(lw, fc.Properties)
-		if !good {
+		ok = l4g.SetAppender(apd, fc.Properties)
+		if !ok {
 			fmt.Println(fc.Tag, "NOT good")
 			continue
 		}
@@ -96,7 +96,7 @@ func main() {
 		}
 		
 		fmt.Println("Add filter", fc.Tag, lvl)
-		fs.Add(fc.Tag, lvl, lw)
+		fs.Add(fc.Tag, lvl, apd)
 	}
 
 	log.SetFilters(fs)

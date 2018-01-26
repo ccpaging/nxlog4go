@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 )
@@ -47,10 +46,10 @@ func TestELog(t *testing.T) {
 	}
 }
 
-var formatTests = []struct {
+var patternTests = []struct {
 	Test    string
 	Record  *LogRecord
-	Formats map[string]string
+	Patterns map[string]string
 }{
 	{
 		Test: "Standard formats",
@@ -60,22 +59,22 @@ var formatTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Formats: map[string]string{
+		Patterns: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			FORMAT_DEFAULT: "[2009/02/13 23:31:30 UTC] [EROR] (source) message\n",
-			FORMAT_SHORT:   "[23:31 13/02/09] [EROR] message\n",
-			FORMAT_ABBREV:  "[EROR] message\n",
+			PATTERN_DEFAULT: "[2009/02/13 23:31:30 CST] [EROR] (source) message\n",
+			PATTERN_SHORT:   "[23:31 13/02/09] [EROR] message\n",
+			PATTERN_ABBREV:  "[EROR] message\n",
 		},
 	},
 }
 
-func TestFormatLogRecord(t *testing.T) {
-	for _, test := range formatTests {
+func TestPatternLayout(t *testing.T) {
+	for _, test := range patternTests {
 		name := test.Test
-		for fmt, want := range test.Formats {
-			formatSlice := bytes.Split([]byte(fmt), []byte{'%'})
-			if got := string(FormatLogRecord(formatSlice, test.Record)); got != want {
-				t.Errorf("%s - %s:", name, fmt)
+		for pattern, want := range test.Patterns {
+			layout := NewPatternLayout(pattern)
+			if got := string(layout.Format(test.Record)); got != want {
+				t.Errorf("%s - %s:", name, pattern)
 				t.Errorf("   got %q", got)
 				t.Errorf("  want %q", want)
 			}
@@ -96,7 +95,7 @@ var logRecordWriteTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Console: "[2009/02/13 23:31:30 UTC] [CRIT] (source) message",
+		Console: "[2009/02/13 23:31:30 CST] [CRIT] (source) message",
 	},
 }
 
@@ -105,13 +104,12 @@ func TestConsoleWriter(t *testing.T) {
 
 	buf := make([]byte, 1024)
 
-	formatSlice := bytes.Split([]byte(FORMAT_DEFAULT), []byte{'%'})
-
+	layout := NewPatternLayout(PATTERN_DEFAULT)
 	for _, test := range logRecordWriteTests {
 		name := test.Test
 
 		// Pipe write and read must be in diff routines otherwise cause dead lock
-		go w.Write(FormatLogRecord(formatSlice, test.Record))
+		go w.Write(layout.Format(test.Record))
 
 		n, _ := r.Read(buf)
 		if got, want := string(buf[:n]), test.Console; got != (want+"\n") {
@@ -126,8 +124,8 @@ func TestFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	formatSlice := bytes.Split([]byte(FORMAT_DEFAULT), []byte{'%'})
-	w.Write(FormatLogRecord(formatSlice, newLogRecord(CRITICAL, "prefix", "source", "message")))
+	layout := NewPatternLayout(PATTERN_DEFAULT)
+	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
 	runtime.Gosched()
@@ -144,8 +142,8 @@ func TestRotateFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	formatSlice := bytes.Split([]byte(FORMAT_DEFAULT), []byte{'%'})
-	w.Write(FormatLogRecord(formatSlice, newLogRecord(CRITICAL, "prefix", "source", "message")))
+	layout := NewPatternLayout(PATTERN_DEFAULT)
+	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
 	runtime.Gosched()
@@ -198,7 +196,7 @@ func TestLogOutput(t *testing.T) {
 
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
 	ww := io.MultiWriter(os.Stderr, fbw)
-	l := New(FINEST).SetOutput(ww).SetFormat("[%L] %M")
+	l := New(FINEST).SetOutput(ww).SetPattern("[%L] %M")
 
 	defer os.Remove(testLogFile)
 
@@ -272,7 +270,7 @@ func TestCountMallocs(t *testing.T) {
 	fmt.Printf("mallocs per unlogged sl.Debug(WARNING, \"%%s is a log message with level %%d\", \"This\", WARNING): %d\n", mallocs/N)
 }
 
-func BenchmarkFormatLogRecord(b *testing.B) {
+func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
 	rec := &LogRecord{
 		Level:   CRITICAL,
@@ -281,14 +279,14 @@ func BenchmarkFormatLogRecord(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	d := bytes.Split([]byte(FORMAT_DEFAULT), []byte{'%'})
-	s := bytes.Split([]byte(FORMAT_SHORT), []byte{'%'})
+	lo1 := NewPatternLayout(PATTERN_DEFAULT)
+	lo2 := NewPatternLayout(PATTERN_SHORT)
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
 		if i%2 == 0 {
-			FormatLogRecord(d, rec)
+			lo1.Format(rec)
 		} else {
-			FormatLogRecord(s, rec)
+			lo2.Format(rec)
 		}
 	}
 }
@@ -350,7 +348,7 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 	sl := New(INFO).SetOutput(w).SetCaller(false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.Warn("%s is a log message", "This")
+		sl.Info("%s is a log message", "This")
 	}
 	b.StopTimer()
 }
@@ -380,7 +378,7 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 	sl := New(INFO).SetOutput(w).SetCaller(false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.Warn("%s is a log message", "This")
+		sl.Info("%s is a log message", "This")
 	}
 	b.StopTimer()
 }

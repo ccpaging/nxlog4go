@@ -6,86 +6,37 @@ import (
     "fmt"
 	"os"
 	"time"
-	"errors"
-	"strconv"
-	"strings"
 )
-
-// Various error codes.
-var (
-    ErrBadOption   = errors.New("invalid or unsupported option")
-    ErrBadValue    = errors.New("invalid option value")
-)
-
-type FilterProp struct {
-	Name  string `xml:"name,attr"`
-	Value string `xml:",chardata"`
-}
 
 type FilterConfig struct {
 	Enabled  string        `xml:"enabled,attr"`
 	Tag      string        `xml:"tag"`
 	Level    string        `xml:"level"`
 	Type     string        `xml:"type"`
-	Properties []FilterProp `xml:"property"`
+	Properties []AppenderProp `xml:"property"`
 }
 
 type LoggerConfig struct {
 	FilterConfigs []FilterConfig `xml:"filter"`
 }
 
-/****** LogWriter ******/
-
-// This is an interface for anything that should be able to write logs
-type LogWriter interface {
-	// Set option about the LogWriter. The options should be set as default.
-	// Must be set before the first log message is written if changed.
-	// You should test more if have to change options while running.
-	SetOption(name string, v interface{}) error
-
-	// This will be called to log a LogRecord message.
-	LogWrite(rec *LogRecord)
-
-	// This should clean up anything lingering about the LogWriter, as it is called before
-	// the LogWriter is removed.  LogWrite should not be called after Close.
-	Close()
-}
-
-func SetLogWriter(lw LogWriter, props []FilterProp) bool {
-	good := true
-	for _, prop := range props {
-		err := lw.SetOption(prop.Name, strings.Trim(prop.Value, " \r\n"))
-		if err != nil {
-			switch err {
-			case ErrBadValue:
-				fmt.Fprintf(os.Stderr, "ConfigLogWriter: Bad value of \"%s\"\n", prop.Name)
-				good = false
-			case ErrBadOption:
-				fmt.Fprintf(os.Stderr, "ConfigLogWriter: Unknown property \"%s\"\n", prop.Name)
-			default:
-			}
-		}
-	}
-	return good
-}
-
 /****** Filter ******/
 
 // A Filter represents the log level below which no log records are written to
-// the associated LogWriter.
+// the associated Appender.
 type Filter struct {
 	Level Level
-	LogWriter
+	Appender
 
 	rec 	chan *LogRecord	// write queue
 	closing	bool	// true if filter was closed at API level
 }
 
 // Create a new filter
-func NewFilter(lvl Level, writer LogWriter) *Filter {
+func NewFilter(lvl Level, writer Appender) *Filter {
 	f := &Filter {
 		Level:		lvl,
-		LogWriter:	writer,
+		Appender:	writer,
 
 		rec: 		make(chan *LogRecord, LogBufferLength),
 		closing: 	false,
@@ -112,7 +63,7 @@ func (f *Filter) run() {
 			if !ok {
 				return
 			}
-			f.LogWrite(rec)
+			f.Write(rec)
 		}
 	}
 }
@@ -135,62 +86,42 @@ func (f *Filter) Close() {
 	// block write channel
 	f.closing = true
 
-	defer f.LogWriter.Close()
+	defer f.Appender.Close()
 
-	// Notify log writer closing
+	// Notify log appender closing
 	close(f.rec)
 
 	if len(f.rec) <= 0 {
 		return
 	}
-	// drain the log channel and write driect
+	// drain the log channel and write direct
 	for rec := range f.rec {
-		f.LogWrite(rec)
+		f.Write(rec)
 	}
-}
-
-// Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
-func StrToNumSuffix(str string, mult int) int {
-	num := 1
-	if len(str) > 1 {
-		switch str[len(str)-1] {
-		case 'G', 'g':
-			num *= mult
-			fallthrough
-		case 'M', 'm':
-			num *= mult
-			fallthrough
-		case 'K', 'k':
-			num *= mult
-			str = str[0 : len(str)-1]
-		}
-	}
-	parsed, _ := strconv.Atoi(str)
-	return parsed * num
 }
 
 // Check filter's configuration
-func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
-	bad, enabled, lvl = false, false, INFO
+func CheckFilterConfig(fc FilterConfig) (ok bool, enabled bool, lvl Level) {
+	ok, enabled, lvl = true, false, INFO
 
 	// Check required children
 	if len(fc.Enabled) == 0 {
 		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required attribute %s\n", "enabled")
-		bad = true
+		ok = false
 	} else {
 		enabled = fc.Enabled != "false"
 	}
 	if len(fc.Tag) == 0 {
 		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "tag")
-		bad = true
+		ok = false
 	}
 	if len(fc.Type) == 0 {
 		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "type")
-		bad = true
+		ok = false
 	}
 	if len(fc.Level) == 0 {
 		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "level")
-		bad = true
+		ok = false
 	}
 
 	switch fc.Level {
@@ -214,9 +145,9 @@ func CheckFilterConfig(fc FilterConfig) (bad bool, enabled bool, lvl Level) {
 		fmt.Fprintf(os.Stderr, 
 			"CheckFilterConfig: Required child level for filter has unknown value. %s\n", 
 			fc.Level)
-		bad = true
+		ok = false
 	}
-	return bad, enabled, lvl
+	return ok, enabled, lvl
 }
 
 
@@ -232,7 +163,7 @@ func NewFilters() *Filters {
 // Add a new filter to the filters map which will only log messages at lvl or
 // higher.  This function should not be called from multiple goroutines.
 // Returns the logger for chaining.
-func (fs Filters) Add(name string, lvl Level, writer LogWriter) *Filters {
+func (fs Filters) Add(name string, lvl Level, writer Appender) *Filters {
 	if filt, isExist := fs[name]; isExist {
 		filt.Close()
 		delete(fs, name)
@@ -244,7 +175,7 @@ func (fs Filters) Add(name string, lvl Level, writer LogWriter) *Filters {
 // Close and remove all filters in preparation for exiting the program or a
 // reconfiguration of logging.  Calling this is not really imperative, unless
 // you want to guarantee that all log messages are written.  Close removes
-// all filters (and thus all LogWriters) from the logger.
+// all filters (and thus all Appenders) from the logger.
 // Returns the logger for chaining.
 func (fs Filters) Close() {
 	// Close all filters

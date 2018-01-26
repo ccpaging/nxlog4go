@@ -15,16 +15,12 @@ func GetLogger() *Logger {
 
 // Logs the given message and crashes the program
 func Crash(arg0 interface{}, args ...interface{}) {
-	msg := Global.intMsg(arg0, args...)
-	Global.intLog(CRITICAL, msg)
-	panic(msg)
+	panic(Global.intLog(CRITICAL, arg0, args...))
 }
 
 // Logs the given message and crashes the program
 func Crashf(format interface{}, args ...interface{}) {
-	msg := Global.intMsg(format, args...)
-	Global.intLog(CRITICAL, msg)
-	panic(msg)
+	panic(Global.intLog(CRITICAL, format, args...))
 }
 
 // Compatibility with `log`
@@ -111,25 +107,19 @@ func Info(arg0 interface{}, args ...interface{}) {
 // These functions will execute a closure exactly once, to build the error message for the return
 // Wrapper for (*Logger).Warn
 func Warn(arg0 interface{}, args ...interface{}) error {
-	msg := Global.intMsg(arg0, args...)
-	Global.intLog(WARNING, msg)
-	return errors.New(msg)
+	return errors.New(Global.intLog(WARNING, arg0, args...))
 }
 
 // Utility for error log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
 // These functions will execute a closure exactly once, to build the error message for the return
 // Wrapper for (*Logger).Error
 func Error(arg0 interface{}, args ...interface{}) error {
-	msg := Global.intMsg(arg0, args...)
-	Global.intLog(ERROR, msg)
-	return errors.New(msg)
+	return errors.New(Global.intLog(ERROR, arg0, args...))
 }
 
 // Utility for critical log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
 // These functions will execute a closure exactly once, to build the error message for the return
 // Wrapper for (*Logger).Critical
 func Critical(arg0 interface{}, args ...interface{}) error {
-	msg := Global.intMsg(arg0, args...)
-	Global.intLog(CRITICAL, msg)
-	return errors.New(msg)
+	return errors.New(Global.intLog(CRITICAL, arg0, args...))
 }
