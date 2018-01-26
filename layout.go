@@ -157,11 +157,14 @@ func (pl PatternLayout) Get(name string) string {
 }
 
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
+	pl.mu.Lock()
+	defer pl.mu.Unlock()
+
 	if rec == nil {
 		return []byte("<nil>")
 	}
 	if len(pl.pattSlice) == 0 {
-		return []byte{}
+		return nil
 	}
 
 	t := rec.Created
@@ -177,11 +180,9 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		timeCache.Update(&t)
 	}
 
-	pl.mu.Lock()
-	defer pl.mu.Unlock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
-	b := make([]byte, 0, 16)
+	var b []byte
 	// Iterate over the pieces, replacing known formats
 	timeCache.RLock()
 	defer timeCache.RUnlock()
@@ -190,7 +191,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			switch piece[0] {
 			case 'N':
 				out.Write(timeCache.longTime)
-				b = b[:0]; b = append(b, '.')
+				b = nil; b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
 				out.Write(b)
 			case 'T':
@@ -212,14 +213,14 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'S':
 				out.WriteString(rec.Source)
 				if rec.Line > 0 {
-					b = b[:0]; b = append(b, ':')
+					b = nil; b = append(b, ':')
 					itoa(&b, rec.Line, -1)
 					out.Write(b)
 				}
 			case 's':
 				out.WriteString(rec.Source[strings.LastIndexByte(rec.Source, '/')+1:])
 				if rec.Line > 0 {
-					b = b[:0]; b = append(b, ':')
+					b = nil; b = append(b, ':')
 					itoa(&b, rec.Line, -1)
 					out.Write(b)
 				}
@@ -272,7 +273,7 @@ func (jl *JsonLayout) Format(rec *LogRecord) []byte {
 	out.WriteString(",")
 
 	out.WriteString("\"Line\":")
-	b = b[:0]; itoa(&b, rec.Line, -1)
+	b = nil; itoa(&b, rec.Line, -1)
 	out.Write(b)
 	out.WriteString(",")
 

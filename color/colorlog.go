@@ -19,7 +19,7 @@ var ColorBytes = [...][]byte{
 	[]byte("\x1b[0;36m"),	   // FINE, Cyan
 	[]byte("\x1b[0;32m"),	   // DEBUG, Green
 	[]byte("\x1b[0;35m"), 	   // TRACE, Purple
- 	[]byte{},				   // INFO, Default
+ 	nil,					   // INFO, Default
  	[]byte("\x1b[1;33m"), 	   // WARNING, Yellow
  	[]byte("\x1b[0;31m"), 	   // ERROR, Red
  	[]byte("\x1b[0;31m;47m"),  // CRITICAL, Red - White

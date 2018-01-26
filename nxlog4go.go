@@ -84,7 +84,6 @@ import (
 	"time"
 	"sync"
 	"io"
-	"io/ioutil"
 )
 
 // Version information
@@ -191,9 +190,6 @@ func (log *Logger) SetOutput(w io.Writer) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	log.out = w
-	if log.out == nil {
-		log.out = ioutil.Discard
-	}
 	return log
 }
 
@@ -277,7 +273,7 @@ func (log *Logger) SetFilters(filters *Filters) *Logger {
 
 // Determine if any logging will be done
 func (log Logger) skip(lvl Level) bool {
-	if lvl >= log.level {
+	if log.out != nil && lvl >= log.level {
         return false
     }
 
@@ -329,7 +325,9 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) strin
 		log.mu.Lock()
 	}
 	
-    log.out.Write(log.layout.Format(rec))
+	if log.out != nil {
+    	log.out.Write(log.layout.Format(rec))
+	}
 
 	if log.filters != nil {
 		// Dispatch the logs
