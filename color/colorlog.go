@@ -10,7 +10,7 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var HasColor = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
+var isColorful = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
 	 os.Getenv("ConEmuANSI") == "ON"
 
 // 0, Black; 1, Red; 2, Green; 3, Yellow; 4, Blue; 5, Purple; 6, Cyan; 7, White
@@ -57,11 +57,11 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	if HasColor {
+	if isColorful {
 		ca.out.Write(ColorBytes[rec.Level])
 	}
 	ca.out.Write(ca.layout.Format(rec))
-	if HasColor {
+	if isColorful {
 		ca.out.Write(ColorReset)
 	}
 }

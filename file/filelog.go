@@ -28,6 +28,7 @@ type FileAppender struct {
 	loopReset chan time.Time
 }
 
+// Write log record
 func (fa *FileAppender) Write(rec *l4g.LogRecord) {
 	if !fa.loopRunning {
 		fa.loopRunning = true
@@ -36,6 +37,7 @@ func (fa *FileAppender) Write(rec *l4g.LogRecord) {
 	fa.messages <- fa.layout.Format(rec)
 }
 
+// Close appender
 func (fa *FileAppender) Close() {
 	close(fa.messages)
 

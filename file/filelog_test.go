@@ -135,7 +135,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewAppender(benchLogFile, 0).Set("flush", 4096))
 	sl.SetFilters(fs)
@@ -150,7 +150,7 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewAppender(benchLogFile, 0).Set("flush", 4096))
 	sl.SetFilters(fs)

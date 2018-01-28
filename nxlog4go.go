@@ -3,17 +3,6 @@
 // Package nxlog4go provides simple, fast, low cost, and extensible logging.
 // It can be used in test, development, and production environment.
 //
-// Logging Levels
-// 
-// 	 FINEST
-//	 FINE
-//	 DEBUG
-//	 TRACE
-//	 INFO
-//	 WARNING
-//	 ERROR
-//	 CRITICAL
-//
 // Logger
 // 
 // - prefix, to write at beginning of each line
@@ -31,6 +20,14 @@
 // Filter
 // 
 // - level, the log level
+// 	 FINEST
+//	 FINE
+//	 DEBUG
+//	 TRACE
+//	 INFO
+//	 WARNING
+//	 ERROR
+//	 CRITICAL
 // - appender
 // 
 // Appender
@@ -50,28 +47,33 @@
 // Enhanced Logging
 //
 // This is inspired by the logging functionality in log4go. Essentially, you create a Logger
-// object and create output filters for it. You can send whatever you want to the Logger,
-// and it will filter and formatter that based on your settings and send it to the outputs.
-// This way, you can put as much debug code in your program as you want, and when you're done
-// you can filter out the mundane messages so only the important ones show up.
+// object with a console writer or create output filters for it. You can send whatever you 
+// want to the Logger, and it will filter and formatter that based on your settings and 
+// send it to the outputs. This way, you can put as much debug code in your program as 
+// you want, and when you're done you can filter out the mundane messages so only 
+// the important ones show up as the pattern you want.
+// 
+// Utility functions are provided to make life easier. 
 //
-// Utility functions are provided to make life easier. Here is some example code to get started:
+// You may using your configuration file format as same as your project's.
+// 
+// You may extend your own appender for your needs.
+// 
+// Here is some example code to get started:
 //
-// log := nxlog4go.nxlog4go(logs.DEBUG)
-// log.AddFilter("log", nxlog4go.FINE, nxlog4go.NewFileLogWriter("example.log", 1))
+// log := nxlog4go.New(nxlog4go.DEBUG)
 // log.Info("The time is now: %s", time.LocalTime().Format("15:04:05 MST 2006/01/02"))
-//
+// 
 // Usage notes:
 // - The utility functions (Info, Debug, Warn, etc) derive their source from the
 //   calling function, and this incurs extra overhead. It can be disabled.
 // - New field prefix is adding to LogRecorder to identify different module/package
 //   in large project  
 //
-// Changes from log4go:
-// - The external interface has remained mostly stable, but a lot of the
-//   internals have been changed, so if you depended on any of this or created
-//   your own LogWriter, then you will probably have to update your code.
-// - In particular, Logger is now a structure include io.Writer and a filters map.
+// Changes from log4go
+// 
+// The most of interfaces and the internals have been changed have been changed, then you will
+// have to update your code. Sorry! I hope it is worth.
 
 package nxlog4go
 

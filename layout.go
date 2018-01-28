@@ -86,7 +86,7 @@ func init() {
 	SetZoneUTC(false)
 }
 
-// This is an interface for anything that should be able to write logs
+// This is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
 	// Must be set before the first log message is written if changed.
@@ -105,11 +105,13 @@ var (
 	PATTERN_ABBREV  = "[%L] %M"
 )
 
+// This layout formats log record by pattern
 type PatternLayout struct {
-	mu  sync.Mutex // ensures atomic writes; protects the following fields
+	mu sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte // Split the pattern into pieces by % signs
 }
 
+// NewPatternLayout creates a new layout which format log record by pattern
 func NewPatternLayout(pattern string) Layout {
 	if pattern == "" {
 		pattern = PATTERN_DEFAULT
@@ -118,7 +120,8 @@ func NewPatternLayout(pattern string) Layout {
 	return pl.Set("pattern", pattern)
 }
 
-// Known format codes:
+// Set option. chainable
+// Known pattern codes:
 // %N - Time (15:04:05.000000)
 // %T - Time (15:04:05)
 // %t - Time (15:04)
@@ -147,6 +150,7 @@ func (pl *PatternLayout) Set(name string, v interface{}) Layout {
 	return pl
 }
 
+// Get option
 func (pl PatternLayout) Get(name string) string {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
@@ -156,6 +160,7 @@ func (pl PatternLayout) Get(name string) string {
 	return ""
 }
 
+// Format log record
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
@@ -239,13 +244,16 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	return out.Bytes()
 }
 
+// This layout formats log record as json
 type JsonLayout struct {
 }
 
+// NewJsonLayout creates a new layout which format log record as json
 func NewJsonLayout() *JsonLayout {
 	return &JsonLayout{}
 }
 
+// Format log recode
 func (jl *JsonLayout) Format(rec *LogRecord) []byte {
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 	b := make([]byte, 0, 16)
