@@ -384,11 +384,11 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 }
 
 // Benchmark results (windows amd64 10g)
-// BenchmarkFormatLogRecord-4               1000000              1478 ns/op
-// BenchmarkConsoleWriter-4                 2000000               975 ns/op
-// BenchmarkConsoleUtilWriter-4              500000              3150 ns/op
-// BenchmarkConsoleUtilNotWriter-4         30000000                48.2 ns/op
-// BenchmarkFileWriter-4                     200000              6285 ns/op
-// BenchmarkFileUtilWriter-4                 200000              7065 ns/op
-// BenchmarkFileBufWriter-4                 1000000              1344 ns/op
-// BenchmarkFileBufUtilWriter-4             1000000              1735 ns/op
+// BenchmarkPatternLayout-4                 1000000              1208 ns/op
+// BenchmarkConsoleWriter-4                 1000000              1076 ns/op
+// BenchmarkConsoleUtilWriter-4              500000              3650 ns/op
+// BenchmarkConsoleUtilNotWriter-4         50000000                30.3 ns/op
+// BenchmarkFileWriter-4                     200000              7085 ns/op
+// BenchmarkFileUtilWriter-4                 200000              7415 ns/op
+// BenchmarkFileBufWriter-4                 1000000              1473 ns/op
+// BenchmarkFileBufUtilWriter-4             1000000              1543 ns/op

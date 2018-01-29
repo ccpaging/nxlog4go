@@ -165,11 +165,11 @@ func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 }
 
 // Benchmark results (darwin amd64 6g)
-// BenchmarkFileLog-4                        200000              7639 ns/op
-// BenchmarkFileNotLogged-4                20000000               118 ns/op
-// BenchmarkFileUtilLog-4                    300000              6449 ns/op
+// BenchmarkFileLog-4                        200000             11179 ns/op
+// BenchmarkFileNotLogged-4                10000000               117 ns/op
+// BenchmarkFileUtilLog-4                    200000              9516 ns/op
 // BenchmarkFileUtilNotLog-4               20000000               118 ns/op
-// BenchmarkCacheFileLog-4                  1000000              1771 ns/op
-// BenchmarkCacheFileNotLogged-4           20000000               119 ns/op
-// BenchmarkCacheFileUtilLog-4               300000              4056 ns/op
-// BenchmarkCacheFileUtilNotLog-4          10000000               121 ns/op
+// BenchmarkCacheFileLog-4                  1000000              1859 ns/op
+// BenchmarkCacheFileNotLogged-4           20000000               117 ns/op
+// BenchmarkCacheFileUtilLog-4              1000000              1769 ns/op
+// BenchmarkCacheFileUtilNotLog-4          20000000               118 ns/op
