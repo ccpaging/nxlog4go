@@ -24,8 +24,6 @@ import (
 )
 
 func main() {
-    defer log.Close()
-
     log.Debug("This is Debug")
     log.Info("This is Info")
 
