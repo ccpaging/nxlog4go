@@ -26,11 +26,6 @@ import (
 func main() {
     log.Debug("This is Debug")
     log.Info("This is Info")
-
-    // Compatibility with `log`
-    log.Print("This is Print()")
-    log.Println("This is Println()")
-    log.Panic("This is Panic()")
 }
 ```
 
