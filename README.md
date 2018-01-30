@@ -20,7 +20,7 @@ import log "github.com/ccpaging/nxlog4go"
 package main
 
 import (
-	log "github.com/ccpaging/nxlog4go"
+    log "github.com/ccpaging/nxlog4go"
 )
 
 func main() {
