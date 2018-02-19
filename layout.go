@@ -63,7 +63,7 @@ func NewPatternLayout(pattern string) Layout {
 		pattern = PATTERN_DEFAULT
 	}
 	pl := &PatternLayout{}
-	return pl.Set("pattern", pattern).Set("utc", true)
+	return pl.Set("pattern", pattern).Set("utc", false)
 }
 
 // Set option. chainable
