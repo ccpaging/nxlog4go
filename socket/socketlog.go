@@ -14,6 +14,7 @@ import (
 // This log appender sends output to a socket
 type SocketAppender struct {
 	mu   sync.Mutex // ensures atomic writes; protects the following fields
+	layout l4g.Layout 	 // format record for output
 	sock net.Conn
 	prot string
 	host string
@@ -27,6 +28,7 @@ func (sa *SocketAppender) Close() {
 
 func NewAppender(prot, host string) *SocketAppender {
 	return &SocketAppender {
+		layout: l4g.NewPatternLayout(l4g.PATTERN_JSON),	
 		sock:	nil,
 		prot:	prot,
 		host:	host,
@@ -47,10 +49,7 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 		}
 	}
 
-	js := l4g.NewJsonLayout().Format(rec)
-	js = append(js, '\n')
-
-	_, err = sa.sock.Write(js)
+	_, err = sa.sock.Write(sa.layout.Format(rec))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "SocketAppender(%s): %v\n", sa.host, err)
 		sa.sock.Close()
@@ -88,6 +87,8 @@ func (sa *SocketAppender) SetOption(name string, v interface{}) error {
 		} else {
 			return l4g.ErrBadValue
 		}
+	case "pattern", "utc":
+		return sa.layout.SetOption(name, v)
 	default:
 		return l4g.ErrBadOption
 	}

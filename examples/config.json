@@ -9,7 +9,7 @@
 		  "properties": [
 			{
 			  "name": "pattern",
-			  "value": "[%D %T] [%L] (%S) %M"
+			  "value": "[%D %T] [%L] (%S) %M%R"
 			}
 		  ]
 		},

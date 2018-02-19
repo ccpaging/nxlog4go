@@ -241,6 +241,13 @@ func (log *Logger) SetPattern(pattern string) *Logger {
 	return log
 }
 
+// Pattern returns the output Layout for the logger.
+func (log *Logger) Layout() Layout {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	return log.layout
+}
+
 // Prefix returns the output prefix for the logger.
 func (log *Logger) Prefix() string {
 	log.mu.Lock()

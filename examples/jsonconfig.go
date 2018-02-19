@@ -83,7 +83,7 @@ func main() {
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 
-		ok = l4g.SetAppender(appender, fc.Properties)
+		ok = l4g.ConfigureAppender(appender, fc.Properties)
 		if !ok {
 			fmt.Println(fc.Tag, "NOT good")
 			continue

@@ -26,72 +26,15 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-type timeCacheType struct {
-	sync.RWMutex   // ensures atomic writes; protects the following fields
-	LastUpdateSeconds   int64
-	longTime, shortTime []byte
-	longDate, shortDate []byte
-	isUTC bool
-	longZone, shortZone []byte
-}
-var timeCache = &timeCacheType{}
-
-func (tc *timeCacheType) SetUTC(isUTC bool) {
-	tc.Lock()
-	defer tc.Unlock()
-	t := time.Now()
-	if isUTC {
-		t = t.UTC()
-	}
-	tc.isUTC = isUTC
-	tc.shortZone = []byte(t.Format("MST"))
-	tc.longZone = []byte(t.Format("-0700"))
-}
-
-func (tc *timeCacheType) Update(t *time.Time) *timeCacheType {
-	tc.Lock()
-	defer tc.Unlock()
-	year, month, day := t.Date()
-	hour, minute, second := t.Clock()
-	// fmt.Sprintf("%02d:%02d", hour, minute)
-	tc.shortTime = nil
-	buf := &tc.shortTime
-	itoa(buf, hour, 2); *buf = append(*buf, ':')
-	itoa(buf, minute, 2)
-	// fmt.Sprintf("%02d:%02d:%02d", hour, minute, second)
-	tc.longTime = nil
-	buf = &tc.longTime
-	*buf = append(*buf, tc.shortTime...); *buf = append(*buf, ':')
-	itoa(buf, second, 2)
-	// fmt.Sprintf("%02d/%02d/%02d", day, month, year%100)
-	tc.shortDate = nil
-	buf = &tc.shortDate
-	itoa(buf, day, 2); *buf = append(*buf, '/')
-	itoa(buf, int(month), 2); *buf = append(*buf, '/')
-	itoa(buf, year%100, 2)
-	// fmt.Sprintf("%04d/%02d/%02d", year, month, day),
-	tc.longDate = nil
-	buf = &tc.longDate
-	itoa(buf, year, 4); *buf = append(*buf, '/')
-	itoa(buf, int(month), 2); *buf = append(*buf, '/')
-	itoa(buf, day, 2)
-	return tc
-}
-
-func SetZoneUTC(isUTC bool) {
-	timeCache.SetUTC(isUTC)
-}
-
-func init() {
-	SetZoneUTC(false)
-}
-
 // This is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
-	// Must be set before the first log message is written if changed.
-	// You should test more if have to change options while running.
+	// Chainable.
 	Set(name string, v interface{}) Layout
+
+	// Set option about the Layout. The options should be set as default.
+	// Checkable
+	SetOption(name string, v interface{}) error
 
 	Get(name string) string
 
@@ -100,15 +43,18 @@ type Layout interface {
 }
 
 var (
-	PATTERN_DEFAULT = "[%D %T %z] [%L] (%s) %M"
-	PATTERN_SHORT   = "[%t %d] [%L] %M"
-	PATTERN_ABBREV  = "[%L] %M"
+	PATTERN_DEFAULT = "[%D %T %z] [%L] (%s:%n) %M\n"
+	PATTERN_SHORT   = "[%t %d] [%L] %M\n"
+	PATTERN_ABBREV  = "[%L] %M\n"
+	PATTERN_JSON	= "{\"Level\":%l,\"Created\":\"%YT%N%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%n,\"Message\":\"%M\"}"
 )
 
 // This layout formats log record by pattern
 type PatternLayout struct {
 	mu sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte // Split the pattern into pieces by % signs
+	isUTC bool
+	longZone, shortZone []byte
 }
 
 // NewPatternLayout creates a new layout which format log record by pattern
@@ -117,7 +63,7 @@ func NewPatternLayout(pattern string) Layout {
 		pattern = PATTERN_DEFAULT
 	}
 	pl := &PatternLayout{}
-	return pl.Set("pattern", pattern)
+	return pl.Set("pattern", pattern).Set("utc", true)
 }
 
 // Set option. chainable
@@ -128,26 +74,60 @@ func NewPatternLayout(pattern string) Layout {
 // %Z - Zone (-0700)
 // %z - Zone (MST)
 // %D - Date (2006/01/02)
+// %Y - Date (2006-01-02)
 // %d - Date (01/02/06)
 // %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+// %l - Level
 // %P - Prefix
 // %S - Source
 // %s - Short Source
-// %x - Extra Short Source: just file without .go suffix
+// %n - Line number
 // %M - Message
+// %R - Return (\n)
 // Ignores unknown formats
 // Recommended: "[%D %T] [%L] (%S) %M"
 func (pl *PatternLayout) Set(name string, v interface{}) Layout {
+	pl.SetOption(name, v)
+	return pl
+}
+
+// Set option. checkable. Must be set before the first log message is written.
+func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
-	if name == "pattern" {
-		if pattern, ok := v.(string); ok {
-			pl.pattSlice = bytes.Split([]byte(pattern), []byte{'%'})
-		} else if pattern, ok := v.([]byte); ok {
-			pl.pattSlice = bytes.Split(pattern, []byte{'%'})
+
+	switch name {
+	case "pattern":
+		if value, ok := v.(string); ok {
+			pl.pattSlice = bytes.Split([]byte(value), []byte{'%'})
+		} else if value, ok := v.([]byte); ok {
+			pl.pattSlice = bytes.Split(value, []byte{'%'})
+		} else {
+			return ErrBadValue
 		}
+	case "utc":
+		if value, ok := v.(string); ok {
+			if value == "true" {
+				pl.isUTC = true
+			} else {
+				pl.isUTC = false
+			}
+		} else if value, ok := v.(bool); ok {
+			pl.isUTC = value
+		} else {
+			return ErrBadValue
+		}
+		t := time.Now()
+		if pl.isUTC {
+			t = t.UTC()
+		}
+		pl.shortZone = []byte(time.Now().Format("MST"))
+		pl.longZone = []byte(time.Now().Format("Z07:00"))
+	default:
+		return ErrBadOption
 	}
-	return pl
+
+	return nil
 }
 
 // Get option
@@ -172,65 +152,83 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		return nil
 	}
 
-	t := rec.Created
-	if timeCache.isUTC {
-		t = t.UTC()
-	}
-
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 
-	secs := t.UnixNano() / 1e9
-	if timeCache.LastUpdateSeconds != secs {
-		timeCache.LastUpdateSeconds = secs
-		timeCache.Update(&t)
+	t := rec.Created
+	if pl.isUTC {
+		t = t.UTC()
 	}
 
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
 	// Iterate over the pieces, replacing known formats
-	timeCache.RLock()
-	defer timeCache.RUnlock()
 	for i, piece := range pl.pattSlice {
 		if i > 0 && len(piece) > 0 {
 			switch piece[0] {
 			case 'N':
-				out.Write(timeCache.longTime)
-				b = nil; b = append(b, '.')
+				b = nil
+				hour, minute, second := t.Clock()
+				itoa(&b, hour, 2); b = append(b, ':');
+ 				itoa(&b, minute, 2); b = append(b, ':');
+ 				itoa(&b, second, 2); b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
 				out.Write(b)
 			case 'T':
-				out.Write(timeCache.longTime)
+				hour, minute, second := t.Clock()
+				b = nil
+				itoa(&b, hour, 2); b = append(b, ':');
+ 				itoa(&b, minute, 2); b = append(b, ':');
+ 				itoa(&b, second, 2)
+				out.Write(b)
 			case 't':
-				out.Write(timeCache.shortTime)
+				hour, minute, _ := t.Clock()
+				b = nil
+				itoa(&b, hour, 2); b = append(b, ':'); itoa(&b, minute, 2)
+				out.Write(b)
 			case 'Z':
-				out.Write(timeCache.longZone)
+				out.Write(pl.longZone)
 			case 'z':
-				out.Write(timeCache.shortZone)
+				out.Write(pl.shortZone)
 			case 'D':
-				out.Write(timeCache.longDate)
+				year, month, day := t.Date()
+				b = nil
+				itoa(&b, year, 4); b = append(b, '/')
+				itoa(&b, int(month), 2); b = append(b, '/')
+				itoa(&b, day, 2)
+				out.Write(b)
+			case 'Y':
+				year, month, day := t.Date()
+				b = nil
+				itoa(&b, year, 4); b = append(b, '-')
+				itoa(&b, int(month), 2); b = append(b, '-')
+				itoa(&b, day, 2)
+				out.Write(b)
 			case 'd':
-				out.Write(timeCache.shortDate)
+				year, month, day := t.Date()
+				b = nil
+				itoa(&b, day, 2); b = append(b, '/')
+				itoa(&b, int(month), 2); b = append(b, '/')
+				itoa(&b, year%100, 2)
+				out.Write(b)
 			case 'L':
 				out.WriteString(levelStrings[rec.Level])
+			case 'l':
+				b = nil; itoa(&b, int(rec.Level), -1)
+				out.Write(b)
 			case 'P':
                 out.WriteString(rec.Prefix)
 			case 'S':
 				out.WriteString(rec.Source)
-				if rec.Line > 0 {
-					b = nil; b = append(b, ':')
-					itoa(&b, rec.Line, -1)
-					out.Write(b)
-				}
 			case 's':
 				out.WriteString(rec.Source[strings.LastIndexByte(rec.Source, '/')+1:])
-				if rec.Line > 0 {
-					b = nil; b = append(b, ':')
-					itoa(&b, rec.Line, -1)
-					out.Write(b)
-				}
+			case 'n':
+				b = nil; itoa(&b, rec.Line, -1)
+				out.Write(b)
 			case 'M':
 				out.WriteString(rec.Message)
+			case 'R':
+				out.WriteByte('\n')
 			}
 			if len(piece) > 1 {
 				out.Write(piece[1:])
@@ -239,56 +237,6 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			out.Write(piece)
 		}
 	}
-	out.WriteByte('\n')
 
-	return out.Bytes()
-}
-
-// This layout formats log record as json
-type JsonLayout struct {
-}
-
-// NewJsonLayout creates a new layout which format log record as json
-func NewJsonLayout() *JsonLayout {
-	return &JsonLayout{}
-}
-
-// Format log recode
-func (jl *JsonLayout) Format(rec *LogRecord) []byte {
-	out := bytes.NewBuffer(make([]byte, 0, 64))
-	b := make([]byte, 0, 16)
-
-	out.WriteString("{\"Level\":")
-	out.WriteByte(byte('0' + int(rec.Level) % 10))
-	out.WriteString(",")
-
-	// 2018-01-26T02:05:55.3620165+08:00
-	out.WriteString("\"Created\":")
-	timeJson, _ := rec.Created.MarshalJSON()
-	out.Write(timeJson)
-	out.WriteString(",")
-
-	out.WriteString("\"Prefix\":")
-	out.WriteString("\"")
-	out.WriteString(rec.Prefix)
-	out.WriteString("\"")
-	out.WriteString(",")
-
-	out.WriteString("\"Source\":")
-	out.WriteString("\"")
-	out.WriteString(rec.Source)
-	out.WriteString("\"")
-	out.WriteString(",")
-
-	out.WriteString("\"Line\":")
-	b = nil; itoa(&b, rec.Line, -1)
-	out.Write(b)
-	out.WriteString(",")
-
-	out.WriteString("\"Message\":")
-	out.WriteString("\"")
-	out.WriteString(rec.Message)
-	out.WriteString("\"")
-	out.WriteString("}")
 	return out.Bytes()
 }

@@ -39,7 +39,7 @@ func TestFileAppender(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 50 {
+	} else if len(contents) != 52 {
 		t.Errorf("malformed filelog: %q (%d bytes)", string(contents), len(contents))
 	}
 }

@@ -219,14 +219,8 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		if fa.cycle <= 0 {
 			fa.out.SetMaxSize(fa.maxsize)
 		}
-	case "pattern":
-		if pattern, ok := v.(string); ok {
-			fa.layout.Set("pattern", pattern)
-		} else if pattern, ok := v.([]byte); ok {
-			fa.layout.Set("pattern", pattern)
-		} else {
-			return l4g.ErrBadValue
-		}
+	case "pattern", "utc":
+		return fa.layout.SetOption(name, v)
 	case "head":
 		if header, ok := v.(string); ok {
 			fa.out.SetHead(header)

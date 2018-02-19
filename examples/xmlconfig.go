@@ -73,14 +73,14 @@ func main() {
 			appender = socketlog.NewAppender("udp", "127.0.0.1:12124")
 		case "xml":
 			appender = filelog.NewAppender("_test.log", 0)
-			appender.SetOption("head","<log created=\"%D %T\">")
+			appender.SetOption("head","<log created=\"%D %T\">%R")
 			appender.SetOption("pattern", 
 `	<record level="%L">
 		<timestamp>%D %T</timestamp>
 		<source>%S</source>
 		<message>%M</message>
-	</record>`)
-			appender.SetOption("foot", "</log>")
+	</record>%R`)
+			appender.SetOption("foot", "</log>%R")
 		default:
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
@@ -89,7 +89,7 @@ func main() {
 			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
 		}
 
-		ok = l4g.SetAppender(appender, fc.Properties)
+		ok = l4g.ConfigureAppender(appender, fc.Properties)
 		if !ok {
 			fmt.Println(fc.Tag, "NOT good")
 			continue

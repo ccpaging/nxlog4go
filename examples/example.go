@@ -9,7 +9,7 @@ import (
 )
 
 
-var glog = l4g.New(l4g.DEBUG).SetPrefix("example").SetPattern("[%T %D %Z] [%L] (%P:%s) %M")
+var glog = l4g.New(l4g.DEBUG).SetPrefix("example").SetPattern("[%T %D %Z] [%L] (%P:%s) %M\n")
 
 func main() {
 	glog.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -24,8 +24,8 @@ func main() {
 	log3.Debug("Filter out. The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
 	// change time zone to 0
-	l4g.SetZoneUTC(true)
+	glog.Layout().Set("utc", true)
 	glog.Info("Using UTC time stamp. Now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
-	l4g.SetZoneUTC(false)
+	glog.Layout().Set("utc", false)
 	glog.Info("Using local time stamp. Now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 }

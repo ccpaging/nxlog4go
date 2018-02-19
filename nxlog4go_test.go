@@ -12,6 +12,7 @@ import (
 	"time"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 )
 
 const testLogFile = "_logtest.log"
@@ -61,7 +62,7 @@ var patternTests = []struct {
 		},
 		Patterns: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			PATTERN_DEFAULT: "[2009/02/13 23:31:30 CST] [EROR] (source) message\n",
+			PATTERN_DEFAULT: "[2009/02/13 23:31:30 CST] [EROR] (source:0) message\n",
 			PATTERN_SHORT:   "[23:31 13/02/09] [EROR] message\n",
 			PATTERN_ABBREV:  "[EROR] message\n",
 		},
@@ -95,7 +96,7 @@ var logRecordWriteTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Console: "[2009/02/13 23:31:30 CST] [CRIT] (source) message",
+		Console: "[2009/02/13 23:31:30 CST] [CRIT] (source:0) message",
 	},
 }
 
@@ -132,7 +133,7 @@ func TestFileWriter(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 50 {
+	} else if len(contents) != 52 {
 		t.Errorf("malformed filelog: %q (%d bytes)", string(contents), len(contents))
 	}
 }
@@ -150,7 +151,7 @@ func TestRotateFileWriter(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 50 {
+	} else if len(contents) != 52 {
 		t.Errorf("malformed filelog: %q (%d bytes)", string(contents), len(contents))
 	}
 }
@@ -196,7 +197,7 @@ func TestLogOutput(t *testing.T) {
 
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
 	ww := io.MultiWriter(os.Stderr, fbw)
-	l := New(FINEST).SetOutput(ww).SetPattern("[%L] %M")
+	l := New(FINEST).SetOutput(ww).SetPattern("[%L] %M\n")
 
 	defer os.Remove(testLogFile)
 
@@ -279,15 +280,41 @@ func BenchmarkPatternLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	lo1 := NewPatternLayout(PATTERN_DEFAULT)
-	lo2 := NewPatternLayout(PATTERN_SHORT)
+	lo := NewPatternLayout(PATTERN_DEFAULT)
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
-		if i%2 == 0 {
-			lo1.Format(rec)
-		} else {
-			lo2.Format(rec)
-		}
+		lo.Format(rec)
+	}
+}
+
+func BenchmarkJson(b *testing.B) {
+	const updateEvery = 1
+	rec := &LogRecord{
+		Level:   CRITICAL,
+		Created: now,
+		Prefix:  "prefix",
+		Source:  "source",
+		Message: "message",
+	}
+	for i := 0; i < b.N; i++ {
+		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
+		json.Marshal(rec)
+	}
+}
+
+func BenchmarkJsonLayout(b *testing.B) {
+	const updateEvery = 1
+	rec := &LogRecord{
+		Level:   CRITICAL,
+		Created: now,
+		Prefix:  "prefix",
+		Source:  "source",
+		Message: "message",
+	}
+	lo := NewPatternLayout(PATTERN_JSON)
+	for i := 0; i < b.N; i++ {
+		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
+		lo.Format(rec)
 	}
 }
 

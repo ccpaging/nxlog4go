@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"encoding/json"
+	l4g "github.com/ccpaging/nxlog4go"
 )
 
 var (
@@ -29,7 +31,9 @@ func main() {
 	listener, err := net.ListenUDP("udp", bind)
 	e(err)
 
+	var rec l4g.LogRecord
 	fmt.Printf("Listening to port %s...\n", *port)
+
 	for {
 		// read into a new buffer
 		buffer := make([]byte, 1024)
@@ -37,6 +41,13 @@ func main() {
 		e(err)
 
 		// log to standard output
-		fmt.Print(a, " ", string(buffer[:size]))
+		fmt.Println(a, " ", string(buffer[:size]))
+		// fmt.Println(buffer[:size])
+		err = json.Unmarshal(buffer[:size], &rec)
+		if err != nil {
+			fmt.Println("error:", err)
+		} else {
+			fmt.Println(rec)
+		}
 	}
 }
