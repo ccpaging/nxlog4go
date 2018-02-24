@@ -26,7 +26,7 @@ func (sa *SocketAppender) Close() {
 	}
 }
 
-func NewAppender(prot, host string) *SocketAppender {
+func NewAppender(prot, host string) l4g.Appender {
 	return &SocketAppender {
 		layout: l4g.NewPatternLayout(l4g.PATTERN_JSON),	
 		sock:	nil,
@@ -58,7 +58,7 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 }
 
 // Set option. chainable
-func (sa *SocketAppender) Set(name string, v interface{}) *SocketAppender {
+func (sa *SocketAppender) Set(name string, v interface{}) l4g.Appender {
 	sa.SetOption(name, v)
 	return sa
 }

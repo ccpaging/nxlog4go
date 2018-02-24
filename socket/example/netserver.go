@@ -41,13 +41,14 @@ func main() {
 		e(err)
 
 		// log to standard output
-		fmt.Println(a, " ", string(buffer[:size]))
+		fmt.Println(a, string(buffer[:size]))
 		// fmt.Println(buffer[:size])
 		err = json.Unmarshal(buffer[:size], &rec)
 		if err != nil {
-			fmt.Println("error:", err)
+			fmt.Println("Error:", err)
 		} else {
-			fmt.Println(rec)
+			fmt.Println("Decode:", rec)
 		}
+		fmt.Println("---")
 	}
 }

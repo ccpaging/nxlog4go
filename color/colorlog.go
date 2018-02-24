@@ -35,7 +35,7 @@ type ColorAppender struct {
 }
 
 // This creates a new ColorAppender.
-func NewAppender() *ColorAppender {
+func NewAppender() l4g.Appender {
 	return &ColorAppender {
 		out:	os.Stderr,
 		layout: l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),
@@ -43,7 +43,7 @@ func NewAppender() *ColorAppender {
 }
 
 // SetOutput sets the output destination for ColorAppender.
-func (ca *ColorAppender) SetOutput(w io.Writer) *ColorAppender {
+func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 	ca.out = w
@@ -59,15 +59,13 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 
 	if isColorful {
 		ca.out.Write(ColorBytes[rec.Level])
+		defer ca.out.Write(ColorReset)
 	}
 	ca.out.Write(ca.layout.Format(rec))
-	if isColorful {
-		ca.out.Write(ColorReset)
-	}
 }
 
 // Set option. chainable
-func (ca *ColorAppender) Set(name string, v interface{}) *ColorAppender {
+func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 	ca.SetOption(name, v)
 	return ca
 }
@@ -80,9 +78,9 @@ func (ca *ColorAppender) SetOption(name string, v interface{}) error {
 	switch name {
 	case "pattern":
 		if pattern, ok := v.(string); ok {
-			ca.layout.Set("parttern", pattern)
+			ca.layout.Set("pattern", pattern)
 		} else if pattern, ok := v.([]byte); ok {
-			ca.layout.Set("parttern", pattern)
+			ca.layout.Set("pattern", pattern)
 		} else {
 			return l4g.ErrBadValue
 		}

@@ -26,9 +26,12 @@ type AppenderProp struct {
 
 // This is an interface for anything that should be able to write logs
 type Appender interface {
-	// Set option about the Appender. The options should be set as default.
-	// Must be set before the first log message is written if changed.
-	// You should test more if have to change options while running.
+	// Set option about the Layout. The options should be set as default.
+	// Chainable.
+	Set(name string, v interface{}) Appender
+
+	// Set option about the Layout. The options should be set as default.
+	// Checkable
 	SetOption(name string, v interface{}) error
 
 	// This will be called to log a LogRecord message.

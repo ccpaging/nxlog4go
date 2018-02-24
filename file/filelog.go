@@ -58,7 +58,7 @@ func (fa *FileAppender) Close() {
 
 // NewFileAppender creates a new appender which writes to the given file and
 // has rotation enabled if maxrotate > 0.
-func NewAppender(filename string, maxbackup int) *FileAppender {
+func NewAppender(filename string, maxbackup int) l4g.Appender {
 	return &FileAppender{
 		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
@@ -125,7 +125,7 @@ func (fa *FileAppender) writeLoop() {
 }
 
 // Set option. chainable
-func (fa *FileAppender) Set(name string, v interface{}) *FileAppender {
+func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	fa.SetOption(name, v)
 	return fa
 }

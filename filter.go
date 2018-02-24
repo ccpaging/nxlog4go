@@ -17,7 +17,7 @@ type FilterConfig struct {
 }
 
 type LoggerConfig struct {
-	FilterConfigs []FilterConfig `xml:"filter"`
+	FilterConfigs []FilterConfig `xml:"filter" json:"filters"`
 }
 
 /****** Filter ******/
