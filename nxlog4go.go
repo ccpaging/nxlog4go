@@ -1,4 +1,5 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
+// Copyright (C) 2010, Kyle Lemons <kyle@kylelemons.net>.  All rights reserved.
 
 // Package nxlog4go provides simple, fast, low cost, and extensible logging.
 // It can be used in test, development, and production environment.
@@ -176,7 +177,7 @@ func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger 
 		level: lvl,
 		caller: true,
 		prefix: prefix,
-		layout: NewPatternLayout(PATTERN_DEFAULT),
+		layout: NewPatternLayout(pattern),
 		filters: nil,
 	}
 }
