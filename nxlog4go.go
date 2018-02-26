@@ -345,7 +345,7 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) strin
 			if lvl < filt.Level {
 				continue
 			}
-			filt.Write(rec)
+			filt.writeToChan(rec)
 		}
 	}
 	return rec.Message
