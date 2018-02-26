@@ -91,10 +91,10 @@ import (
 
 // Version information
 const (
-	NXLOG4GO_VERSION = "nxlog4go-v0.0.2"
+	NXLOG4GO_VERSION = "nxlog4go-v0.0.3"
 	NXLOG4GO_MAJOR   = 0
 	NXLOG4GO_MINOR   = 0
-	NXLOG4GO_BUILD   = 2
+	NXLOG4GO_BUILD   = 3
 )
 
 /****** Constants ******/
@@ -111,11 +111,12 @@ const (
 	WARNING
 	ERROR
 	CRITICAL
+	OFFLevel = 100 // The OFF LogLevel is used during configuration to turn off logging 
 )
 
 // Logging level strings
 var (
-	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT"}
+	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT", "OFFL"}
 )
 
 func (l Level) String() string {

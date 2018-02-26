@@ -43,17 +43,17 @@ type Appender interface {
 }
 
 // Configure appender by properties. checkable
-func ConfigureAppender(app Appender, props []AppenderProp) bool {
+func AppenderConfigure(app Appender, props []AppenderProp) bool {
 	ok := true
 	for _, prop := range props {
 		err := app.SetOption(prop.Name, strings.Trim(prop.Value, " \r\n"))
 		if err != nil {
 			switch err {
 			case ErrBadValue:
-				fmt.Fprintf(os.Stderr, "ConfigureAppender: Bad value of \"%s\"\n", prop.Name)
+				fmt.Fprintf(os.Stderr, "AppenderConfigure: Bad value of \"%s\"\n", prop.Name)
 				ok = false
 			case ErrBadOption:
-				fmt.Fprintf(os.Stderr, "ConfigureAppender: Unknown property \"%s\"\n", prop.Name)
+				fmt.Fprintf(os.Stderr, "AppenderConfigure: Unknown property \"%s\"\n", prop.Name)
 			default:
 			}
 		}

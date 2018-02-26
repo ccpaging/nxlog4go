@@ -56,56 +56,31 @@ func main() {
 	}
 
 	fs := l4g.NewFilters()
-	var	appender l4g.Appender
-	for _, fc := range xc.FilterConfigs {
-		ok, enabled, lvl := l4g.CheckFilterConfig(fc)
-	
-		if !ok {
-			os.Exit(1)
-		}
-	
-		switch fc.Type {
-		case "color":
-			appender = colorlog.NewAppender()
-		case "file":
-			appender = filelog.NewAppender("_test.log", 0)
-		case "socket":
-			appender = socketlog.NewAppender("udp", "127.0.0.1:12124")
-		case "xml":
-			appender = filelog.NewAppender("_test.log", 0)
-			appender.SetOption("head","<log created=\"%D %T\">%R")
-			appender.SetOption("pattern", 
+
+	// pre-install appender may used in configuration
+	fs.Add("color", l4g.OFFLevel, colorlog.NewAppender())
+	fs.Add("file", l4g.OFFLevel, filelog.NewAppender("_test.log", 0))
+	fs.Add("socket", l4g.OFFLevel, socketlog.NewAppender("udp", "127.0.0.1:12124"))
+	xa := filelog.NewAppender("_test.log", 0)
+	xa.SetOption("head","<log created=\"%D %T\">%R")
+	xa.SetOption("pattern", 
 `	<record level="%L">
 		<timestamp>%D %T</timestamp>
 		<source>%S</source>
 		<message>%M</message>
 	</record>%R`)
-			appender.SetOption("foot", "</log>%R")
-		default:
-			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
-		}
+	xa.SetOption("foot", "</log>%R")
+	fs.Add("xml", l4g.OFFLevel, xa)
 	
-		if appender == nil {
-			panic(fmt.Sprintf("Unknown filter type \"%s\"", fc.Type))
-		}
-
-		ok = l4g.ConfigureAppender(appender, fc.Properties)
-		if !ok {
-			fmt.Println(fc.Tag, "NOT good")
-			continue
-		}
-	
-		// If it's disabled, we're just checking syntax
-		if !enabled {
-			fmt.Println(fc.Tag, "disabled")
-			continue
-		}
-		
-		fmt.Println("Add filter", fc.Tag, lvl)
-		fs.Add(fc.Tag, lvl, appender)
+	fmt.Println(len(*fs), "appenders pre-installed")
+	fs.LoadConfiguration(xc.Filters)
+	if len(*fs) > 0 {
+		log.SetFilters(fs)
+		// disable default console writer
+		log.SetOutput(nil)
 	}
+	fmt.Println(len(*fs), "appenders configured ok")
 
-	log.SetFilters(fs)
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")
 	log.Debug("Oh no!  %d + %d = %d!", 2, 2, 2+2)

@@ -1,10 +1,8 @@
 {
 	"LogConfig" : {
-		"filterconfigs": [
+		"filters": [
 		{
-		  "enabled": "true",
-		  "tag": "stdout",
-		  "type": "color",
+		  "tag": "color",
 		  "level": "DEBUG",
 		  "properties": [
 			{
@@ -14,9 +12,7 @@
 		  ]
 		},
 		{
-		  "enabled": "true",
 		  "tag": "file",
-		  "type": "file",
 		  "level": "FINEST",
 		  "properties": [
 			{
@@ -26,9 +22,7 @@
 		  ]
 		},
 		{
-		  "enabled": "true",
 		  "tag": "socket",
-		  "type": "socket",
 		  "level": "FINEST",
 		  "properties": [
 			{

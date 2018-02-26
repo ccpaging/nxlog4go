@@ -8,18 +8,6 @@ import (
 	"time"
 )
 
-type FilterConfig struct {
-	Enabled  string        `xml:"enabled,attr"`
-	Tag      string        `xml:"tag"`
-	Level    string        `xml:"level"`
-	Type     string        `xml:"type"`
-	Properties []AppenderProp `xml:"property"`
-}
-
-type LoggerConfig struct {
-	FilterConfigs []FilterConfig `xml:"filter" json:"filters"`
-}
-
 /****** Filter ******/
 
 // A Filter represents the log level below which no log records are written to
@@ -97,90 +85,5 @@ func (f *Filter) Close() {
 	// drain the log channel and write direct
 	for rec := range f.rec {
 		f.Write(rec)
-	}
-}
-
-// Check filter's configuration
-func CheckFilterConfig(fc FilterConfig) (ok bool, enabled bool, lvl Level) {
-	ok, enabled, lvl = true, false, INFO
-
-	// Check required children
-	if len(fc.Enabled) == 0 {
-		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required attribute %s\n", "enabled")
-		ok = false
-	} else {
-		enabled = fc.Enabled != "false"
-	}
-	if len(fc.Tag) == 0 {
-		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "tag")
-		ok = false
-	}
-	if len(fc.Type) == 0 {
-		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "type")
-		ok = false
-	}
-	if len(fc.Level) == 0 {
-		fmt.Fprintf(os.Stderr, "CheckFilterConfig: Required child <%s>\n", "level")
-		ok = false
-	}
-
-	switch fc.Level {
-	case "FINEST":
-		lvl = FINEST
-	case "FINE":
-		lvl = FINE
-	case "DEBUG":
-		lvl = DEBUG
-	case "TRACE":
-		lvl = TRACE
-	case "INFO":
-		lvl = INFO
-	case "WARNING":
-		lvl = WARNING
-	case "ERROR":
-		lvl = ERROR
-	case "CRITICAL":
-		lvl = CRITICAL
-	default:
-		fmt.Fprintf(os.Stderr, 
-			"CheckFilterConfig: Required child level for filter has unknown value. %s\n", 
-			fc.Level)
-		ok = false
-	}
-	return ok, enabled, lvl
-}
-
-
-/****** Filters map ******/
-
-type Filters map[string]*Filter
-
-// Make a new filters
-func NewFilters() *Filters {
-	return &Filters{}
-}
-
-// Add a new filter to the filters map which will only log messages at lvl or
-// higher.  This function should not be called from multiple goroutines.
-// Returns the logger for chaining.
-func (fs Filters) Add(name string, lvl Level, writer Appender) *Filters {
-	if filt, isExist := fs[name]; isExist {
-		filt.Close()
-		delete(fs, name)
-	}
-	fs[name] = NewFilter(lvl, writer)
-	return &fs
-}
-
-// Close and remove all filters in preparation for exiting the program or a
-// reconfiguration of logging.  Calling this is not really imperative, unless
-// you want to guarantee that all log messages are written.  Close removes
-// all filters (and thus all Appenders) from the logger.
-// Returns the logger for chaining.
-func (fs Filters) Close() {
-	// Close all filters
-	for name, filt := range fs {
-		filt.Close()
-		delete(fs, name)
 	}
 }
