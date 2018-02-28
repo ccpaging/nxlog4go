@@ -3,8 +3,6 @@
 package nxlog4go
 
 import (
-    "fmt"
-	"os"
 	"time"
 )
 
@@ -38,7 +36,7 @@ func NewFilter(lvl Level, writer Appender) *Filter {
 // buffer is full. 
 func (f *Filter) writeToChan(rec *LogRecord) {
 	if f.closing {
-		fmt.Fprintf(os.Stderr, "Filter: channel has been closed. Message is [%s]\n", rec.Message)
+		loglog.Log(ERROR, "Filter", "Channel has been closed. Message is [%s]", rec.Message)
 		return
 	}
 	f.rec <- rec

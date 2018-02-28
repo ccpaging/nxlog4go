@@ -141,6 +141,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			if len(filename) <= 0 {
 				return l4g.ErrBadValue
 			}
+			// Directory exist already, return nil
 			err := os.MkdirAll(path.Dir(filename), l4g.FilePermDefault)
 			if err != nil {
 				return err

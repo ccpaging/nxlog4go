@@ -3,8 +3,6 @@
 package nxlog4go
 
 import (
-    "fmt"
-	"os"
 )
 
 /****** Filters map ******/
@@ -14,7 +12,7 @@ type Filters map[string]*Filter
 type FilterConfig struct {
 	Tag		 string     	`xml:"tag"`
 	Level    string     	`xml:"level"`
-	Props	 []AppenderProp `xml:"property"`
+	Props	 []AppenderProp `xml:"property" json:"properties"`
 }
 
 type LoggerConfig struct {
@@ -57,16 +55,16 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 		if !ok {
 			continue
 		}
-		if lvl >= OFFLevel {
+		if lvl >= SILENT {
 			continue
 		}
 		filt, isExist := fs[tag]
 		if !isExist {
-			fmt.Fprintf(os.Stderr, "LoadConfiguration: Appender <%s> is not pre-installed\n", tag)
+			loglog.Log(ERROR, "LoadConfiguration", "Appender <%s> is not pre-installed", tag)
 			continue
 		}
 		if filt.Appender == nil {
-			fmt.Fprintf(os.Stderr, "LoadConfiguration: Appender <%s> pre-installed is nil\n", tag)
+			loglog.Log(ERROR, "LoadConfiguration", "Appender <%s> pre-installed is nil", tag)
 			continue
 		}
 		if !AppenderConfigure(filt.Appender, fc.Props) {
@@ -74,9 +72,9 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 		}
 		filt.Level = lvl
 	}
-	// Close and delete the appenders at OFFLevel
+	// Close and delete the appenders at SILENT
 	for tag, filt := range fs {
-		if filt.Level >= OFFLevel {
+		if filt.Level >= SILENT {
 			filt.Close()
 			delete(fs, tag)
 		}
@@ -89,11 +87,11 @@ func getFilterConfig(fc FilterConfig) (ok bool, tag string, lvl Level) {
 
 	// Check required children
 	if len(fc.Tag) == 0 {
-		fmt.Fprintf(os.Stderr, "getFilterConfig: Required child <%s>\n", "tag")
+		loglog.Log(ERROR, "getFilterConfig", "Required child <%s>", "tag")
 		ok = false
 	}
 	if len(fc.Level) == 0 {
-		fmt.Fprintf(os.Stderr, "getFilterConfig: Required child <%s>\n", "level")
+		loglog.Log(ERROR, "getFilterConfig", "Required child <%s>", "level")
 		ok = false
 	}
 
@@ -114,10 +112,10 @@ func getFilterConfig(fc FilterConfig) (ok bool, tag string, lvl Level) {
 		lvl = ERROR
 	case "CRITICAL", "CRIT":
 		lvl = CRITICAL
-	case "OFF", "OFFL", "DISABLE", "DISA":
-		lvl = OFFLevel
+	case "DISABLE", "DISA", "SILENT", "QUIET":
+		lvl = SILENT
 	default:
-		lvl = OFFLevel
+		lvl = SILENT
 	}
 	return ok, fc.Tag, lvl
 }

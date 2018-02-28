@@ -192,7 +192,7 @@ func TestLogger(t *testing.T) {
 
 func TestLogOutput(t *testing.T) {
 	const (
-		expected = "fdf3e51e444da56b4cb400f30bc47424"
+		expected = "e7927ba6dc08038cf8ab631575169abf"
 	)
 
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
@@ -202,10 +202,6 @@ func TestLogOutput(t *testing.T) {
 	defer os.Remove(testLogFile)
 
 	// Send some log messages
-	l.intLog(CRITICAL, fmt.Sprintf("This message is level %d", int(CRITICAL)))
-	l.intLog(ERROR, "This message is level %v", ERROR)
-	l.intLog(WARNING, "This message is level %s", WARNING)
-	l.intLog(INFO, func() string { return "This message is level INFO" })
 	l.Trace("This message is level %d", int(TRACE))
 	l.Debug("This message is level %s", DEBUG)
 	l.Fine(func() string { return fmt.Sprintf("This message is level %v", FINE) })
@@ -411,13 +407,13 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 }
 
 // Benchmark results (windows amd64 10g)
-// BenchmarkPatternLayout-4                 2000000               947 ns/op
-// BenchmarkJson-4                           500000              3148 ns/op
-// BenchmarkJsonLayout-4                    1000000              1470 ns/op
-// BenchmarkConsoleWriter-4                 1000000              1553 ns/op
-// BenchmarkConsoleUtilWriter-4              300000              3906 ns/op
-// BenchmarkConsoleUtilNotWriter-4         50000000                30.3 ns/op
-// BenchmarkFileWriter-4                     200000              8110 ns/op
-// BenchmarkFileUtilWriter-4                 200000              8220 ns/op
-// BenchmarkFileBufWriter-4                 1000000              2549 ns/op
-// BenchmarkFileBufUtilWriter-4              500000              2604 ns/op 
+// BenchmarkPatternLayout-4                 2000000               952 ns/op
+// BenchmarkJson-4                           500000              3040 ns/op
+// BenchmarkJsonLayout-4                    1000000              1458 ns/op
+// BenchmarkConsoleWriter-4                 1000000              1334 ns/op
+// BenchmarkConsoleUtilWriter-4              300000              3936 ns/op
+// BenchmarkConsoleUtilNotWriter-4         50000000                30.2 ns/op
+// BenchmarkFileWriter-4                     200000              6505 ns/op
+// BenchmarkFileUtilWriter-4                 200000              7540 ns/op
+// BenchmarkFileBufWriter-4                 1000000              1705 ns/op
+// BenchmarkFileBufUtilWriter-4              500000              2158 ns/op

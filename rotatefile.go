@@ -109,7 +109,9 @@ func (rfw *RotateFileWriter) Rotate() {
 		layout := NewPatternLayout(rfw.footer)
 		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
 	}
-	// fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Close file\n", rfw.FileBufWriter.Name())
+
+	loglog.Log(DEBUG, "RotateFileWriter", "Close %s", rfw.FileBufWriter.Name())
+
 	rfw.FileBufWriter.Close()
 	
 	name := rfw.FileBufWriter.Name()
@@ -120,9 +122,10 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	// File existed. File size > maxsize. Rotate
 	newName := name + time.Now().Format(".20060102-150405")
+	loglog.Log(DEBUG, "RotateFileWriter", "Rename %s to %s", name, newName)
 	err := os.Rename(name, newName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "RotateFileWriter(%q): Rename to %s. %v\n", name, newName, err)
+		loglog.Log(ERROR, "RotateFileWriter", err)
 		return
 	}
 	
@@ -134,6 +137,7 @@ func (rfw *RotateFileWriter) Rotate() {
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	rfw.Lock()
 	defer rfw.Unlock()
+	loglog.Log(DEBUG, "RotateFileWriter", "Change file name to %s", path)
 	rfw.FileBufWriter.Close()
 	rfw.FileBufWriter = NewFileBufWriter(path)
 	return rfw

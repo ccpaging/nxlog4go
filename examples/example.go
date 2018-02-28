@@ -14,7 +14,7 @@ var glog = l4g.New(l4g.DEBUG).SetPrefix("example").SetPattern("[%T %D %Z] [%L] (
 func main() {
 	glog.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
-	log1 := l4g.NewLogger(os.Stderr, l4g.DEBUG, "prefix1", "[%N %D %z] [%L] (%P:%s) %M")
+	log1 := l4g.NewLogger(os.Stderr, l4g.DEBUG, "prefix1", "[%N %D %z] [%L] (%P:%s) %M\n")
 	log1.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	// set io.Writer as nil, no output
 	log2 := l4g.New(l4g.DEBUG).SetOutput(ioutil.Discard)

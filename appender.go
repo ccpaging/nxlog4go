@@ -3,8 +3,6 @@
 package nxlog4go
 
 import (
-    "fmt"
-	"os"
 	"errors"
 	"strings"
 	"strconv"
@@ -50,10 +48,10 @@ func AppenderConfigure(app Appender, props []AppenderProp) bool {
 		if err != nil {
 			switch err {
 			case ErrBadValue:
-				fmt.Fprintf(os.Stderr, "AppenderConfigure: Bad value of \"%s\"\n", prop.Name)
+				loglog.Log(ERROR, "AppenderConfigure", "Bad value of \"%s\"", prop.Name)
 				ok = false
 			case ErrBadOption:
-				fmt.Fprintf(os.Stderr, "AppenderConfigure: Unknown property \"%s\"\n", prop.Name)
+				loglog.Log(ERROR, "AppenderConfigure", "Unknown property \"%s\"", prop.Name)
 			default:
 			}
 		}

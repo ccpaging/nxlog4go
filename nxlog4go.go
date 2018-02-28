@@ -111,7 +111,7 @@ const (
 	WARNING
 	ERROR
 	CRITICAL
-	OFFLevel = 100 // The OFF LogLevel is used during configuration to turn off logging 
+	SILENT = 100 // SILENT is used during configuration to turn in quiet mode 
 )
 
 // Logging level strings
@@ -298,8 +298,46 @@ func (log Logger) skip(lvl Level) bool {
 	return true
 }
 
+func intMsg(arg0 interface{}, args ...interface{}) string {
+	switch first := arg0.(type) {
+	case string:
+		if len(args) == 0 {
+			return first
+		} else {
+			// Use the string as a format string
+			return fmt.Sprintf(first, args...)
+		}
+	case func() string:
+		// Log the closure (no other arguments used)
+		return first()
+	default:
+		// Build a format string so that it will be similar to Sprint
+		return fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
+	}
+}
+
+func (log Logger) dispatch(rec *LogRecord) {
+	if log.out != nil {
+    	log.out.Write(log.layout.Format(rec))
+	}
+
+	if log.filters != nil {
+		// Dispatch the logs
+		for _, filt := range *log.filters {
+			if rec.Level < filt.Level {
+				continue
+			}
+			filt.writeToChan(rec)
+		}
+	}
+}
+
 // Send a log message with manual level, source, and message.
-func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) string {
+func (log Logger) Log(lvl Level, source string, arg0 interface{}, args ...interface{}) {
+	if log.skip(lvl) {
+		return
+	}
+
 	log.mu.Lock()
 	defer log.mu.Unlock()
 
@@ -308,18 +346,24 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) strin
 		Level:   lvl,
 		Created: time.Now(),
 		Prefix:  log.prefix,
+		Source:  source,
+		Message: intMsg(arg0, args ...),
 	}
 
-	switch first := arg0.(type) {
-	case string:
-		// Use the string as a format string
-		rec.Message = fmt.Sprintf(first, args...)
-	case func() string:
-		// Log the closure (no other arguments used)
-		rec.Message = first()
-	default:
-		// Build a format string so that it will be similar to Sprint
-		rec.Message = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
+	log.dispatch(rec)
+}
+
+// Send a log message with level, and message.
+func (log Logger) intLog(lvl Level, message string) {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+
+	// Make the log record
+	rec := &LogRecord{
+		Level:   lvl,
+		Created: time.Now(),
+		Prefix:  log.prefix,
+		Message: message,
 	}
 
 	if log.caller {
@@ -336,20 +380,7 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) strin
 		log.mu.Lock()
 	}
 	
-	if log.out != nil {
-    	log.out.Write(log.layout.Format(rec))
-	}
-
-	if log.filters != nil {
-		// Dispatch the logs
-		for _, filt := range *log.filters {
-			if lvl < filt.Level {
-				continue
-			}
-			filt.writeToChan(rec)
-		}
-	}
-	return rec.Message
+	log.dispatch(rec)
 }
 
 // Finest logs a message at the finest log level.
@@ -358,7 +389,7 @@ func (log Logger) Finest(arg0 interface{}, args ...interface{}) {
 	if log.skip(FINEST) {
 		return
 	}
-	log.intLog(FINEST, arg0, args...)
+	log.intLog(FINEST, intMsg(arg0, args...))
 }
 
 // Fine logs a message at the fine log level.
@@ -367,7 +398,7 @@ func (log Logger) Fine(arg0 interface{}, args ...interface{}) {
 	if log.skip(FINE) {
 		return
 	}
-	log.intLog(FINE, arg0, args...)
+	log.intLog(FINE, intMsg(arg0, args...))
 }
 
 // Debug is a utility method for debug log messages.
@@ -386,7 +417,7 @@ func (log Logger) Debug(arg0 interface{}, args ...interface{}) {
 	if log.skip(DEBUG) {
 		return
 	}
-	log.intLog(DEBUG, arg0, args...)
+	log.intLog(DEBUG, intMsg(arg0, args...))
 }
 
 // Trace logs a message at the trace log level.
@@ -395,7 +426,7 @@ func (log Logger) Trace(arg0 interface{}, args ...interface{}) {
 	if log.skip(TRACE) {
 		return
 	}
-	log.intLog(TRACE, arg0, args...)
+	log.intLog(TRACE, intMsg(arg0, args...))
 }
 
 // Info logs a message at the info log level.
@@ -404,7 +435,7 @@ func (log Logger) Info(arg0 interface{}, args ...interface{}) {
 	if log.skip(INFO) {
 		return
 	}
-	log.intLog(INFO, arg0, args...)
+	log.intLog(INFO, intMsg(arg0, args...))
 }
 
 // Warn logs a message at the warning log level and returns the formatted error.
@@ -413,19 +444,31 @@ func (log Logger) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
 func (log Logger) Warn(arg0 interface{}, args ...interface{}) error {
-	return errors.New(log.intLog(WARNING, arg0, args...))
+	msg := intMsg(arg0, args...)
+	if !log.skip(WARNING) {
+		log.intLog(WARNING, msg)
+	}
+	return errors.New(msg)
 }
 
 // Error logs a message at the error log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Error(arg0 interface{}, args ...interface{}) error {
-	return errors.New(log.intLog(ERROR, arg0, args...))
+	msg := intMsg(arg0, args...)
+	if !log.skip(ERROR) {
+		log.intLog(ERROR, msg)
+	}
+	return errors.New(msg)
 }
 
 // Critical logs a message at the critical log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
-	return errors.New(log.intLog(CRITICAL, arg0, args...))
+	msg := intMsg(arg0, args...)
+	if !log.skip(CRITICAL) {
+		log.intLog(CRITICAL, msg)
+	}
+	return errors.New(msg)
 }
