@@ -66,10 +66,10 @@ func main() {
 
 	fs := l4g.NewFilters()
 
-	// pre-install appender may used in configuration
-	fs.Add("color", l4g.SILENT, colorlog.NewAppender())
-	fs.Add("file", l4g.SILENT, filelog.NewAppender("_test.log", 0))
-	fs.Add("socket", l4g.SILENT, socketlog.NewAppender("udp", "127.0.0.1:12124"))
+	// Preload appender may used in configuration
+	fs.Preload("color", colorlog.NewAppender())
+	fs.Preload("file", filelog.NewAppender("_test.log", 0))
+	fs.Preload("socket", socketlog.NewAppender("udp", "127.0.0.1:12124"))
 	fmt.Println(len(*fs), "appenders pre-installed")
 
 	fs.LoadConfiguration(lc.Filters)

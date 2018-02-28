@@ -37,6 +37,10 @@ func (fs Filters) Add(tag string, lvl Level, writer Appender) *Filters {
 	return &fs
 }
 
+func (fs Filters) Preload(tag string, writer Appender) *Filters {
+	return fs.Add(tag, SILENT, writer)
+}
+
 // Close and remove all filters in preparation for exiting the program or a
 // reconfiguration of logging.  Calling this is not really imperative, unless
 // you want to guarantee that all log messages are written.
@@ -46,6 +50,27 @@ func (fs Filters) Close() {
 	for tag, filt := range fs {
 		filt.Close()
 		delete(fs, tag)
+	}
+}
+
+// Check log level
+// Return skip or not
+func (fs Filters) Skip (lvl Level) bool {
+	for _, filt := range fs {
+		if lvl >= filt.Level {
+			return false
+		}
+	}
+	return true
+}
+
+// Dispatch the logs
+func (fs Filters) Dispatch(rec *LogRecord) {
+	for _, filt := range fs {
+		if rec.Level < filt.Level {
+			continue
+		}
+		filt.writeToChan(rec)
 	}
 }
 

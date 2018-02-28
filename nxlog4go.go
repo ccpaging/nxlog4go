@@ -189,6 +189,20 @@ func New(lvl Level) *Logger {
 	return NewLogger(os.Stderr, lvl, "", PATTERN_DEFAULT)
 }
 
+// Closes all log filters in preparation for exiting the program.
+// Calling this is not really imperative, unless you want to 
+// guarantee that all log messages are written.  Close removes
+// all filters (and thus all appenders) from the logger.
+func (log *Logger) Shutdown() {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+
+	if log.filters != nil {
+		log.filters.Close()
+		log.filters = nil
+	}
+}
+
 // SetOutput sets the output destination for the logger.
 func (log *Logger) SetOutput(w io.Writer) *Logger {
 	log.mu.Lock()
@@ -289,10 +303,8 @@ func (log Logger) skip(lvl Level) bool {
     }
 
 	if log.filters != nil {
-		for _, filt := range *log.filters {
-			if lvl >= filt.Level {
-				return false
-			}
+		if log.filters.Skip(lvl) == false{
+			return false
 		}
 	}
 	return true
@@ -316,22 +328,6 @@ func intMsg(arg0 interface{}, args ...interface{}) string {
 	}
 }
 
-func (log Logger) dispatch(rec *LogRecord) {
-	if log.out != nil {
-    	log.out.Write(log.layout.Format(rec))
-	}
-
-	if log.filters != nil {
-		// Dispatch the logs
-		for _, filt := range *log.filters {
-			if rec.Level < filt.Level {
-				continue
-			}
-			filt.writeToChan(rec)
-		}
-	}
-}
-
 // Send a log message with manual level, source, and message.
 func (log Logger) Log(lvl Level, source string, arg0 interface{}, args ...interface{}) {
 	if log.skip(lvl) {
@@ -350,7 +346,13 @@ func (log Logger) Log(lvl Level, source string, arg0 interface{}, args ...interf
 		Message: intMsg(arg0, args ...),
 	}
 
-	log.dispatch(rec)
+	if log.out != nil {
+    	log.out.Write(log.layout.Format(rec))
+	}
+
+	if log.filters != nil {
+		log.filters.Dispatch(rec)
+	}
 }
 
 // Send a log message with level, and message.
@@ -380,7 +382,13 @@ func (log Logger) intLog(lvl Level, message string) {
 		log.mu.Lock()
 	}
 	
-	log.dispatch(rec)
+	if log.out != nil {
+    	log.out.Write(log.layout.Format(rec))
+	}
+
+	if log.filters != nil {
+		log.filters.Dispatch(rec)
+	}
 }
 
 // Finest logs a message at the finest log level.
