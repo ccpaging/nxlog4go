@@ -32,6 +32,9 @@ func PrintFile(fn string) {
 }
 
 func main() {
+	// Enable internal logger
+	l4g.GetLogLog().SetLevel(l4g.TRACE)
+
 	// Can also specify manually via the following: (these are the defaults)
 	rfw := l4g.NewRotateFileWriter(filename).SetMaxSize(1024 * 5).SetMaxBackup(10)
 	ww := io.MultiWriter(os.Stderr, rfw)

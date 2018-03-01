@@ -48,10 +48,10 @@ func AppenderConfigure(app Appender, props []AppenderProp) bool {
 		if err != nil {
 			switch err {
 			case ErrBadValue:
-				loglog.Log(ERROR, "AppenderConfigure", "Bad value of \"%s\"", prop.Name)
+				loglogError("AppenderConfigure", "Bad value of \"%s\"", prop.Name)
 				ok = false
 			case ErrBadOption:
-				loglog.Log(ERROR, "AppenderConfigure", "Unknown property \"%s\"", prop.Name)
+				loglogError("AppenderConfigure", "Unknown property \"%s\"", prop.Name)
 			default:
 			}
 		}

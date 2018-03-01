@@ -31,6 +31,11 @@ func PrintFile(fn string) {
 	fd.Close()
 }
 
+func init() {
+	// Enable internal logger
+	l4g.GetLogLog().SetLevel(l4g.TRACE)
+}
+
 func main() {
 	// Get a new logger instance
 	log := l4g.New(l4g.FINE)

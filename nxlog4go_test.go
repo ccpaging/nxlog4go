@@ -156,6 +156,36 @@ func TestRotateFileWriter(t *testing.T) {
 	}
 }
 
+func TestLogLogger(t *testing.T) {
+	l := GetLogLog().SetLevel(TRACE)
+	if l == nil {
+		t.Fatalf("GetLogLog should never return nil")
+	}
+	if l.level != TRACE {
+		t.Fatalf("New produced invalid logger (incorrect level)")
+	}
+
+	//func (l *Logger) Warn(format string, args ...interface{}) error {}
+	if err := l.Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
+		t.Errorf("Warn returned invalid error: %s", err)
+	}
+
+	//func (l *Logger) Error(format string, args ...interface{}) error {}
+	if err := l.Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
+		t.Errorf("Error returned invalid error: %s", err)
+	}
+
+	// Already tested or basically untestable
+	//func (l *Logger) Log(level int, source, message string) {}
+	//func (l *Logger) Logf(level int, format string, args ...interface{}) {}
+	//func (l *Logger) intLogf(level int, format string, args ...interface{}) string {}
+	//func (l *Logger) Finest(format string, args ...interface{}) {}
+	//func (l *Logger) Fine(format string, args ...interface{}) {}
+	//func (l *Logger) Debug(format string, args ...interface{}) {}
+	//func (l *Logger) Trace(format string, args ...interface{}) {}
+	//func (l *Logger) Info(format string, args ...interface{}) {}
+}
+
 func TestLogger(t *testing.T) {
 	l := New(WARNING)
 	if l == nil {

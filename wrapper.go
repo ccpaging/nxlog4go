@@ -7,15 +7,6 @@ import (
 	"os"
 )
 
-var loglog = New(SILENT).SetPrefix("nxlog4go").SetPattern("%P:%S %L %M\n").SetCaller(false)
-
-// Return internal logger.
-// This logger used to output log statements from within the package.
-// Do not set any filters.
-func GetLogLog() *Logger {
-	return loglog
-}
-
 var global = New(DEBUG)
 
 // Return the default logger 

@@ -36,7 +36,7 @@ func NewFilter(lvl Level, writer Appender) *Filter {
 // buffer is full. 
 func (f *Filter) writeToChan(rec *LogRecord) {
 	if f.closing {
-		loglog.Log(ERROR, "Filter", "Channel has been closed. Message is [%s]", rec.Message)
+		loglogError("Filter", "Channel has been closed. Message is [%s]", rec.Message)
 		return
 	}
 	f.rec <- rec
