@@ -111,7 +111,7 @@ const (
 	WARNING
 	ERROR
 	CRITICAL
-	SILENT = 100 // SILENT is used during configuration to turn in quiet mode 
+	_SILENT_ = 100 // SILENT is used during configuration to turn in quiet mode
 )
 
 // Logging level strings
