@@ -63,6 +63,8 @@ func NewAppender(filename string, maxbackup int) l4g.Appender {
 		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
 		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
+		cycle:		 86400,
+		clock:		 0,
 		loopRunning: false,
 		loopReset: 	 make(chan time.Time, 5),
 	}
@@ -181,7 +183,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			// such as "300ms", "-1.5h" or "2h45m". 
 			// Valid time units are "ns", "us", "ms", "s", "m", "h".
 			dur, _ := time.ParseDuration(value)
-			fa.cycle = int(dur/time.Millisecond)
+			fa.cycle = int(dur/time.Second)
 		default:
 			return l4g.ErrBadValue
 		}
@@ -199,12 +201,29 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			fa.clock = value
 		case string:
 			dur, _ := time.ParseDuration(value)
-			fa.clock = int(dur/time.Millisecond)
+			fa.clock = int(dur/time.Second)
 		default:
 			return l4g.ErrBadValue
 		}
 		if fa.loopRunning {
 			fa.loopReset <- time.Now()
+		}
+	case "daily":
+		var daily bool
+		switch value := v.(type) {
+		case string:
+			daily = strings.Trim(value, " \r\n") != "false"
+		case bool:
+			daily = value
+		default:
+			return l4g.ErrBadValue
+		}
+		if daily {
+			fa.cycle = 86400
+			fa.clock = 0
+			if fa.loopRunning {
+				fa.loopReset <- time.Now()
+			}
 		}
 	case "maxsize":
 		var maxsize int
@@ -220,7 +239,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		if fa.cycle <= 0 {
 			fa.out.SetMaxSize(fa.maxsize)
 		}
-	case "pattern", "utc":
+	case "pattern", "format", "utc":
 		return fa.layout.SetOption(name, v)
 	case "head":
 		if header, ok := v.(string); ok {

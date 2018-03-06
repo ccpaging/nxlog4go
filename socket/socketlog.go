@@ -91,7 +91,7 @@ func (sa *SocketAppender) SetOption(name string, v interface{}) error {
 		} else {
 			return l4g.ErrBadValue
 		}
-	case "pattern", "utc":
+	case "pattern", "format", "utc":
 		return sa.layout.SetOption(name, v)
 	default:
 		return l4g.ErrBadOption

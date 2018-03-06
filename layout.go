@@ -97,7 +97,7 @@ func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 	defer pl.mu.Unlock()
 
 	switch name {
-	case "pattern":
+	case "pattern", "format":
 		if value, ok := v.(string); ok {
 			pl.pattSlice = bytes.Split([]byte(value), []byte{'%'})
 		} else if value, ok := v.([]byte); ok {
