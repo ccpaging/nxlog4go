@@ -7,7 +7,7 @@
 		  "properties": [
 			{
 			  "name": "pattern",
-			  "value": "[%D %T] [%L] (%S) %M%R"
+			  "value": "[%T] [%L] (%s) %M%R"
 			}
 		  ]
 		},
@@ -18,6 +18,10 @@
 			{
 			  "name": "filename",
 			  "value": "_test.log"
+			},
+			{
+			  "name": "pattern",
+			  "value": "[%D %T] [%L] (%s) %M%R"
 			}
 		  ]
 		},

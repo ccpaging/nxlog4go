@@ -18,7 +18,7 @@ var (
 	filename = flag.String("conf", "config.json", "config file")
 )
 
-var log = l4g.GetLogger()
+var log = l4g.GetLogger().SetCaller(false).SetPattern("[%T] [%L] (%s) %M\n")
 
 // Wrapper for app developing
 func Debug(source string, arg0 interface{}, args ...interface{}) {
@@ -125,6 +125,7 @@ func main() {
 	log.Debug("Oh no!  %d + %d = %d!", 2, 2, 2+2)
 	log.Info("About that time, eh chaps?")
 
+	// Close all appenders in logger
 	log.Shutdown()
 
 	PrintFile("_test.log")
