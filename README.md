@@ -1,4 +1,6 @@
 # nxlog4go - Next logging package based on log4go 
+ccpaging/nxlog4go
+[![GoDoc](https://godoc.org/github.com/ccpaging/nxlog4go?status.svg)](https://godoc.org/github.com/ccpaging/nxlog4go)
 
 Installation:
 
