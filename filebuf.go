@@ -105,6 +105,12 @@ func (fbw *FileBufWriter) Flush() {
 }
 
 func (fbw *FileBufWriter) Size() int {
+	if fbw.cursize <= 0 {
+		fi, err := fbw.Stat()
+		if err == nil {
+			fbw.cursize = int(fi.Size())
+		}
+	}
 	return fbw.cursize
 }
 

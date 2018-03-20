@@ -65,7 +65,7 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 func intBackup(newName string, pattern string, backup int) {
 	// May compress new log file here
 
-	loglogTrace("RotateFileWriter", "Backup %s", newName)
+	LogLogTrace("RotateFileWriter", "Backup %s", newName)
 
 	ext := path.Ext(pattern) // like ".log"
 	path := pattern[0:len(pattern)-len(ext)] // include dir
@@ -94,12 +94,12 @@ func intBackup(newName string, pattern string, backup int) {
 	
 	for ; n > 1; n-- {
 		prev := path + fmt.Sprintf(".%d", n - 1) + ext
-		loglogTrace("RotateFileWriter", "Rename %s to %s", prev, slot)
+		LogLogTrace("RotateFileWriter", "Rename %s to %s", prev, slot)
 		os.Rename(prev, slot)
 		slot = prev
 	}
 	
-	loglogTrace("RotateFileWriter", "Rename %s to %s", newName, path + ".1" + ext)
+	LogLogTrace("RotateFileWriter", "Rename %s to %s", newName, path + ".1" + ext)
 	os.Rename(newName, path + ".1" + ext)
 }
 
@@ -114,7 +114,7 @@ func (rfw *RotateFileWriter) Rotate() {
 		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
 	}
 
-	loglogTrace("RotateFileWriter", "Close %s", rfw.FileBufWriter.Name())
+	LogLogTrace("RotateFileWriter", "Close %s", rfw.FileBufWriter.Name())
 	rfw.FileBufWriter.Close()
 	
 	name := rfw.FileBufWriter.Name()
@@ -125,10 +125,10 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	// File existed. File size > maxsize. Rotate
 	newName := name + time.Now().Format(".20060102-150405")
-	loglogTrace("RotateFileWriter", "Rename %s to %s", name, newName)
+	LogLogTrace("RotateFileWriter", "Rename %s to %s", name, newName)
 	err := os.Rename(name, newName)
 	if err != nil {
-		loglogError("RotateFileWriter", err)
+		LogLogError("RotateFileWriter", err)
 		return
 	}
 	
@@ -140,7 +140,7 @@ func (rfw *RotateFileWriter) Rotate() {
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	rfw.Lock()
 	defer rfw.Unlock()
-	loglogTrace("RotateFileWriter", "Set file name as %s", path)
+	LogLogTrace("RotateFileWriter", "Set file name as %s", path)
 	rfw.FileBufWriter.Close()
 	rfw.FileBufWriter = NewFileBufWriter(path)
 	return rfw

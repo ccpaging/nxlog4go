@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	filename = "_fa.log"
-	oldfiles = "_fa.*.log"
+	filenameA = "_fa.log"
+	filename = "_fb.log"
+	oldfiles = "_fb.*.log"
 )
 
 // Print what was logged to the file (yes, I know I'm skipping error checking)
@@ -38,10 +39,10 @@ func init() {
 
 func main() {
 	// Get a new logger instance
-	log := l4g.New(l4g.FINE)
+	log := l4g.New(l4g.FINE).SetOutput(nil)
 
 	// Create a default logger that is logging messages of FINE or higher
-	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewAppender(filename, 0))
+	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewAppender(filenameA, 0))
 	log.SetFilters(fs0)
 	log.Finest("Everything is created now (notice that I will not be printing to the file)")
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -49,16 +50,16 @@ func main() {
 	log.SetFilters(nil)
 	fs0.Close()
 
-	PrintFile(filename)
+	PrintFile(filenameA)
 	// Remove the file so it's not lying around
-	err := os.Remove(filename)
+	err := os.Remove(filenameA)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	fa := filelog.NewAppender(filename, 10)
-	fa.Set("format", "[%D %T] [%L] (%x) %M")
+	fa.Set("format", "[%D %T] [%L] (%x) %M%R")
 	fa.Set("cycle", 5)
 	fa.Set("delay0", -1)
 	fa.Set("maxsize", "5k")

@@ -9,26 +9,26 @@ var loglog *Logger = nil
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = New(_SILENT_).SetPrefix("nxlog4go").SetPattern("%P:%S %L %M\n").SetCaller(false)
+		loglog = New(_SILENT_).SetPrefix("nxlog4go").SetPattern("%T %P:%S %L %M\n").SetCaller(false)
 	}
 	return loglog
 }
 
-func loglogTrace(source string, arg0 interface{}, args ...interface{}) {
+func LogLogTrace(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	loglog.Log(TRACE, source, arg0, args ...)
 }
 
-func loglogWarn(source string, arg0 interface{}, args ...interface{}) {
+func LogLogWarn(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	loglog.Log(WARNING, source, arg0, args ...)
 }
 
-func loglogError(source string, arg0 interface{}, args ...interface{}) {
+func LogLogError(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}

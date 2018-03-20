@@ -92,8 +92,14 @@ func (fa *FileAppender) writeLoop() {
 		fa.loopRunning = false
 	}()
 
+	l4g.LogLogTrace("filelog", "cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
+	if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
+		fa.out.Rotate()
+	}
+
 	nrt := nextTime(fa.cycle, fa.clock)
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
+	l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
 	for {
 		select {
 		case bb, ok := <-fa.messages:
@@ -116,12 +122,15 @@ func (fa *FileAppender) writeLoop() {
 		case <-rotTimer.C:
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
+			l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
 			if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
 				fa.out.Rotate()
 			}
 		case <-fa.loopReset:
+			l4g.LogLogTrace("filelog", "Reset. cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
+			l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
 		}
 	}
 }
@@ -195,7 +204,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		if fa.loopRunning {
 			fa.loopReset <- time.Now()
 		}
-	case "clock":
+	case "clock", "delay0":
 		switch value := v.(type) {
 		case int:
 			fa.clock = value
@@ -221,6 +230,8 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		if daily {
 			fa.cycle = 86400
 			fa.clock = 0
+			fa.maxsize = 0
+			fa.out.SetMaxSize(0)
 			if fa.loopRunning {
 				fa.loopReset <- time.Now()
 			}

@@ -38,7 +38,7 @@ func init() {
 
 func main() {
 	// Get a new logger instance
-	log := l4g.New(l4g.FINE)
+	log := l4g.New(l4g.FINE).SetOutput(nil)
 
 	// Create a default logger that is logging messages of FINE or higher
 	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewAppender(filename, 0))
@@ -58,7 +58,7 @@ func main() {
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	fa := filelog.NewAppender(filename, 10)
-	fa.Set("format", "[%D %T] [%L] (%x) %M")
+	fa.Set("format", "[%D %T] [%L] (%x) %M%R")
 	fa.Set("cycle", 0)
 	fa.Set("maxsize", "5k")
 	fs1 := l4g.NewFilters().Add("file", l4g.FINE, fa)
