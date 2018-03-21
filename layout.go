@@ -121,8 +121,8 @@ func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 		if pl.isUTC {
 			t = t.UTC()
 		}
-		pl.shortZone = []byte(time.Now().Format("MST"))
-		pl.longZone = []byte(time.Now().Format("Z07:00"))
+		pl.shortZone = []byte(t.Format("MST"))
+		pl.longZone = []byte(t.Format("Z07:00"))
 	default:
 		return ErrBadOption
 	}
