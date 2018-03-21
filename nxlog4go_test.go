@@ -62,7 +62,7 @@ var patternTests = []struct {
 		},
 		Patterns: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			PATTERN_DEFAULT: "[2009/02/13 23:31:30 CST] [EROR] (source:0) message\n",
+			PATTERN_DEFAULT: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
 			PATTERN_SHORT:   "[23:31 13/02/09] [EROR] message\n",
 			PATTERN_ABBREV:  "[EROR] message\n",
 		},
@@ -73,7 +73,7 @@ func TestPatternLayout(t *testing.T) {
 	for _, test := range patternTests {
 		name := test.Test
 		for pattern, want := range test.Patterns {
-			layout := NewPatternLayout(pattern)
+			layout := NewPatternLayout(pattern).Set("utc", true)
 			if got := string(layout.Format(test.Record)); got != want {
 				t.Errorf("%s - %s:", name, pattern)
 				t.Errorf("   got %q", got)
@@ -96,7 +96,7 @@ var logRecordWriteTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Console: "[2009/02/13 23:31:30 CST] [CRIT] (source:0) message",
+		Console: "[2009/02/13 23:31:30 UTC] [CRIT] (source:0) message",
 	},
 }
 
@@ -105,7 +105,7 @@ func TestConsoleWriter(t *testing.T) {
 
 	buf := make([]byte, 1024)
 
-	layout := NewPatternLayout(PATTERN_DEFAULT)
+	layout := NewPatternLayout(PATTERN_DEFAULT).Set("utc", true)
 	for _, test := range logRecordWriteTests {
 		name := test.Test
 
