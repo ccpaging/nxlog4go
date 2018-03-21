@@ -1,8 +1,33 @@
 language: go
+
 sudo: false
+
+# Only the last two Go releases are supported by the Go team with security
+# updates. Any versions older than that should be considered deprecated.
+# Don't bother testing with them. tip builds your code with the latest
+# development version of Go. This can warn you that your code will break
+# in the next version of Go. Don't worry! Later we declare that test runs
+# are allowed to fail on Go tip.
 go:
   - tip
+
+# Don't email me the results of the test runs.
+notifications:
+  email: false
+
+# Skip the install step. Don't `go get` dependencies. Only build with the
+# code in vendor/
+install: true
+
 before_install:
+
+# Anything in before_script that returns a nonzero exit code will
+# flunk the build and immediately stop. It's sorta like having
+# set -e enabled in bash. 
+before_script:
+
+# script always run to completion (set +e). All of these code checks are must haves
+# in a modern Go project.
 script:
   - go test ./
   - go test ./color
