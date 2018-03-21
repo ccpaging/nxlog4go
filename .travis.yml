@@ -3,9 +3,4 @@ sudo: false
 go:
   - tip
 before_install:
-script:
-  - go test ./
-  - go test ./color
-  - go test ./file
-  - go test ./socket
-
+script: go test ./
