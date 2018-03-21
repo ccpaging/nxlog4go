@@ -3,5 +3,8 @@ sudo: false
 go:
   - tip
 before_install:
+  - go get github.com/ccpaging/nxlog4go/color
+  - go get github.com/ccpaging/nxlog4go/file
+  - go get github.com/ccpaging/nxlog4go/socket
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
