@@ -4,4 +4,8 @@ go:
   - tip
 before_install:
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - go test ./
+  - go test ./color
+  - go test ./file
+  - go test ./socket
+
