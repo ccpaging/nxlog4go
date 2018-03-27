@@ -37,7 +37,7 @@ func (fa *FileAppender) Write(rec *l4g.LogRecord) {
 	fa.messages <- fa.layout.Format(rec)
 }
 
-// Close appender
+// Close file
 func (fa *FileAppender) Close() {
 	close(fa.messages)
 
@@ -57,7 +57,7 @@ func (fa *FileAppender) Close() {
 }
 
 // NewFileAppender creates a new appender which writes to the given file and
-// has rotation enabled if maxrotate > 0.
+// has rotation enabled if maxbackup > 0.
 func NewAppender(filename string, maxbackup int) l4g.Appender {
 	return &FileAppender{
 		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
@@ -141,7 +141,19 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	return fa
 }
 
-// Set option. checkable. Must be set before the first log message is written.
+// Set option. checkable. Better be set before SetFilters()
+// Option names include:
+// filename 	- The opened file
+// flush 		- Flush file cache buffer size
+// maxbackup 	- Max number for log file storage
+// maxsize 		- Rotate at size
+// pattern 		- Layout format pattern
+// utc 			- Log recorder time zone
+// head 		- File head format layout pattern
+// foot 		- File foot format layout pattern
+// cycle		- The cycle seconds of checking rotate size
+// clock		- The seconds since midnight
+// daily		- Checking rotate size at every midnight
 func (fa *FileAppender) SetOption(name string, v interface{}) error {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
@@ -183,6 +195,34 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			return l4g.ErrBadValue
 		}
 		fa.out.SetMaxBackup(maxbackup)
+	case "maxsize":
+		var maxsize int
+		switch value := v.(type) {
+		case int:
+			maxsize = value
+		case string:
+			maxsize = l4g.StrToNumSuffix(strings.Trim(value, " \r\n"), 1024)
+		default:
+			return l4g.ErrBadValue
+		}
+		fa.maxsize = maxsize
+		if fa.cycle <= 0 {
+			fa.out.SetMaxSize(fa.maxsize)
+		}
+	case "pattern", "format", "utc":
+		return fa.layout.SetOption(name, v)
+	case "head":
+		if header, ok := v.(string); ok {
+			fa.out.SetHead(header)
+		} else {
+			return l4g.ErrBadValue
+		}
+	case "foot":
+		if footer, ok := v.(string); ok {
+			fa.out.SetFoot(footer)
+		} else {
+			return l4g.ErrBadValue
+		}
 	case "cycle":
 		switch value := v.(type) {
 		case int:
@@ -235,34 +275,6 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			if fa.loopRunning {
 				fa.loopReset <- time.Now()
 			}
-		}
-	case "maxsize":
-		var maxsize int
-		switch value := v.(type) {
-		case int:
-			maxsize = value
-		case string:
-			maxsize = l4g.StrToNumSuffix(strings.Trim(value, " \r\n"), 1024)
-		default:
-			return l4g.ErrBadValue
-		}
-		fa.maxsize = maxsize
-		if fa.cycle <= 0 {
-			fa.out.SetMaxSize(fa.maxsize)
-		}
-	case "pattern", "format", "utc":
-		return fa.layout.SetOption(name, v)
-	case "head":
-		if header, ok := v.(string); ok {
-			fa.out.SetHead(header)
-		} else {
-			return l4g.ErrBadValue
-		}
-	case "foot":
-		if footer, ok := v.(string); ok {
-			fa.out.SetFoot(footer)
-		} else {
-			return l4g.ErrBadValue
 		}
 	default:
 		return l4g.ErrBadOption

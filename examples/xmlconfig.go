@@ -33,9 +33,6 @@ func PrintFile(fn string) {
 }
 
 func main() {
-	// disable default console writer
-	log.SetOutput(nil)
-
 	// Open config file
 	fd, err := os.Open(filename)
 	if err != nil {
@@ -76,11 +73,11 @@ func main() {
 	
 	fmt.Println(len(*fs), "appenders pre-installed")
 	fs.LoadConfiguration(xc.Filters)
-	if len(*fs) > 0 {
-		log.SetFilters(fs)
+	if _, isExist := (*fs)["color"]; isExist {
 		// disable default console writer
 		log.SetOutput(nil)
 	}
+	log.SetFilters(fs)
 	fmt.Println(len(*fs), "appenders configured ok")
 
 	// And now we're ready!

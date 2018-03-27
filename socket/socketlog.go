@@ -67,7 +67,12 @@ func (sa *SocketAppender) Set(name string, v interface{}) l4g.Appender {
 	return sa
 }
 
-// Set option. checkable
+// Set option. checkable. Better be set before SetFilters()
+// Option names include:
+// protocol 	- The named network. See net.Dial()
+// endpoint		- The address and post number. See net.Dial()
+// pattern 		- Layout format pattern
+// utc 			- Log recorder time zone
 func (sa *SocketAppender) SetOption(name string, v interface{}) error {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
