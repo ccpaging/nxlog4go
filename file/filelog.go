@@ -149,7 +149,7 @@ Option names include:
 	maxbackup - Max number for log file storage
 	maxsize	  - Rotate at size
 	pattern	  - Layout format pattern
-	utc		  - Log recorder time zone
+	utc	  - Log recorder time zone
 	head 	  - File head format layout pattern
 	foot 	  - File foot format layout pattern
 	cycle	  - The cycle seconds of checking rotate size
