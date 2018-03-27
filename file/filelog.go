@@ -141,19 +141,21 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	return fa
 }
 
-// Set option. checkable. Better be set before SetFilters()
-// Option names include:
-// filename 	- The opened file
-// flush 		- Flush file cache buffer size
-// maxbackup 	- Max number for log file storage
-// maxsize 		- Rotate at size
-// pattern 		- Layout format pattern
-// utc 			- Log recorder time zone
-// head 		- File head format layout pattern
-// foot 		- File foot format layout pattern
-// cycle		- The cycle seconds of checking rotate size
-// clock		- The seconds since midnight
-// daily		- Checking rotate size at every midnight
+/*
+Set option. checkable. Better be set before SetFilters()
+Option names include:
+	filename  - The opened file
+	flush	  - Flush file cache buffer size
+	maxbackup - Max number for log file storage
+	maxsize	  - Rotate at size
+	pattern	  - Layout format pattern
+	utc		  - Log recorder time zone
+	head 	  - File head format layout pattern
+	foot 	  - File foot format layout pattern
+	cycle	  - The cycle seconds of checking rotate size
+	clock	  - The seconds since midnight
+	daily	  - Checking rotate size at every midnight
+*/
 func (fa *FileAppender) SetOption(name string, v interface{}) error {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()

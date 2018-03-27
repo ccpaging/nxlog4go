@@ -67,31 +67,33 @@ func NewPatternLayout(pattern string) Layout {
 }
 
 // Set option. chainable
-// Known pattern codes:
-// %N - Time (15:04:05.000000)
-// %T - Time (15:04:05)
-// %t - Time (15:04)
-// %Z - Zone (-0700)
-// %z - Zone (MST)
-// %D - Date (2006/01/02)
-// %Y - Date (2006-01-02)
-// %d - Date (01/02/06)
-// %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
-// %l - Level
-// %P - Prefix
-// %S - Source
-// %s - Short Source
-// %n - Line number
-// %M - Message
-// %R - Return (\n)
-// Ignores unknown formats
-// Recommended: "[%D %T] [%L] (%S) %M"
 func (pl *PatternLayout) Set(name string, v interface{}) Layout {
 	pl.SetOption(name, v)
 	return pl
 }
 
-// Set option. checkable. Must be set before the first log message is written.
+/* 
+Set option. checkable. Better be set before the first log message is written.
+Known pattern codes:
+	%N - Time (15:04:05.000000)
+	%T - Time (15:04:05)
+	%t - Time (15:04)
+	%Z - Zone (-0700)
+	%z - Zone (MST)
+	%D - Date (2006/01/02)
+	%Y - Date (2006-01-02)
+	%d - Date (01/02/06)
+	%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+	%l - Level
+	%P - Prefix
+	%S - Source
+	%s - Short Source
+	%n - Line number
+	%M - Message
+	%R - Return (\n)
+	Ignores unknown formats
+Recommended: "[%D %T] [%L] (%S) %M"
+*/
 func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()

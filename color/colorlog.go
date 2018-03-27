@@ -70,10 +70,12 @@ func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 	return ca
 }
 
-// Set option. checkable. Better be set before SetFilters()
-// Option names include:
-// pattern 		- Layout format pattern
-// utc 			- Log recorder time zone
+/* 
+Set option. checkable. Better be set before SetFilters()
+Option names include:
+	pattern	 - Layout format pattern
+	utc 	 - Log recorder time zone
+*/
 func (ca *ColorAppender) SetOption(name string, v interface{}) error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
