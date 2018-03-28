@@ -1,5 +1,5 @@
 # nxlog4go - Next logging package based on log4go 
-[![GoDoc](https://godoc.org/github.com/ccpaging/nxlog4go?status.svg)](https://godoc.org/github.com/ccpaging/nxlog4go) [![Build Status](https://travis-ci.org/abhigupta912/mbuckets.svg?branch=master)](https://travis-ci.org/abhigupta912/mbuckets)
+[![License](https://img.shields.io/pypi/l/Django.svg)](https://github.com/ccpaging/nxlog4go/blob/master/LICENSE) [![GoDoc](https://godoc.org/github.com/ccpaging/nxlog4go?status.svg)](https://godoc.org/github.com/ccpaging/nxlog4go) [![Build Status](https://travis-ci.org/abhigupta912/mbuckets.svg?branch=master)](https://travis-ci.org/abhigupta912/mbuckets)
 
 Installation:
 
