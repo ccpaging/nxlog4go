@@ -127,6 +127,7 @@ func (l Level) String() string {
 }
 
 /****** Variables ******/
+
 var (
 	// Default skip passed to runtime.Caller to get file name/line
 	// May require tweaking if you want to wrap the logger
@@ -168,7 +169,7 @@ type Logger struct {
 	filters *Filters  // a collection of Filters
 }
 
-// New creates a new Logger. The out variable sets the
+// NewLogger creates a new Logger. The out variable sets the
 // destination to which log data will be written.
 // The prefix appears at the beginning of each generated log line.
 // The flag argument defines the logging properties.
@@ -183,8 +184,8 @@ func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger 
 	}
 }
 
-// Create a new logger with a "stderr" writer to send log messages at
-// or above lvl to standard output.
+// New Creates a new logger with a "stderr" writer to send 
+// log messages at or above lvl to standard output.
 func New(lvl Level) *Logger {
 	return NewLogger(os.Stderr, lvl, "", PATTERN_DEFAULT)
 }
@@ -226,7 +227,7 @@ func (log *Logger) SetLevel(lvl Level) *Logger {
 	return log
 }
 
-// Return runtime caller skip for the logger.
+// Caller return runtime caller skip for the logger.
 func (log *Logger) Caller() bool {
 	log.mu.Lock()
 	defer log.mu.Unlock()
