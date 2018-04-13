@@ -116,7 +116,7 @@ const (
 
 // Logging level strings
 var (
-	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT", "OFFL"}
+	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT", "DISA"}
 )
 
 func (l Level) String() string {
@@ -124,6 +124,32 @@ func (l Level) String() string {
 		return "UNKNOWN"
 	}
 	return levelStrings[int(l)]
+}
+
+func GetLevel(s string) (lvl Level) {
+	switch s {
+	case "FINEST", FINEST.String():
+		lvl = FINEST
+	case FINE.String():
+		lvl = FINE
+	case "DEBUG", DEBUG.String():
+		lvl = DEBUG
+	case "TRACE", TRACE.String():
+		lvl = TRACE
+	case "INFO", INFO.String():
+		lvl = INFO
+	case "WARNING", WARNING.String():
+		lvl = WARNING
+	case "ERROR", ERROR.String():
+		lvl = ERROR
+	case "CRITICAL", CRITICAL.String():
+		lvl = CRITICAL
+	case "DISABLE", "DISA", "SILENT", "QUIET":
+		lvl = _SILENT_
+	default:
+		lvl = INFO
+	}
+	return lvl
 }
 
 /****** Variables ******/
@@ -204,11 +230,33 @@ func (log *Logger) Shutdown() {
 	}
 }
 
-// SetOutput sets the output destination for the logger.
-func (log *Logger) SetOutput(w io.Writer) *Logger {
+// Prefix returns the output prefix for the logger.
+func (log *Logger) Prefix() string {
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	log.out = w
+	return log.prefix
+}
+
+// SetPrefix sets the output prefix for the logger.
+func (log *Logger) SetPrefix(prefix string) *Logger {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	log.prefix = prefix
+	return log
+}
+
+// Caller return runtime caller skip for the logger.
+func (log *Logger) Caller() bool {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	return log.caller
+}
+
+// SetCaller enable or disable the runtime caller function for the logger.
+func (log *Logger) SetCaller(caller bool) *Logger {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	log.caller = caller
 	return log
 }
 
@@ -227,22 +275,6 @@ func (log *Logger) SetLevel(lvl Level) *Logger {
 	return log
 }
 
-// Caller return runtime caller skip for the logger.
-func (log *Logger) Caller() bool {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.caller
-}
-
-// SetSkip sets the runtime caller skip for the logger.
-// skip = -1, no runtime caller
-func (log *Logger) SetCaller(caller bool) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.caller = caller
-	return log
-}
-
 // Pattern returns the output PatternLayout's pattern for the logger.
 func (log *Logger) Pattern() string {
 	log.mu.Lock()
@@ -258,25 +290,84 @@ func (log *Logger) SetPattern(pattern string) *Logger {
 	return log
 }
 
-// Pattern returns the output Layout for the logger.
+// Set option. chainable
+func (log *Logger) Set(name string, v interface{}) *Logger {
+	log.SetOption(name, v)
+	return log
+}
+
+/*
+Set option. checkable
+Option names include:
+	prefix  - The output prefix
+	caller	- Enable or disable the runtime caller function
+	level   - The output level
+	pattern	- The pattern of Layout format
+*/
+func (log *Logger) SetOption(name string, v interface{}) error {
+	switch name {
+	case "prefix":
+		if prefix, ok := v.(string); ok {
+			log.SetPrefix(prefix)
+		} else {
+			return ErrBadValue
+		}
+	case "caller":
+		caller := false
+		switch value := v.(type) {
+		case bool:
+			caller = value
+		case string:
+			if strings.HasPrefix(value, "T") || strings.HasPrefix(value, "t") {
+				caller = true 
+			}
+		default:
+			return ErrBadValue
+		}
+		log.SetCaller(caller)
+	case "level":
+		lvl := INFO
+		switch value := v.(type) {
+		case int:
+			lvl = Level(value)
+		case string:
+			lvl = GetLevel(value)
+		default:
+			return ErrBadValue
+		}
+		log.SetLevel(lvl)
+	case "pattern":
+		if pattern, ok := v.(string); ok {
+			log.SetPattern(pattern)
+		} else {
+			return ErrBadValue
+		}
+	default:
+		return ErrBadOption
+	}
+	return nil
+}
+
+// SetOutput sets the output destination for the logger.
+func (log *Logger) SetOutput(w io.Writer) *Logger {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	log.out = w
+	return log
+}
+
+// Layout returns the output Layout for the logger.
 func (log *Logger) Layout() Layout {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	return log.layout
 }
 
-// Prefix returns the output prefix for the logger.
-func (log *Logger) Prefix() string {
+// SetLayout sets the output layout for the logger.
+func (log *Logger) SetLayout(layout Layout) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
-	return log.prefix
-}
-
-// SetPrefix sets the output prefix for the logger.
-func (log *Logger) SetPrefix(prefix string) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.prefix = prefix
+	log.layout = layout
 	return log
 }
 

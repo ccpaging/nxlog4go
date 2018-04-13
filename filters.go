@@ -76,10 +76,16 @@ func (fs Filters) Dispatch(rec *LogRecord) {
 
 func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 	for _, fc := range fcs {
-		ok, tag, lvl := getFilterConfig(fc)
-		if !ok {
+		if len(fc.Tag) == 0 {
+			LogLogError("LoadConfiguration", "Required child tag")
 			continue
 		}
+		tag := fc.Tag
+		if len(fc.Level) == 0 {
+			LogLogError("LoadConfiguration", "Required child level")
+			continue
+		}
+		lvl := GetLevel(fc.Level)
 		if lvl >= _SILENT_ {
 			continue
 		}
@@ -104,43 +110,4 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 			delete(fs, tag)
 		}
 	}
-}
-
-// Check filter's configuration
-func getFilterConfig(fc FilterConfig) (ok bool, tag string, lvl Level) {
-	ok, tag, lvl = true, "", INFO
-
-	// Check required children
-	if len(fc.Tag) == 0 {
-		LogLogError("getFilterConfig", "Required child <%s>", "tag")
-		ok = false
-	}
-	if len(fc.Level) == 0 {
-		LogLogError("getFilterConfig", "Required child <%s>", "level")
-		ok = false
-	}
-
-	switch fc.Level {
-	case "FINEST", "FNST":
-		lvl = FINEST
-	case "FINE":
-		lvl = FINE
-	case "DEBUG", "DEBG":
-		lvl = DEBUG
-	case "TRACE", "TRAC":
-		lvl = TRACE
-	case "INFO":
-		lvl = INFO
-	case "WARNING", "WARN":
-		lvl = WARNING
-	case "ERROR", "EROR":
-		lvl = ERROR
-	case "CRITICAL", "CRIT":
-		lvl = CRITICAL
-	case "DISABLE", "DISA", "SILENT", "QUIET":
-		lvl = _SILENT_
-	default:
-		lvl = _SILENT_
-	}
-	return ok, fc.Tag, lvl
 }
