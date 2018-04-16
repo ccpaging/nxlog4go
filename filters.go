@@ -77,12 +77,12 @@ func (fs Filters) Dispatch(rec *LogRecord) {
 func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 	for _, fc := range fcs {
 		if len(fc.Tag) == 0 {
-			LogLogError("LoadConfiguration", "Required child tag")
+			LogLogError("config", "Required child tag")
 			continue
 		}
 		tag := fc.Tag
 		if len(fc.Level) == 0 {
-			LogLogError("LoadConfiguration", "Required child level")
+			LogLogError("config", "Required child level")
 			continue
 		}
 		lvl := GetLevel(fc.Level)
@@ -91,11 +91,11 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 		}
 		filt, isExist := fs[tag]
 		if !isExist {
-			LogLogError("LoadConfiguration", "Appender <%s> is not pre-installed", tag)
+			LogLogError("config", "Appender <%s> is not pre-installed", tag)
 			continue
 		}
 		if filt.Appender == nil {
-			LogLogError("LoadConfiguration", "Appender <%s> pre-installed is nil", tag)
+			LogLogError("config", "Appender <%s> pre-installed is nil", tag)
 			continue
 		}
 		if !AppenderConfigure(filt.Appender, fc.Props) {

@@ -43,10 +43,10 @@ type Layout interface {
 }
 
 var (
-	PATTERN_DEFAULT = "[%D %T %z] [%L] (%s:%n) %M\n"
-	PATTERN_SHORT   = "[%t %d] [%L] %M\n"
+	PATTERN_DEFAULT = "[%D %T %z] [%L] (%s:%N) %M\n"
+	PATTERN_SHORT   = "[%h:%m %d] [%L] %M\n"
 	PATTERN_ABBREV  = "[%L] %M\n"
-	PATTERN_JSON	= "{\"Level\":%l,\"Created\":\"%YT%N%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%n,\"Message\":\"%M\"}"
+	PATTERN_JSON	= "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
 )
 
 // This layout formats log record by pattern
@@ -75,9 +75,10 @@ func (pl *PatternLayout) Set(name string, v interface{}) Layout {
 /* 
 Set option. checkable. Better be set before the first log message is written.
 Known pattern codes:
-	%N - Time (15:04:05.000000)
+	%U - Time (15:04:05.000000)
 	%T - Time (15:04:05)
-	%t - Time (15:04)
+	%h - hour
+	%m - minute
 	%Z - Zone (-0700)
 	%z - Zone (MST)
 	%D - Date (2006/01/02)
@@ -88,9 +89,11 @@ Known pattern codes:
 	%P - Prefix
 	%S - Source
 	%s - Short Source
-	%n - Line number
+	%N - Line number
 	%M - Message
-	%R - Return (\n)
+	%t - Return (\t)
+	%r - Return (\r)
+	%n - Return (\n)
 	Ignores unknown formats
 Recommended: "[%D %T] [%L] (%S) %M"
 */
@@ -161,6 +164,8 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		t = t.UTC()
 	}
 
+	year, month, day := t.Date()
+	hour, minute, second := t.Clock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
@@ -168,46 +173,44 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	for i, piece := range pl.pattSlice {
 		if i > 0 && len(piece) > 0 {
 			switch piece[0] {
-			case 'N':
+			case 'U':
 				b = nil
-				hour, minute, second := t.Clock()
 				itoa(&b, hour, 2); b = append(b, ':');
  				itoa(&b, minute, 2); b = append(b, ':');
  				itoa(&b, second, 2); b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
 				out.Write(b)
 			case 'T':
-				hour, minute, second := t.Clock()
 				b = nil
 				itoa(&b, hour, 2); b = append(b, ':');
  				itoa(&b, minute, 2); b = append(b, ':');
  				itoa(&b, second, 2)
 				out.Write(b)
-			case 't':
-				hour, minute, _ := t.Clock()
+			case 'h':
 				b = nil
-				itoa(&b, hour, 2); b = append(b, ':'); itoa(&b, minute, 2)
+				itoa(&b, hour, 2)
+				out.Write(b)
+			case 'm':
+				b = nil
+				itoa(&b, minute, 2)
 				out.Write(b)
 			case 'Z':
 				out.Write(pl.longZone)
 			case 'z':
 				out.Write(pl.shortZone)
 			case 'D':
-				year, month, day := t.Date()
 				b = nil
 				itoa(&b, year, 4); b = append(b, '/')
 				itoa(&b, int(month), 2); b = append(b, '/')
 				itoa(&b, day, 2)
 				out.Write(b)
 			case 'Y':
-				year, month, day := t.Date()
 				b = nil
 				itoa(&b, year, 4); b = append(b, '-')
 				itoa(&b, int(month), 2); b = append(b, '-')
 				itoa(&b, day, 2)
 				out.Write(b)
 			case 'd':
-				year, month, day := t.Date()
 				b = nil
 				itoa(&b, day, 2); b = append(b, '/')
 				itoa(&b, int(month), 2); b = append(b, '/')
@@ -224,12 +227,16 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				out.WriteString(rec.Source)
 			case 's':
 				out.WriteString(rec.Source[strings.LastIndexByte(rec.Source, '/')+1:])
-			case 'n':
+			case 'N':
 				b = nil; itoa(&b, rec.Line, -1)
 				out.Write(b)
 			case 'M':
 				out.WriteString(rec.Message)
-			case 'R':
+			case 't':
+				out.WriteByte('\t')
+			case 'r':
+				out.WriteByte('\r')
+			case 'n', 'R':
 				out.WriteByte('\n')
 			}
 			if len(piece) > 1 {

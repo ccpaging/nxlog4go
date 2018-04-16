@@ -91,10 +91,10 @@ import (
 
 // Version information
 const (
-	NXLOG4GO_VERSION = "nxlog4go-v0.0.3"
+	NXLOG4GO_VERSION = "nxlog4go-v0.4.4"
 	NXLOG4GO_MAJOR   = 0
-	NXLOG4GO_MINOR   = 0
-	NXLOG4GO_BUILD   = 3
+	NXLOG4GO_MINOR   = 4
+	NXLOG4GO_BUILD   = 4
 )
 
 /****** Constants ******/
