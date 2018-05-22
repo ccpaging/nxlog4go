@@ -14,49 +14,39 @@ func GetLogger() *Logger {
 	return global
 }
 
-// Logs the given message and crashes the program
-func Crash(arg0 interface{}, args ...interface{}) {
+// Compatibility with `log`
+func Panic(arg0 interface{}, args ...interface{}) {
 	msg := intMsg(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
 
-// Logs the given message and crashes the program
-func Crashf(format interface{}, args ...interface{}) {
+// Compatibility with `log`
+func Panicf(format interface{}, args ...interface{}) {
 	msg := intMsg(format, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
 
 // Compatibility with `log`
-func Exit(arg0 interface{}, args ...interface{}) {
+func Fatal(arg0 interface{}, args ...interface{}) {
 	global.intLog(ERROR, intMsg(arg0, args...))
 	os.Exit(0)
 }
 
 // Compatibility with `log`
-func Exitf(format interface{}, args ...interface{}) {
+func Fatalf(format interface{}, args ...interface{}) {
 	global.intLog(ERROR, intMsg(format, args...))
 	os.Exit(0)
 }
 
 // Compatibility with `log`
-func Stderr(arg0 interface{}, args ...interface{}) {
-	global.intLog(ERROR, intMsg(arg0, args...))
-}
-
-// Compatibility with `log`
-func Stderrf(format interface{}, args ...interface{}) {
-	global.intLog(ERROR, intMsg(format, args...))
-}
-
-// Compatibility with `log`
-func Stdout(arg0 interface{}, args ...interface{}) {
+func Print(arg0 interface{}, args ...interface{}) {
 	global.intLog(INFO, intMsg(arg0, args...))
 }
 
 // Compatibility with `log`
-func Stdoutf(format interface{}, args ...interface{}) {
+func Printf(format interface{}, args ...interface{}) {
 	global.intLog(INFO, intMsg(format, args...))
 }
 

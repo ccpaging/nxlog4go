@@ -226,7 +226,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'S':
 				out.WriteString(rec.Source)
 			case 's':
-				out.WriteString(rec.Source[strings.LastIndexByte(rec.Source, '/')+1:])
+				out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
 			case 'N':
 				b = nil; itoa(&b, rec.Line, -1)
 				out.Write(b)
