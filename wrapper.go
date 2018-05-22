@@ -5,6 +5,7 @@ package nxlog4go
 import (
 	"errors"
 	"os"
+	"fmt"
 )
 
 var global = New(DEBUG)
@@ -22,10 +23,17 @@ func Panic(arg0 interface{}, args ...interface{}) {
 }
 
 // Compatibility with `log`
-func Panicf(format interface{}, args ...interface{}) {
-	msg := intMsg(format, args...)
+func Panicln(arg0 interface{}, args ...interface{}) {
+	msg := intMsg(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
+}
+
+// Compatibility with `log`
+func Panicf(format string, v ...interface{}) {
+	s := fmt.Sprintf(format, v...)
+	global.intLog(CRITICAL, s)
+	panic(s)
 }
 
 // Compatibility with `log`
@@ -35,8 +43,14 @@ func Fatal(arg0 interface{}, args ...interface{}) {
 }
 
 // Compatibility with `log`
-func Fatalf(format interface{}, args ...interface{}) {
-	global.intLog(ERROR, intMsg(format, args...))
+func Fatalln(arg0 interface{}, args ...interface{}) {
+	global.intLog(ERROR, intMsg(arg0, args...))
+	os.Exit(0)
+}
+
+// Compatibility with `log`
+func Fatalf(format string, v ...interface{}) {
+	global.intLog(ERROR, fmt.Sprintf(format, v...))
 	os.Exit(0)
 }
 
@@ -46,8 +60,13 @@ func Print(arg0 interface{}, args ...interface{}) {
 }
 
 // Compatibility with `log`
-func Printf(format interface{}, args ...interface{}) {
-	global.intLog(INFO, intMsg(format, args...))
+func Println(arg0 interface{}, args ...interface{}) {
+	global.intLog(INFO, intMsg(arg0, args...))
+}
+
+// Compatibility with `log`
+func Printf(format string, v ...interface{}) {
+	global.intLog(INFO, fmt.Sprintf(format, v...))
 }
 
 // Utility for finest log messages (see Debug() for parameter explanation)
