@@ -33,6 +33,7 @@ func (fs Filters) Add(tag string, lvl Level, writer Appender) *Filters {
 		filt.Close()
 		delete(fs, tag)
 	}
+	writer.Init()
 	fs[tag] = NewFilter(lvl, writer)
 	return &fs
 }

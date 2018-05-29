@@ -33,6 +33,7 @@ func TestFileAppender(t *testing.T) {
 	}
 	defer os.Remove(testLogFile)
 
+	w.Init()
 	w.Write(newLogRecord(l4g.CRITICAL, "source", "message"))
 	runtime.Gosched()
 	w.Close()

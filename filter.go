@@ -28,7 +28,9 @@ func NewFilter(lvl Level, writer Appender) *Filter {
 		closing: 	false,
 	}
 
-	go f.run()
+	ready := make(chan struct{})
+	go f.run(ready)
+	<- ready
 	return f
 }
 
@@ -42,7 +44,8 @@ func (f *Filter) writeToChan(rec *LogRecord) {
 	f.rec <- rec
 }
 
-func (f *Filter) run() {
+func (f *Filter) run(ready chan struct{}) {
+	close(ready)
 	for {
 		select {
 		case rec, ok := <-f.rec:

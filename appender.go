@@ -32,6 +32,11 @@ type Appender interface {
 	// Checkable
 	SetOption(name string, v interface{}) error
 
+	// Init is called by the filters.Add() function to allow the appender
+	// protocol to perform any initialization steps it needs. 
+	// It should save the handle for future use, as well.
+	Init()
+
 	// This will be called to log a LogRecord message.
 	Write(rec *LogRecord)
 

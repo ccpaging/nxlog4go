@@ -30,11 +30,17 @@ type FileAppender struct {
 
 // Write log record
 func (fa *FileAppender) Write(rec *l4g.LogRecord) {
-	if !fa.loopRunning {
-		fa.loopRunning = true
-		go fa.writeLoop()
-	}
 	fa.messages <- fa.layout.Format(rec)
+}
+
+func (fa *FileAppender) Init() {
+	if fa.loopRunning {
+		return
+	}
+	fa.loopRunning = true
+	ready := make(chan struct{})
+	go fa.writeLoop(ready)
+	<-ready
 }
 
 // Close file
@@ -66,7 +72,7 @@ func NewAppender(filename string, maxbackup int) l4g.Appender {
 		cycle:		 86400,
 		clock:		 0,
 		loopRunning: false,
-		loopReset: 	 make(chan time.Time, 5),
+		loopReset: 	 make(chan time.Time, l4g.LogBufferLength),
 	}
 }
 
@@ -87,7 +93,7 @@ func nextTime(cycle, clock int) time.Time {
 	return nrt.Add(time.Duration(clock) * time.Second)
 }
 
-func (fa *FileAppender) writeLoop() {
+func (fa *FileAppender) writeLoop(ready chan struct{}) {
 	defer func() {
 		fa.loopRunning = false
 	}()
@@ -100,6 +106,8 @@ func (fa *FileAppender) writeLoop() {
 	nrt := nextTime(fa.cycle, fa.clock)
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
 	l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
+
+	close(ready)
 	for {
 		select {
 		case bb, ok := <-fa.messages:

@@ -50,6 +50,9 @@ func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
 	return ca
 }
 
+func (ca *ColorAppender) Init() {
+}
+
 func (ca *ColorAppender) Close() {
 }
 
