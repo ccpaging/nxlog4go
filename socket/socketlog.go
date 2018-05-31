@@ -24,6 +24,9 @@ type SocketAppender struct {
 	host string
 }
 
+func (sa *SocketAppender) Init() {
+}
+
 func (sa *SocketAppender) Close() {
 	if sa.sock != nil {
 		sa.sock.Close()
