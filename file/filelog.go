@@ -70,7 +70,7 @@ func NewAppender(filename string, maxbackup int) l4g.Appender {
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
 		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
 		cycle:		 86400,
-		clock:		 0,
+		clock:		 -1,
 		loopRunning: false,
 		loopReset: 	 make(chan time.Time, l4g.LogBufferLength),
 	}
@@ -86,7 +86,7 @@ func nextTime(cycle, clock int) time.Time {
 		return nrt.Add(time.Duration(cycle) * time.Second)
 	}
 	
-	// next cycle midnight + clock
+	// clock >= 0, next cycle midnight + clock
 	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
 	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
 					0, 0, 0, 0, nextCycle.Location())
