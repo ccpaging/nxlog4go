@@ -80,12 +80,14 @@ func nextTime(cycle, clock int) time.Time {
 	if cycle <= 0 {
 		cycle = 86400
 	}
+	if cycle < 86400 { // Correct invalid clock
+		clock = -1
+	}
 	nrt := time.Now()
 	if clock < 0 {
 		// Now + cycle
 		return nrt.Add(time.Duration(cycle) * time.Second)
 	}
-	
 	// clock >= 0, next cycle midnight + clock
 	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
 	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 

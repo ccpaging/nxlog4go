@@ -25,9 +25,10 @@ func NewFilters() *Filters {
 }
 
 // Add a new filter to the filters map which will only log messages at lvl or
-// higher.
-// Returns the Filters for chaining.
+// higher. And call Appender.Init() to allow the appender protocol to perform 
+// any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
+// Returns the Filters for chaining.
 func (fs Filters) Add(tag string, lvl Level, writer Appender) *Filters {
 	if filt, isExist := fs[tag]; isExist {
 		filt.Close()

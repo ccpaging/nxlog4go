@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 	"time"
+	"fmt"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
@@ -43,6 +44,15 @@ func TestFileAppender(t *testing.T) {
 	} else if len(contents) != 52 {
 		t.Errorf("malformed filelog: %q (%d bytes)", string(contents), len(contents))
 	}
+}
+
+func TestNextTime(t *testing.T) {
+	fmt.Println("now:", time.Now())
+	fmt.Println("After 10 minutes:", nextTime(600, -1).Sub(time.Now()))
+	fmt.Println("Correct invalid value. cycle = 300 / clock = 0. After 5 minutes:", nextTime(300, 0).Sub(time.Now()))
+	fmt.Println("Next midnight:", nextTime(86400, 0).Sub(time.Now()))
+	fmt.Println("Next 3:00am:", nextTime(86400, 10800).Sub(time.Now()))
+	fmt.Println("Next weekly midnight:", nextTime(86400 * 7, 0).Sub(time.Now()))
 }
 
 func BenchmarkFileLog(b *testing.B) {
