@@ -9,7 +9,7 @@ var loglog *Logger = nil
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = New(_SILENT_).SetPrefix("nxlog4go").SetPattern("%T %P:%S %L %M\n").SetCaller(false)
+		loglog = New(DEBUG).SetPrefix("nxlog4go").SetPattern("%T %P:%S %L %M\n").SetCaller(false)
 	}
 	return loglog
 }

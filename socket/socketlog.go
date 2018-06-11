@@ -9,12 +9,6 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var loglog *l4g.Logger
-
-func init() {
-	loglog = l4g.GetLogLog()
-} 
-
 // This log appender sends output to a socket
 type SocketAppender struct {
 	mu   sync.Mutex // ensures atomic writes; protects the following fields
@@ -51,14 +45,14 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 	if sa.sock == nil {
 		sa.sock, err = net.Dial(sa.prot, sa.host)
 		if err != nil {
-			loglog.Log(l4g.ERROR, "SocketAppender", err)
+			l4g.LogLogError("SocketAppender", err)
 			return
 		}
 	}
 
 	_, err = sa.sock.Write(sa.layout.Format(rec))
 	if err != nil {
-		loglog.Log(l4g.ERROR, "SocketAppender", err)
+		l4g.LogLogError("SocketAppender", err)
 		sa.sock.Close()
 		sa.sock = nil
 	}

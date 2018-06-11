@@ -40,7 +40,7 @@ func (fs Filters) Add(tag string, lvl Level, writer Appender) *Filters {
 }
 
 func (fs Filters) Preload(tag string, writer Appender) *Filters {
-	return fs.Add(tag, _SILENT_, writer)
+	return fs.Add(tag, SILENT, writer)
 }
 
 // Close and remove all filters in preparation for exiting the program or a
@@ -88,7 +88,7 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 			continue
 		}
 		lvl := GetLevel(fc.Level)
-		if lvl >= _SILENT_ {
+		if lvl >= SILENT {
 			continue
 		}
 		filt, isExist := fs[tag]
@@ -105,9 +105,9 @@ func (fs Filters) LoadConfiguration(fcs []FilterConfig) {
 		}
 		filt.Level = lvl
 	}
-	// Close and delete the appenders at _SILENT_
+	// Close and delete the appenders at SILENT
 	for tag, filt := range fs {
-		if filt.Level >= _SILENT_ {
+		if filt.Level >= SILENT {
 			filt.Close()
 			delete(fs, tag)
 		}

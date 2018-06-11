@@ -111,7 +111,7 @@ const (
 	WARNING
 	ERROR
 	CRITICAL
-	_SILENT_ = 100 // SILENT is used during configuration to turn in quiet mode
+	SILENT = 100 // SILENT is used during configuration to turn in quiet mode
 )
 
 // Logging level strings
@@ -145,7 +145,7 @@ func GetLevel(s string) (lvl Level) {
 	case "CRITICAL", CRITICAL.String():
 		lvl = CRITICAL
 	case "DISABLE", "DISA", "SILENT", "QUIET":
-		lvl = _SILENT_
+		lvl = SILENT
 	default:
 		lvl = INFO
 	}
