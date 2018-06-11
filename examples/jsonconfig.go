@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"bufio"
 	"io"
+	"strings"
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/file"
@@ -19,6 +20,7 @@ var (
 )
 
 var log = l4g.GetLogger().SetCaller(false).SetPattern("[%T] [%L] (%s) %M\n")
+var filters = l4g.NewFilters()
 
 // Wrapper for app developing
 func Debug(source string, arg0 interface{}, args ...interface{}) {
@@ -37,45 +39,104 @@ func Error(source string, arg0 interface{}, args ...interface{}) {
 	log.Log(l4g.ERROR, source, arg0, args ...)
 }
 
+// Appender's properties
+type AppenderProp struct {
+	Name  string
+	Value string
+}
+
+type FilterConfig struct {
+	Tag		 string
+	Level    string
+	Props	 []AppenderProp `json:"properties"`
+}
+
+type LoggerConfig struct {
+	Filters  []FilterConfig `json:"filters"`
+}
+
+func loadFilter(fc *FilterConfig) {
+	if len(fc.Tag) == 0 {
+		Error("config", "Required child tag")
+		return
+	}
+	tag := strings.ToLower(fc.Tag)
+	if len(fc.Level) == 0 {
+		Error("config", "Required child level")
+		return
+	}
+	lvl := l4g.GetLevel(fc.Level)
+	if lvl >= l4g.SILENT {
+		Warn("config", "Disable \"%s\" for level \"%s\"", tag, fc.Level)
+		return
+	}
+
+	var appender l4g.Appender
+	switch tag {
+	case "color":
+		appender = colorlog.NewAppender()
+	case "file":
+		appender = filelog.NewAppender("_test.log", 0)
+	case "socket":
+		appender = socketlog.NewAppender("udp", "127.0.0.1:12124")
+	default:
+		Error("config", "Unknown appender <%s>", tag)
+		return
+	}
+
+	ok := true
+	for _, prop := range fc.Props {
+		err := appender.SetOption(prop.Name, strings.Trim(prop.Value, " \r\n"))
+		if err != nil {
+			Error("config", err)
+			ok = false
+		}
+	}
+	if !ok {
+		return
+	}
+ 	
+	filters.Add(tag, lvl, appender)
+}
+
+
 // Load appenders' configuration 
-func ConfigureLogger(logger *l4g.Logger, contents []byte, debug bool) {
+func loadConfiguration(contents []byte, debug bool) {
 	if debug {
-		logger.SetLevel(l4g.DEBUG)
+		log.SetLevel(l4g.DEBUG)
 	} else {
-		logger.SetLevel(l4g.INFO)
+		log.SetLevel(l4g.INFO)
 	}
 
  	// fmt.Println(string(contents))
 	// decode json logger config
-	lc := new(l4g.LoggerConfig)
+	lc := new(LoggerConfig)
 	if err := json.Unmarshal(contents, lc); err != nil {
-		Error("ConfigureLogger", "Can't parse %v %v", contents, err)
+		Error("config", "Can't parse %v %v", contents, err)
 		return
 	}
 
 	if len(lc.Filters) <= 0 {
-		Warn("ConfigureLogger", "Filters is NIL. The struct name should be 'filters'")
+		Warn("config", "Filters is NIL. The struct name should be 'filters'")
 		return
 	}
  	
-	Info("ConfigureLogger", "Total configuration: %d", len(lc.Filters))
+	Info("config", "Total configuration: %d", len(lc.Filters))
 	// fmt.Println(lc)
-	fs := l4g.NewFilters()
-	// Preload appenders which may be in configuration
-	fs.Preload("color", colorlog.NewAppender())
-	fs.Preload("file", filelog.NewAppender("_test.log", 0))
-	fs.Preload("socket", socketlog.NewAppender("udp", "127.0.0.1:12124"))
 
-	fs.LoadConfiguration(lc.Filters)
-	if filt, isExist := (*fs)["color"]; isExist {
+	for _, fc := range lc.Filters {
+		loadFilter(&fc)
+	}
+
+	if filt := filters.Get("color"); filt != nil {
 		if debug {
 			filt.Level = l4g.DEBUG
 		}
 		// New console appender loaded and disable default writer
-		logger.SetOutput(nil)
+		log.SetOutput(nil)
 	}
-	logger.SetFilters(fs)
-	Info("ConfigureLogger", "Total appenders installed: %d", len(*fs))
+	log.SetFilters(filters)
+	Info("config", "Total appenders installed: %d", len(*filters))
 	// Close filters by call log.Shutdown() when program exit
 }
 
@@ -99,6 +160,8 @@ func PrintFile(fn string) {
 }
 
 func main() {
+	flag.Parse()
+
 	// Open config file
 	fd, err := os.Open(*filename)
 	if err != nil {
@@ -118,7 +181,7 @@ func main() {
 	}
 
 	// Configure logger
-	ConfigureLogger(log, c.LogConfig, *debug)
+	loadConfiguration(c.LogConfig, *debug)
 
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")

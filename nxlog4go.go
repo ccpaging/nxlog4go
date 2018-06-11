@@ -127,7 +127,7 @@ func (l Level) String() string {
 }
 
 func GetLevel(s string) (lvl Level) {
-	switch s {
+	switch strings.ToUpper(s) {
 	case "FINEST", FINEST.String():
 		lvl = FINEST
 	case FINE.String():

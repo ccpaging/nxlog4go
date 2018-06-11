@@ -5,7 +5,7 @@ package filelog
 import (
 	"sync"
 	"time"
-	"strings"
+	"strconv"
 	"os"
 	"path"
 	l4g "github.com/ccpaging/nxlog4go"
@@ -151,6 +151,26 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	return fa
 }
 
+// Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
+func strToNumSuffix(str string, mult int) int {
+	num := 1
+	if len(str) > 1 {
+		switch str[len(str)-1] {
+		case 'G', 'g':
+			num *= mult
+			fallthrough
+		case 'M', 'm':
+			num *= mult
+			fallthrough
+		case 'K', 'k':
+			num *= mult
+			str = str[0 : len(str)-1]
+		}
+	}
+	parsed, _ := strconv.Atoi(str)
+	return parsed * num
+}
+
 /*
 Set option. checkable. Better be set before SetFilters()
 Option names include:
@@ -191,7 +211,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		case int:
 			flush = value
 		case string:
-			flush = l4g.StrToNumSuffix(strings.Trim(value, " \r\n"), 1024)
+			flush = strToNumSuffix(value, 1024)
 		default:
 			return l4g.ErrBadValue
 		}
@@ -202,7 +222,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		case int:
 			maxbackup = value
 		case string:
-			maxbackup = l4g.StrToNumSuffix(strings.Trim(value, " \r\n"), 1)
+			maxbackup = strToNumSuffix(value, 1)
 		default:
 			return l4g.ErrBadValue
 		}
@@ -213,7 +233,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		case int:
 			maxsize = value
 		case string:
-			maxsize = l4g.StrToNumSuffix(strings.Trim(value, " \r\n"), 1024)
+			maxsize = strToNumSuffix(value, 1024)
 		default:
 			return l4g.ErrBadValue
 		}
@@ -273,7 +293,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 		var daily bool
 		switch value := v.(type) {
 		case string:
-			daily = strings.Trim(value, " \r\n") != "false"
+			daily = (value != "false")
 		case bool:
 			daily = value
 		default:

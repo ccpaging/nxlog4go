@@ -3,7 +3,7 @@
 		"filters": [
 		{
 		  "tag": "color",
-		  "level": "DEBUG",
+		  "level": "INFO",
 		  "properties": [
 			{
 			  "name": "pattern",
@@ -27,7 +27,7 @@
 		},
 		{
 		  "tag": "socket",
-		  "level": "FINEST",
+		  "level": "SILENT",
 		  "properties": [
 			{
 			  "name": "protocol",
