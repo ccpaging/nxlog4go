@@ -2,16 +2,6 @@
 
 package nxlog4go
 
-import (
-	"errors"
-)
-
-// Various error codes.
-var (
-    ErrBadOption   = errors.New("invalid or unsupported option")
-    ErrBadValue    = errors.New("invalid option value")
-)
-
 /****** Appender ******/
 
 // This is an interface for anything that should be able to write logs

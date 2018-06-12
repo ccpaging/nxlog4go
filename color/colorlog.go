@@ -83,11 +83,5 @@ func (ca *ColorAppender) SetOption(name string, v interface{}) error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	switch name {
-	case "pattern", "format", "utc":
-		return ca.layout.SetOption(name, v)
-	default:
-		return l4g.ErrBadOption
-	}
-	return nil
+	return ca.layout.SetOption(name, v)
 }

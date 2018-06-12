@@ -152,7 +152,7 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 }
 
 // Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
-func strToNumSuffix(str string, mult int) int {
+func strToNumSuffix(str string, mult int) (int, error) {
 	num := 1
 	if len(str) > 1 {
 		switch str[len(str)-1] {
@@ -167,8 +167,41 @@ func strToNumSuffix(str string, mult int) int {
 			str = str[0 : len(str)-1]
 		}
 	}
-	parsed, _ := strconv.Atoi(str)
-	return parsed * num
+	parsed, err := strconv.Atoi(str)
+	return parsed * num, err
+}
+
+func toInt(i interface{}) (int, error) {
+	if v, ok := i.(int); ok {
+		return v, nil
+	} else if v, ok := i.(string); ok { 
+		return strToNumSuffix(v, 1024)
+	}
+	return 0, l4g.ErrBadValue
+}
+
+func toSeconds(i interface{}) (int, error) {
+	if v, ok := i.(int); ok {
+		return v, nil
+	} else if v, ok := i.(string); ok {
+		// Each with optional fraction and a unit suffix, 
+		// such as "300ms", "-1.5h" or "2h45m". 
+		// Valid time units are "ns", "us", "ms", "s", "m", "h".
+		dur, err := time.ParseDuration(v)
+		return int(dur/time.Second), err
+	}
+	return 0, l4g.ErrBadValue
+}
+
+func toBool(i interface{}) (bool, error) {
+	if v, ok := i.(bool); ok {
+		return v, nil
+	} else if v, ok := i.(int); ok {
+		return (v > 0), nil
+	} else if v, ok := i.(string); ok { 
+		return strconv.ParseBool(v)
+	}
+	return false, l4g.ErrBadValue
 }
 
 /*
@@ -192,124 +225,89 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 
 	switch name {
 	case "filename":
-		if filename, ok := v.(string); ok {
-			if len(filename) <= 0 {
-				return l4g.ErrBadValue
-			}
+		if filename, ok := v.(string); !ok {
+			return l4g.ErrBadValue
+		} else if len(filename) <= 0 {
+			return l4g.ErrBadValue
+		} else {
 			// Directory exist already, return nil
 			err := os.MkdirAll(path.Dir(filename), l4g.FilePermDefault)
 			if err != nil {
 				return err
 			}
 			fa.out.SetFileName(filename)
-		} else {
-			return l4g.ErrBadValue
 		}
 	case "flush":
-		var flush int
-		switch value := v.(type) {
-		case int:
-			flush = value
-		case string:
-			flush = strToNumSuffix(value, 1024)
-		default:
-			return l4g.ErrBadValue
-		}
-		fa.out.SetFlush(flush)
-	case "maxbackup":
-		var maxbackup int
-		switch value := v.(type) {
-		case int:
-			maxbackup = value
-		case string:
-			maxbackup = strToNumSuffix(value, 1)
-		default:
-			return l4g.ErrBadValue
-		}
-		fa.out.SetMaxBackup(maxbackup)
-	case "maxsize":
-		var maxsize int
-		switch value := v.(type) {
-		case int:
-			maxsize = value
-		case string:
-			maxsize = strToNumSuffix(value, 1024)
-		default:
-			return l4g.ErrBadValue
-		}
-		fa.maxsize = maxsize
-		if fa.cycle <= 0 {
-			fa.out.SetMaxSize(fa.maxsize)
-		}
-	case "pattern", "format", "utc":
-		return fa.layout.SetOption(name, v)
-	case "head":
-		if header, ok := v.(string); ok {
-			fa.out.SetHead(header)
+		if flush, err := toInt(v); err != nil {
+			return err
 		} else {
+			fa.out.SetFlush(flush)
+		}
+	case "maxbackup":
+		if maxbackup, err := toInt(v); err != nil {
+			return err
+		} else {
+			fa.out.SetMaxBackup(maxbackup)
+		}
+	case "maxsize":
+		if maxsize, err := toInt(v); err != nil {
+			return err
+		} else {
+			fa.maxsize = maxsize
+			if fa.cycle <= 0 {
+				fa.out.SetMaxSize(fa.maxsize)
+			}
+		}
+	case "head":
+		if header, ok := v.(string); !ok {
 			return l4g.ErrBadValue
+		} else {
+			fa.out.SetHead(header)
 		}
 	case "foot":
-		if footer, ok := v.(string); ok {
-			fa.out.SetFoot(footer)
-		} else {
+		if footer, ok := v.(string); !ok {
 			return l4g.ErrBadValue
+		} else {
+			fa.out.SetFoot(footer)
 		}
 	case "cycle":
-		switch value := v.(type) {
-		case int:
-			fa.cycle = value
-		case string:
-			// Each with optional fraction and a unit suffix, 
-			// such as "300ms", "-1.5h" or "2h45m". 
-			// Valid time units are "ns", "us", "ms", "s", "m", "h".
-			dur, _ := time.ParseDuration(value)
-			fa.cycle = int(dur/time.Second)
-		default:
-			return l4g.ErrBadValue
-		}
-		if fa.cycle <= 0 {
-			fa.out.SetMaxSize(fa.maxsize)
+		if cycle, err := toSeconds(v); err != nil {
+			return err
 		} else {
-			fa.out.SetMaxSize(0)
-		}
-		if fa.loopRunning {
-			fa.loopReset <- time.Now()
-		}
-	case "clock", "delay0":
-		switch value := v.(type) {
-		case int:
-			fa.clock = value
-		case string:
-			dur, _ := time.ParseDuration(value)
-			fa.clock = int(dur/time.Second)
-		default:
-			return l4g.ErrBadValue
-		}
-		if fa.loopRunning {
-			fa.loopReset <- time.Now()
-		}
-	case "daily":
-		var daily bool
-		switch value := v.(type) {
-		case string:
-			daily = (value != "false")
-		case bool:
-			daily = value
-		default:
-			return l4g.ErrBadValue
-		}
-		if daily {
-			fa.cycle = 86400
-			fa.clock = 0
-			fa.maxsize = 0
-			fa.out.SetMaxSize(0)
+			fa.cycle = cycle
+			if fa.cycle <= 0 {
+				fa.out.SetMaxSize(fa.maxsize)
+			} else {
+				fa.out.SetMaxSize(0)
+			}
 			if fa.loopRunning {
 				fa.loopReset <- time.Now()
 			}
 		}
+	case "clock", "delay0":
+		if clock, err := toSeconds(v); err != nil {
+			return err
+		} else {
+			fa.clock = clock
+			if fa.loopRunning {
+				fa.loopReset <- time.Now()
+			}
+		}
+	case "daily":
+		if daily, err := toBool(v); err != nil {
+			return err
+		} else if !daily {
+			return nil
+		}
+		fa.cycle = 86400
+		fa.clock = 0
+		fa.maxsize = 0
+		fa.out.SetMaxSize(0)
+		if fa.loopRunning {
+			fa.loopReset <- time.Now()
+		}
 	default:
-		return l4g.ErrBadOption
+		return fa.layout.SetOption(name, v)
 	}
 	return nil
 }

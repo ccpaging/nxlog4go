@@ -163,6 +163,13 @@ var (
 	LogBufferLength = 32
 )
 
+/****** Errors ******/
+
+var (
+    ErrBadOption   = errors.New("invalid or unsupported option")
+    ErrBadValue    = errors.New("invalid option value")
+)
+
 /****** LogRecord ******/
 
 // A LogRecord contains all of the pertinent information for each message

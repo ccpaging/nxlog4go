@@ -78,27 +78,25 @@ func (sa *SocketAppender) SetOption(name string, v interface{}) error {
 
 	switch name {
 	case "protocol":
-		if protocol, ok := v.(string); ok {
+		if protocol, ok := v.(string); !ok {
+			return l4g.ErrBadValue
+		} else if protocol == "" {
+			return l4g.ErrBadValue
+		} else {
 			sa.Close()
 			sa.prot = protocol
-		} else {
-			return l4g.ErrBadValue
 		}
 	case "endpoint":
-		if endpoint, ok := v.(string); ok {
-			if len(endpoint) > 0 {
-				sa.Close()
-				sa.host = endpoint
-			} else {
-				return l4g.ErrBadValue
-			}
-		} else {
+		if endpoint, ok := v.(string); !ok {
 			return l4g.ErrBadValue
+		} else if endpoint == "" {
+			return l4g.ErrBadValue
+		} else {
+			sa.Close()
+			sa.host = endpoint
 		}
-	case "pattern", "format", "utc":
-		return sa.layout.SetOption(name, v)
 	default:
-		return l4g.ErrBadOption
+		return sa.layout.SetOption(name, v)
 	}
 	return nil
 }

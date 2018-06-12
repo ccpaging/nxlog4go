@@ -5,6 +5,7 @@ package nxlog4go
 import (
 	"bytes"
 	"strings"
+	"strconv"
 	"time"
 	"sync"
 )
@@ -112,11 +113,11 @@ func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 		}
 	case "utc":
 		if value, ok := v.(string); ok {
-			if value == "true" {
-				pl.isUTC = true
-			} else {
-				pl.isUTC = false
-			}
+			b, err := strconv.ParseBool(value)
+			if err != nil {
+				return err
+			} 
+			pl.isUTC = b
 		} else if value, ok := v.(bool); ok {
 			pl.isUTC = value
 		} else {
