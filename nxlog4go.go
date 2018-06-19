@@ -116,11 +116,11 @@ const (
 
 // Logging level strings
 var (
-	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT", "DISA"}
+	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT"}
 )
 
 func (l Level) String() string {
-	if l < 0 || int(l) > len(levelStrings) {
+	if l < 0 || int(l) >= len(levelStrings) {
 		return "UNKNOWN"
 	}
 	return levelStrings[int(l)]
