@@ -14,23 +14,52 @@ func GetLogLog() *Logger {
 	return loglog
 }
 
+func LogLogDebug(source string, arg0 interface{}, args ...interface{}) {
+	if loglog == nil {
+		return
+	}
+	if loglog.skip(DEBUG) {
+		return
+	}
+	loglog.intLogS(DEBUG, source, intMsg(arg0, args ...))
+}
+
 func LogLogTrace(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
-	loglog.Log(TRACE, source, arg0, args ...)
+	if loglog.skip(TRACE) {
+		return
+	}
+	loglog.intLogS(TRACE, source, intMsg(arg0, args ...))
+}
+
+func LogLogInfo(source string, arg0 interface{}, args ...interface{}) {
+	if loglog == nil {
+		return
+	}
+	if loglog.skip(INFO) {
+		return
+	}
+	loglog.intLogS(INFO, source, intMsg(arg0, args ...))
 }
 
 func LogLogWarn(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
-	loglog.Log(WARNING, source, arg0, args ...)
+	if loglog.skip(WARNING) {
+		return
+	}
+	loglog.intLogS(WARNING, source, intMsg(arg0, args ...))
 }
 
 func LogLogError(source string, arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
-	loglog.Log(ERROR, source, arg0, args ...)
+	if loglog.skip(ERROR) {
+		return
+	}
+	loglog.intLogS(ERROR, source, intMsg(arg0, args ...))
 }

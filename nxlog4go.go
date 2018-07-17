@@ -428,11 +428,7 @@ func intMsg(arg0 interface{}, args ...interface{}) string {
 }
 
 // Send a log message with manual level, source, and message.
-func (log Logger) Log(lvl Level, source string, arg0 interface{}, args ...interface{}) {
-	if log.skip(lvl) {
-		return
-	}
-
+func (log Logger) intLogS(lvl Level, source string, message string) {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 
@@ -442,7 +438,7 @@ func (log Logger) Log(lvl Level, source string, arg0 interface{}, args ...interf
 		Created: time.Now(),
 		Prefix:  log.prefix,
 		Source:  source,
-		Message: intMsg(arg0, args ...),
+		Message: message,
 	}
 
 	if log.out != nil {
@@ -576,6 +572,43 @@ func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
 	msg := intMsg(arg0, args...)
 	if !log.skip(CRITICAL) {
 		log.intLog(CRITICAL, msg)
+	}
+	return errors.New(msg)
+}
+
+func (log Logger) DebugS(source string, arg0 interface{}, args ...interface{}) {
+	if log.skip(DEBUG) {
+		return
+	}
+	log.intLogS(DEBUG, source, intMsg(arg0, args...))
+}
+
+func (log Logger) TraceS(source string, arg0 interface{}, args ...interface{}) {
+	if log.skip(TRACE) {
+		return
+	}
+	log.intLogS(TRACE, source, intMsg(arg0, args...))
+}
+
+func (log Logger) InfoS(source string, arg0 interface{}, args ...interface{}) {
+	if log.skip(INFO) {
+		return
+	}
+	log.intLogS(INFO, source, intMsg(arg0, args...))
+}
+
+func (log Logger) WarnS(source string, arg0 interface{}, args ...interface{}) error {
+	msg := intMsg(arg0, args...)
+	if !log.skip(WARNING) {
+		log.intLogS(WARNING, source, msg)
+	}
+	return errors.New(msg)
+}
+
+func (log Logger) ErrorS(source string, arg0 interface{}, args ...interface{}) error {
+	msg := intMsg(arg0, args...)
+	if !log.skip(ERROR) {
+		log.intLogS(ERROR, source, msg)
 	}
 	return errors.New(msg)
 }

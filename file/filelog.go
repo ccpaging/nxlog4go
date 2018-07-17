@@ -132,7 +132,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		case <-rotTimer.C:
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
-			l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
+			l4g.LogLogDebug("filelog", "Next time is %v", nrt.Sub(time.Now()))
 			if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
 				fa.out.Rotate()
 			}
