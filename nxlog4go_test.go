@@ -436,6 +436,7 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 	b.StopTimer()
 }
 
+// go test -bench=.
 // Benchmark results (windows amd64 10g)
 // BenchmarkPatternLayout-4                 2000000               952 ns/op
 // BenchmarkJson-4                           500000              3040 ns/op

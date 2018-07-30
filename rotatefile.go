@@ -65,7 +65,7 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 func intBackup(newName string, pattern string, backup int) {
 	// May compress new log file here
 
-	LogLogTrace("rfw", "Backup %s", newName)
+	LogLogTrace("Backup %s", newName)
 
 	ext := path.Ext(pattern) // like ".log"
 	path := pattern[0:len(pattern)-len(ext)] // include dir
@@ -94,12 +94,12 @@ func intBackup(newName string, pattern string, backup int) {
 	
 	for ; n > 1; n-- {
 		prev := path + fmt.Sprintf(".%d", n - 1) + ext
-		LogLogTrace("rfw", "Rename %s to %s", prev, slot)
+		LogLogTrace("Rename %s to %s", prev, slot)
 		os.Rename(prev, slot)
 		slot = prev
 	}
 	
-	LogLogTrace("rfw", "Rename %s to %s", newName, path + ".1" + ext)
+	LogLogTrace("Rename %s to %s", newName, path + ".1" + ext)
 	os.Rename(newName, path + ".1" + ext)
 }
 
@@ -114,7 +114,7 @@ func (rfw *RotateFileWriter) Rotate() {
 		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
 	}
 
-	LogLogTrace("rfw", "Close %s", rfw.FileBufWriter.Name())
+	LogLogTrace("Close %s", rfw.FileBufWriter.Name())
 	rfw.FileBufWriter.Close()
 	
 	name := rfw.FileBufWriter.Name()
@@ -125,10 +125,10 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	// File existed. File size > maxsize. Rotate
 	newName := name + time.Now().Format(".20060102-150405")
-	LogLogTrace("rfw", "Rename %s to %s", name, newName)
+	LogLogTrace("Rename %s to %s", name, newName)
 	err := os.Rename(name, newName)
 	if err != nil {
-		LogLogError("RotateFileWriter", err)
+		LogLogError(err)
 		return
 	}
 	
@@ -140,7 +140,7 @@ func (rfw *RotateFileWriter) Rotate() {
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	rfw.Lock()
 	defer rfw.Unlock()
-	LogLogTrace("rfw", "Set file name as %s", path)
+	LogLogTrace("Set file name as %s", path)
 	rfw.FileBufWriter.Close()
 	rfw.FileBufWriter = NewFileBufWriter(path)
 	return rfw

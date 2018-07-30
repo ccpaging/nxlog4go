@@ -9,57 +9,57 @@ var loglog *Logger = nil
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = New(DEBUG).SetPrefix("nxlog4go").SetPattern("%T %P:%S %L %M\n").SetCaller(false)
+		loglog = New(DEBUG).SetPrefix("lg4g").SetPattern("%T %P %L %M\n").SetCaller(false)
 	}
 	return loglog
 }
 
-func LogLogDebug(source string, arg0 interface{}, args ...interface{}) {
+func LogLogDebug(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	if loglog.skip(DEBUG) {
 		return
 	}
-	loglog.intLogS(DEBUG, source, intMsg(arg0, args ...))
+	loglog.intLog(DEBUG, intMsg(arg0, args ...))
 }
 
-func LogLogTrace(source string, arg0 interface{}, args ...interface{}) {
+func LogLogTrace(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	if loglog.skip(TRACE) {
 		return
 	}
-	loglog.intLogS(TRACE, source, intMsg(arg0, args ...))
+	loglog.intLog(TRACE, intMsg(arg0, args ...))
 }
 
-func LogLogInfo(source string, arg0 interface{}, args ...interface{}) {
+func LogLogInfo(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	if loglog.skip(INFO) {
 		return
 	}
-	loglog.intLogS(INFO, source, intMsg(arg0, args ...))
+	loglog.intLog(INFO, intMsg(arg0, args ...))
 }
 
-func LogLogWarn(source string, arg0 interface{}, args ...interface{}) {
+func LogLogWarn(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	if loglog.skip(WARNING) {
 		return
 	}
-	loglog.intLogS(WARNING, source, intMsg(arg0, args ...))
+	loglog.intLog(WARNING, intMsg(arg0, args ...))
 }
 
-func LogLogError(source string, arg0 interface{}, args ...interface{}) {
+func LogLogError(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
 	}
 	if loglog.skip(ERROR) {
 		return
 	}
-	loglog.intLogS(ERROR, source, intMsg(arg0, args ...))
+	loglog.intLog(ERROR,intMsg(arg0, args ...))
 }

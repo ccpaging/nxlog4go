@@ -100,14 +100,14 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		fa.loopRunning = false
 	}()
 
-	l4g.LogLogTrace("filelog", "cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
+	l4g.LogLogTrace("cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
 	if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
 		fa.out.Rotate()
 	}
 
 	nrt := nextTime(fa.cycle, fa.clock)
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
-	l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
+	l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
 
 	close(ready)
 	for {
@@ -132,15 +132,15 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		case <-rotTimer.C:
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
-			l4g.LogLogDebug("filelog", "Next time is %v", nrt.Sub(time.Now()))
+			l4g.LogLogDebug("Next time is %v", nrt.Sub(time.Now()))
 			if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
 				fa.out.Rotate()
 			}
 		case <-fa.loopReset:
-			l4g.LogLogTrace("filelog", "Reset. cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
+			l4g.LogLogTrace("Reset. cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
-			l4g.LogLogTrace("filelog", "Next time is %v", nrt.Sub(time.Now()))
+			l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
 		}
 	}
 }

@@ -428,7 +428,7 @@ func intMsg(arg0 interface{}, args ...interface{}) string {
 }
 
 // Send a log message with manual level, source, and message.
-func (log Logger) intLogS(lvl Level, source string, message string) {
+func (log Logger) Log(lvl Level, source string, line int, message string) {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 
@@ -438,6 +438,7 @@ func (log Logger) intLogS(lvl Level, source string, message string) {
 		Created: time.Now(),
 		Prefix:  log.prefix,
 		Source:  source,
+		Line:    line,
 		Message: message,
 	}
 
@@ -452,38 +453,16 @@ func (log Logger) intLogS(lvl Level, source string, message string) {
 
 // Send a log message with level, and message.
 func (log Logger) intLog(lvl Level, message string) {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-
-	// Make the log record
-	rec := &LogRecord{
-		Level:   lvl,
-		Created: time.Now(),
-		Prefix:  log.prefix,
-		Message: message,
+	if !log.caller {
+		log.Log(lvl, "", 0, message)
+		return
 	}
-
-	if log.caller {
-		// Determine caller func - it's expensive.
-		log.mu.Unlock()
-
-		var ok bool
-		_, rec.Source, rec.Line, ok = runtime.Caller(LogCallerDepth)
-		if !ok {
-			rec.Source = "???"
-			rec.Line = 0
-		}
-
-		log.mu.Lock()
+	if log.out == nil && log.filters == nil {
+		return
 	}
-	
-	if log.out != nil {
-    	log.out.Write(log.layout.Format(rec))
-	}
-
-	if log.filters != nil {
-		log.filters.Dispatch(rec)
-	}
+	// Determine caller func - it's expensive.
+	_, source, line, _ := runtime.Caller(LogCallerDepth)
+	log.Log(lvl, source, line, message)
 }
 
 // Finest logs a message at the finest log level.
@@ -572,43 +551,6 @@ func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
 	msg := intMsg(arg0, args...)
 	if !log.skip(CRITICAL) {
 		log.intLog(CRITICAL, msg)
-	}
-	return errors.New(msg)
-}
-
-func (log Logger) DebugS(source string, arg0 interface{}, args ...interface{}) {
-	if log.skip(DEBUG) {
-		return
-	}
-	log.intLogS(DEBUG, source, intMsg(arg0, args...))
-}
-
-func (log Logger) TraceS(source string, arg0 interface{}, args ...interface{}) {
-	if log.skip(TRACE) {
-		return
-	}
-	log.intLogS(TRACE, source, intMsg(arg0, args...))
-}
-
-func (log Logger) InfoS(source string, arg0 interface{}, args ...interface{}) {
-	if log.skip(INFO) {
-		return
-	}
-	log.intLogS(INFO, source, intMsg(arg0, args...))
-}
-
-func (log Logger) WarnS(source string, arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
-	if !log.skip(WARNING) {
-		log.intLogS(WARNING, source, msg)
-	}
-	return errors.New(msg)
-}
-
-func (log Logger) ErrorS(source string, arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
-	if !log.skip(ERROR) {
-		log.intLogS(ERROR, source, msg)
 	}
 	return errors.New(msg)
 }

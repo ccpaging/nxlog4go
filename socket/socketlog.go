@@ -45,14 +45,14 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 	if sa.sock == nil {
 		sa.sock, err = net.Dial(sa.prot, sa.host)
 		if err != nil {
-			l4g.LogLogError("SocketAppender", err)
+			l4g.LogLogError(err)
 			return
 		}
 	}
 
 	_, err = sa.sock.Write(sa.layout.Format(rec))
 	if err != nil {
-		l4g.LogLogError("SocketAppender", err)
+		l4g.LogLogError(err)
 		sa.sock.Close()
 		sa.sock = nil
 	}
