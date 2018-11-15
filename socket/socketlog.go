@@ -27,7 +27,15 @@ func (sa *SocketAppender) Close() {
 	}
 }
 
-func NewAppender(prot, host string) l4g.Appender {
+// This creates a the socket appender with default udp 
+// protocol and endpoint.
+func New() l4g.Appender {
+	return NewSocketAppender("udp", "127.0.0.1:12124")
+}
+
+// NewSocketAppender creates a new appender with given 
+// socket protocol and endpoint.
+func NewSocketAppender(prot, host string) l4g.Appender {
 	return &SocketAppender {
 		layout: l4g.NewPatternLayout(l4g.PATTERN_JSON),	
 		sock:	nil,

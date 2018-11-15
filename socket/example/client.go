@@ -13,7 +13,7 @@ func main() {
 	// Enable internal log
 	l4g.GetLogLog().SetLevel(l4g.WARNING)
 
-	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewAppender("udp", "127.0.0.1:12124"))
+	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewSocketAppender("udp", "127.0.0.1:12124"))
 	defer func() {
 		if fs := log.Filters(); fs != nil {
 			log.SetFilters(nil).SetOutput(os.Stderr)

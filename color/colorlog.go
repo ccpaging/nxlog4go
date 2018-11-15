@@ -10,9 +10,6 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var isColorful = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
-	 os.Getenv("ConEmuANSI") == "ON"
-
 // 0, Black; 1, Red; 2, Green; 3, Yellow; 4, Blue; 5, Purple; 6, Cyan; 7, White
 var ColorBytes = [...][]byte{
 	[]byte("\x1b[0;34m"),	   // FINEST, Blue
@@ -32,13 +29,21 @@ type ColorAppender struct {
 	mu		sync.Mutex // ensures atomic writes; protects the following fields
 	out		io.Writer  // destination for output
 	layout  l4g.Layout // format record for output
+	isColorful bool
+}
+
+// This creates the default ColorAppender output to os.Stderr.
+func New() l4g.Appender {
+	return NewColorAppender(os.Stderr)
 }
 
 // This creates a new ColorAppender.
-func NewAppender() l4g.Appender {
+func NewColorAppender(w io.Writer) l4g.Appender {
 	return &ColorAppender {
-		out:	os.Stderr,
+		out:	w,
 		layout: l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),
+		isColorful: (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
+			os.Getenv("ConEmuANSI") == "ON",
 	}
 }
 
@@ -47,6 +52,14 @@ func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 	ca.out = w
+	return ca
+}
+
+// SetOutput sets the output destination for ColorAppender.
+func (ca *ColorAppender) SetColor(isColorful bool) l4g.Appender {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	ca.isColorful = isColorful
 	return ca
 }
 
@@ -60,7 +73,7 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	if isColorful {
+	if ca.isColorful {
 		ca.out.Write(ColorBytes[rec.Level])
 		defer ca.out.Write(ColorReset)
 	}

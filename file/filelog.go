@@ -7,7 +7,8 @@ import (
 	"time"
 	"strconv"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
@@ -62,9 +63,16 @@ func (fa *FileAppender) Close() {
 	close(fa.loopReset)
 }
 
+// This creates a new file appender which writes to the file 
+// named '<exe path base name>.log' without rotation.
+func New() l4g.Appender {
+	base := filepath.Base(os.Args[0])
+	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", 0)
+}
+
 // NewFileAppender creates a new appender which writes to the given file and
 // has rotation enabled if maxbackup > 0.
-func NewAppender(filename string, maxbackup int) l4g.Appender {
+func NewFileAppender(filename string, maxbackup int) l4g.Appender {
 	return &FileAppender{
 		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
@@ -231,7 +239,7 @@ func (fa *FileAppender) SetOption(name string, v interface{}) error {
 			return l4g.ErrBadValue
 		} else {
 			// Directory exist already, return nil
-			err := os.MkdirAll(path.Dir(filename), l4g.FilePermDefault)
+			err := os.MkdirAll(filepath.Dir(filename), l4g.FilePermDefault)
 			if err != nil {
 				return err
 			}

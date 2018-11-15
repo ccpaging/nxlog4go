@@ -42,7 +42,7 @@ func main() {
 	log := l4g.New(l4g.FINE).SetOutput(nil)
 
 	// Create a default logger that is logging messages of FINE or higher
-	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewAppender(filenameA, 0))
+	fs0 := l4g.NewFilters().Add("file", l4g.FINE, filelog.NewFileAppender(filenameA, 0))
 	log.SetFilters(fs0)
 	log.Finest("Everything is created now (notice that I will not be printing to the file)")
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	/* Can also specify manually via the following: (these are the defaults) */
-	fa := filelog.NewAppender(filename, 10)
+	fa := filelog.NewFileAppender(filename, 10)
 	fa.Set("format", "[%D %T] [%L] (%x) %M%R")
 	fa.Set("cycle", 5)
 	fa.Set("delay0", -1)
