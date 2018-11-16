@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"strconv"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
@@ -29,7 +30,7 @@ type ColorAppender struct {
 	mu		sync.Mutex // ensures atomic writes; protects the following fields
 	out		io.Writer  // destination for output
 	layout  l4g.Layout // format record for output
-	isColorful bool
+	color	bool
 }
 
 // This creates the default ColorAppender output to os.Stderr.
@@ -42,7 +43,7 @@ func NewColorAppender(w io.Writer) l4g.Appender {
 	return &ColorAppender {
 		out:	w,
 		layout: l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),
-		isColorful: (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
+		color: 	(os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
 			os.Getenv("ConEmuANSI") == "ON",
 	}
 }
@@ -52,14 +53,6 @@ func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 	ca.out = w
-	return ca
-}
-
-// SetOutput sets the output destination for ColorAppender.
-func (ca *ColorAppender) SetColor(isColorful bool) l4g.Appender {
-	ca.mu.Lock()
-	defer ca.mu.Unlock()
-	ca.isColorful = isColorful
 	return ca
 }
 
@@ -73,7 +66,7 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	if ca.isColorful {
+	if ca.color {
 		ca.out.Write(ColorBytes[rec.Level])
 		defer ca.out.Write(ColorReset)
 	}
@@ -86,6 +79,17 @@ func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 	return ca
 }
 
+func toBool(i interface{}) (bool, error) {
+	if v, ok := i.(bool); ok {
+		return v, nil
+	} else if v, ok := i.(int); ok {
+		return (v > 0), nil
+	} else if v, ok := i.(string); ok { 
+		return strconv.ParseBool(v)
+	}
+	return false, l4g.ErrBadValue
+}
+
 /* 
 Set option. checkable. Better be set before SetFilters()
 Option names include:
@@ -96,5 +100,15 @@ func (ca *ColorAppender) SetOption(name string, v interface{}) error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	return ca.layout.SetOption(name, v)
+	switch name {
+	case "color":
+		if color, err := toBool(v); err != nil {
+			return err
+		} else {
+			ca.color = color
+		}
+	default:
+		return ca.layout.SetOption(name, v)
+	}
+	return nil
 }
