@@ -61,28 +61,20 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		if fc.Tag == "" && fc.Type == "" {
 			LogLogWarn("Missing tag and type")
 			continue
-		}
-
-		if fc.Tag == "" { 
+		} else if fc.Tag == "" { 
 			fc.Tag = fc.Type
-		}
-		if fc.Type == "" {
+		} else if fc.Type == "" {
 			fc.Type = strings.ToLower(fc.Tag)
 		}
 
-		enabled, err := strconv.ParseBool(fc.Enabled)
-		if err != nil {
+		if enabled, err := ToBool(fc.Enabled); err != nil {
 			LogLogTrace("Disable \"%s\" for %s", fc.Tag, err)
 			continue
-		}
-		if !enabled {
+		} else if !enabled {
 			LogLogTrace("Disable \"%s\"", fc.Tag)
 			continue
 		} 
 
-		if fc.Level == "" {
-			fc.Level = levelStrings[INFO]
-		}
 		lvl := GetLevel(fc.Level)
 
 		if fc.Type == "stdout" {
