@@ -157,7 +157,7 @@ func TestRotateFileWriter(t *testing.T) {
 }
 
 func TestLogLogger(t *testing.T) {
-	l := GetLogLog().SetLevel(TRACE)
+	l := GetLogLog().Set("level", TRACE)
 	if l == nil {
 		t.Fatalf("GetLogLog should never return nil")
 	}
@@ -227,7 +227,7 @@ func TestLogOutput(t *testing.T) {
 
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
 	ww := io.MultiWriter(os.Stderr, fbw)
-	l := New(FINEST).SetOutput(ww).SetPattern("[%L] %M\n")
+	l := New(FINEST).SetOutput(ww).Set("pattern", "[%L] %M\n")
 
 	defer os.Remove(testLogFile)
 
@@ -262,7 +262,7 @@ func TestCountMallocs(t *testing.T) {
 	}
 
 	// Console logger
-	sl := New(INFO).SetCaller(false)
+	sl := New(INFO).Set("caller", false)
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
@@ -355,7 +355,7 @@ func BenchmarkConsoleWriter(b *testing.B) {
 	}
 	*/
 
-	sl := New(INFO).SetOutput(ioutil.Discard).SetCaller(false)
+	sl := New(INFO).SetOutput(ioutil.Discard).Set("caller", false)
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
 	}
@@ -382,7 +382,7 @@ func BenchmarkFileWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).SetCaller(false)
+	sl := New(INFO).SetOutput(w).Set("caller", false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
@@ -398,7 +398,7 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 	}()
 	defer w.Close()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).SetCaller(false)
+	sl := New(INFO).SetOutput(w).Set("caller", false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -413,7 +413,7 @@ func BenchmarkFileBufWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).SetCaller(false)
+	sl := New(INFO).SetOutput(w).Set("caller", false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
@@ -428,7 +428,7 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).SetCaller(false)
+	sl := New(INFO).SetOutput(w).Set("caller", false)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")

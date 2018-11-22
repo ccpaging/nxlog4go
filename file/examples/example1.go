@@ -34,7 +34,7 @@ func PrintFile(fn string) {
 
 func init() {
 	// Enable internal logger
-	l4g.GetLogLog().SetLevel(l4g.TRACE)
+	l4g.GetLogLog().Set("level", l4g.TRACE)
 }
 
 func main() {

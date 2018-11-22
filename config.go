@@ -24,44 +24,53 @@ type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
 }
 
-func loadLogLog(l Level, pattern string) {
-	if l < SILENT {
-		loglog := GetLogLog().SetLevel(l)
-		if pattern != "" {
-			loglog.SetPattern(pattern)
-		}
-	}
-}
-
-func loadStdout(log *Logger, l Level, pattern string) {
-	if l < SILENT {
-		log.SetLevel(l)
-		if pattern != "" {
-			log.SetPattern(pattern)
-		}
+func loadLogLog(level Level, pattern string) {
+	if level >= SILENT {
+		LogLogTrace("Disable loglog for level \"%d\"", level)
 	} else {
-		log.SetOutput(nil)
+		loglog := GetLogLog().Set("level", level)
+		if pattern != "" {
+			loglog.Set("pattern", pattern)
+		}
 	}
 }
 
-func loadAppender(typ string, props []NameValue) (Appender, []string) {
-	var errs []string
+func loadStdout(log *Logger, level Level, pattern string) {
+	if level >= SILENT {
+		LogLogTrace("Disable stdout for level \"%d\"", level)
+		log.SetOutput(nil)
+	} else {
+		log.Set("level", level)
+		if pattern != "" {
+			log.Set("pattern", pattern)
+		}
+	}
+}
+
+func loadAppender(level Level, typ string, props []NameValue) Appender {
+	if level >= SILENT {
+		LogLogTrace("Disable \"%s\" for level \"%d\"", typ, level)
+		return nil
+	}
 
 	newFunc := GetAppenderNewFunc(typ)
 	if newFunc == nil {
-		errs = append(errs, "Unknown appender type. " + typ)
-		return nil, errs
+		LogLogWarn("Unknown appender type \"%s\"", typ)
+		return nil
 	}
 
 	appender := newFunc()
+	if appender == nil {
+		return nil
+	}
+
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
-		err := appender.SetOption(prop.Name, v)
-		if err != nil {
-			errs = append(errs, err.Error() + ". " + prop.Name + ": " + v)
+		if err := appender.SetOption(prop.Name, v); err != nil {
+			LogLogWarn("%s. %s: %s", err.Error(), prop.Name, v)
 		}
 	}
-	return appender, errs
+	return appender
 }
 
 // Load configuration; see examples/example.xml for documentation
@@ -95,9 +104,6 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		} 
 
 		level := GetLevel(fc.Level)
-		if level >= SILENT {
-			LogLogTrace("Disable \"%s\" for level \"%s\"", fc.Tag, fc.Level)
-		}
 
 		switch fc.Type {
 		case "loglog":
@@ -105,20 +111,11 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		case "stdout":
 			loadStdout(log, level, fc.Pattern)
 		default:
-			if level >= SILENT {
-				continue
+			appender := loadAppender(level, fc.Type, fc.Properties)
+			if appender != nil {
+				LogLogTrace("Succeeded loading appender \"%s\"", fc.Tag)
+				filters.Add(fc.Tag, level, appender)
 			}
-			appender, errs := loadAppender(fc.Type, fc.Properties)
-			if len(errs) > 0 {
-				for _, err := range errs {
-					LogLogWarn(err)
-				}
-				LogLogTrace("Failed loading appender \"%s\"", fc.Tag)
-				continue
-			}
-	
-			LogLogTrace("Succeeded loading appender \"%s\"", fc.Tag)
-			filters.Add(fc.Tag, level, appender)
 		}
 	}
 

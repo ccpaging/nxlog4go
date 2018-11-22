@@ -9,7 +9,7 @@ var loglog *Logger = nil
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = New(DEBUG).SetPrefix("lg4g").SetPattern("%T %P %L %M\n").SetCaller(false)
+		loglog = New(DEBUG).Set("prefix", "lg4g").Set("pattern", "%T %P %L %M\n").Set("caller", false)
 	}
 	return loglog
 }

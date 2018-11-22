@@ -126,30 +126,30 @@ func (l Level) String() string {
 	return levelStrings[int(l)]
 }
 
-func GetLevel(s string) (lvl Level) {
+func GetLevel(s string) (level Level) {
 	switch strings.ToUpper(s) {
 	case "FINEST", FINEST.String():
-		lvl = FINEST
+		level = FINEST
 	case FINE.String():
-		lvl = FINE
+		level = FINE
 	case "DEBUG", DEBUG.String():
-		lvl = DEBUG
+		level = DEBUG
 	case "TRACE", TRACE.String():
-		lvl = TRACE
+		level = TRACE
 	case "INFO", INFO.String():
-		lvl = INFO
+		level = INFO
 	case "WARNING", WARNING.String():
-		lvl = WARNING
+		level = WARNING
 	case "ERROR", ERROR.String():
-		lvl = ERROR
+		level = ERROR
 	case "CRITICAL", CRITICAL.String():
-		lvl = CRITICAL
+		level = CRITICAL
 	case "DISABLE", "DISA", "SILENT", "QUIET":
-		lvl = SILENT
+		level = SILENT
 	default:
-		lvl = INFO
+		level = INFO
 	}
-	return lvl
+	return level
 }
 
 /****** Variables ******/
@@ -252,51 +252,6 @@ func (log *Logger) SetPrefix(prefix string) *Logger {
 	return log
 }
 
-// Caller return runtime caller skip for the logger.
-func (log *Logger) Caller() bool {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.caller
-}
-
-// SetCaller enable or disable the runtime caller function for the logger.
-func (log *Logger) SetCaller(caller bool) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.caller = caller
-	return log
-}
-
-// Level returns the output level for the logger.
-func (log *Logger) Level() Level {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.level
-}
-
-// SetLevel sets the output level for the logger.
-func (log *Logger) SetLevel(lvl Level) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.level = lvl
-	return log
-}
-
-// Pattern returns the output PatternLayout's pattern for the logger.
-func (log *Logger) Pattern() string {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.layout.Get("pattern")
-}
-
-// SetPattern sets the output PatternLayout's pattern for the logger.
-func (log *Logger) SetPattern(pattern string) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.layout.Set("pattern", pattern)
-	return log
-}
-
 // Set option. chainable
 func (log *Logger) Set(name string, v interface{}) *Logger {
 	log.SetOption(name, v)
@@ -311,42 +266,39 @@ Option names include:
 	level   - The output level
 	pattern	- The pattern of Layout format
 */
-func (log *Logger) SetOption(name string, v interface{}) error {
-	switch name {
+func (log *Logger) SetOption(k string, v interface{}) (err error) {
+	err = nil
+
+	switch k {
 	case "prefix":
-		if prefix, ok := v.(string); ok {
+		prefix := ""
+		if prefix, err = ToString(v); err == nil {
 			log.SetPrefix(prefix)
-		} else {
-			return ErrBadValue
 		}
 	case "caller":
 		caller := false
-		switch value := v.(type) {
-		case bool:
-			caller = value
-		case string:
-			if strings.HasPrefix(value, "T") || strings.HasPrefix(value, "t") {
-				caller = true 
-			}
-		default:
-			return ErrBadValue
+		if caller, err = ToBool(v); err == nil {
+			log.mu.Lock()
+			log.caller = caller
+			log.mu.Unlock()
 		}
-		log.SetCaller(caller)
 	case "level":
-		lvl := INFO
-		switch value := v.(type) {
+		switch v.(type) {
 		case int:
-			lvl = Level(value)
+			log.mu.Lock()
+			log.level = Level(v.(int))
+			log.mu.Unlock()
 		case string:
-			lvl = GetLevel(value)
+			log.mu.Lock()
+			log.level = GetLevel(v.(string))
+			log.mu.Unlock()
 		default:
-			return ErrBadValue
+			err = ErrBadValue
 		}
-		log.SetLevel(lvl)
 	default:
-		return log.layout.SetOption(name, v)
+		return log.layout.SetOption(k, v)
 	}
-	return nil
+	return
 }
 
 // SetOutput sets the output destination for the logger.

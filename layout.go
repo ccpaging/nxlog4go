@@ -9,23 +9,6 @@ import (
 	"sync"
 )
 
-// Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
-func itoa(buf *[]byte, i int, wid int) {
-	// Assemble decimal in reverse order.
-	var b [20]byte
-	bp := len(b) - 1
-	for i >= 10 || wid > 1 {
-		wid--
-		q := i / 10
-		b[bp] = byte('0' + i - q*10)
-		bp--
-		i = q
-	}
-	// i < 10
-	b[bp] = byte('0' + i)
-	*buf = append(*buf, b[bp:]...)
-}
-
 // This is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
@@ -36,7 +19,7 @@ type Layout interface {
 	// Checkable
 	SetOption(name string, v interface{}) error
 
-	Get(name string) string
+	// Get(name string) string
 
 	// This will be called to log a LogRecord message.
 	Format(rec *LogRecord) []byte
@@ -130,6 +113,7 @@ func (pl *PatternLayout) SetOption(name string, v interface{}) (err error) {
 	return
 }
 
+/*
 // Get option
 func (pl PatternLayout) Get(name string) string {
 	pl.mu.Lock()
@@ -139,6 +123,25 @@ func (pl PatternLayout) Get(name string) string {
 	}
 	return ""
 }
+*/
+
+// Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
+func itoa(buf *[]byte, i int, wid int) {
+	// Assemble decimal in reverse order.
+	var b [20]byte
+	bp := len(b) - 1
+	for i >= 10 || wid > 1 {
+		wid--
+		q := i / 10
+		b[bp] = byte('0' + i - q*10)
+		bp--
+		i = q
+	}
+	// i < 10
+	b[bp] = byte('0' + i)
+	*buf = append(*buf, b[bp:]...)
+}
+
 
 // Format log record
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
@@ -171,8 +174,8 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'U':
 				b = nil
 				itoa(&b, hour, 2); b = append(b, ':');
- 				itoa(&b, minute, 2); b = append(b, ':');
- 				itoa(&b, second, 2); b = append(b, '.')
+				itoa(&b, minute, 2); b = append(b, ':');
+				itoa(&b, second, 2); b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
 				out.Write(b)
 			case 'T':

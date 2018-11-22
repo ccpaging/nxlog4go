@@ -202,7 +202,7 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "filename":
 		fname := ""
-		if fname, err = l4g.ToString(v); err == nil && len(fname) > 0{
+		if fname, err = l4g.ToString(v); err == nil && len(fname) > 0 {
 			// Directory exist already, return nil
 			err = os.MkdirAll(filepath.Dir(fname), l4g.FilePermDefault)
 			if err == nil {
@@ -216,19 +216,8 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 		if flush, err = l4g.ToInt(v); err == nil {
 			fa.out.SetFlush(flush)
 		}
-	case "maxbackup":
-		maxbackup := 0
-		if maxbackup, err = l4g.ToInt(v); err == nil {
-			fa.out.Set("maxbackup", maxbackup)
-		}
-	case "maxsize":
-		maxsize := 0
-		if maxsize, err = l4g.ToInt(v); err == nil {
-			fa.out.Set("maxsize", maxsize)
-			fa.out.Set("rotate", (fa.cycle <= 0))
-		}
-	case "head", "foot":
-		return fa.out.SetOption(k, v)
+	case "head", "foot", "maxbackup", "maxsize", "maxlines":
+		err = fa.out.SetOption(k, v)
 	case "cycle":
 		cycle := 0
 		if cycle, err = l4g.ToSeconds(v); err == nil {
@@ -257,7 +246,7 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 			}
 		}
 	default:
-		return fa.layout.SetOption(k, v)
+		err = fa.layout.SetOption(k, v)
 	}
 	return
 }
