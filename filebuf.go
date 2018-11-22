@@ -23,21 +23,23 @@ var (
 	//                  group: the users from group that owner is member
 	//                  other: all other users
 	FilePermDefault = os.FileMode(0660)
+	FileLineSize = 256
 )
 
 // File buffer writer
 type FileBufWriter struct {
 	sync.RWMutex
 	*bufio.Writer
-	file *os.File
-	name   string
-	flush  int
-	cursize int
+	file	 *os.File
+	name	 string
+	flush    int
+	cursize  int
+	curlines int
 }
 
-func NewFileBufWriter(name string) *FileBufWriter {
+func NewFileBufWriter(fname string) *FileBufWriter {
 	return &FileBufWriter {
-		name: name,
+		name: fname,
 		flush: FileFlushDefault,
 	}
 }
@@ -48,6 +50,7 @@ func (fbw *FileBufWriter) Close() error {
 	fbw.Lock()
 	defer func() {
 		fbw.cursize = 0
+		fbw.curlines = 0
 		fbw.file = nil
 		fbw.Writer = nil
 		fbw.Unlock()
@@ -70,10 +73,10 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 		}
 	
 		fbw.file = file
-		fi, err := fbw.file.Stat()
-		if err == nil {
-			fbw.cursize = int(fi.Size())
-		}
+		fbw.cursize = 0
+		fbw.curlines = 0
+		fbw.cursize = fbw.Size()
+		fbw.curlines = fbw.Lines()
 
 		if fbw.flush > 0 {
 			fbw.Writer = bufio.NewWriterSize(fbw.file, fbw.flush)
@@ -87,6 +90,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	}
 	if err == nil {
 		fbw.cursize += n
+		fbw.curlines += 1
 	}
 	return n, err 
 }
@@ -114,10 +118,14 @@ func (fbw *FileBufWriter) Size() int {
 	return fbw.cursize
 }
 
-func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
-	fbw.Lock()
-	defer fbw.Unlock()
+func (fbw *FileBufWriter) Lines() int {
+	if fbw.curlines <= 0 {
+		fbw.curlines = fbw.Size() / FileLineSize
+	}
+	return fbw.curlines
+}
 
+func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 	if fbw.file != nil {
 		return fbw.file.Stat()
 	}

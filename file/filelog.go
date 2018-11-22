@@ -5,7 +5,6 @@ package filelog
 import (
 	"sync"
 	"time"
-	"strconv"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,8 +19,6 @@ type FileAppender struct {
 	messages chan []byte
 	// 3nd cache, destination for output with buffered and rotated
 	out *l4g.RotateFileWriter
-	// Rotate at size
-	maxsize int
 	// Rotate cycle in seconds
 	cycle, clock int
 	// write loop
@@ -63,20 +60,41 @@ func (fa *FileAppender) Close() {
 	close(fa.loopReset)
 }
 
+func init() {
+	l4g.AddAppenderNewFunc("file", New)
+	l4g.AddAppenderNewFunc("xml", NewXml)
+}
+
 // This creates a new file appender which writes to the file 
 // named '<exe path base name>.log' without rotation.
 func New() l4g.Appender {
 	base := filepath.Base(os.Args[0])
-	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", 0)
+	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", false)
+}
+
+func NewXml() l4g.Appender {
+	base := filepath.Base(os.Args[0])
+	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", false)
+	appender.SetOption("head","<log created=\"%D %T\">%R")
+			
+	appender.SetOption("pattern", 
+`	<record level="%L">
+		<timestamp>%D %T</timestamp>
+		<source>%S</source>
+		<message>%M</message>
+	</record>%R`)
+			
+	appender.SetOption("foot", "</log>%R")
+	return appender
 }
 
 // NewFileAppender creates a new appender which writes to the given file and
 // has rotation enabled if maxbackup > 0.
-func NewFileAppender(filename string, maxbackup int) l4g.Appender {
+func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	return &FileAppender{
 		layout: 	 l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),	
 		messages: 	 make(chan []byte,  l4g.LogBufferLength),
-		out: 		 l4g.NewRotateFileWriter(filename).SetMaxBackup(maxbackup),
+		out: 		 l4g.NewRotateFileWriter(fname, rotate),
 		cycle:		 86400,
 		clock:		 -1,
 		loopRunning: false,
@@ -108,8 +126,8 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		fa.loopRunning = false
 	}()
 
-	l4g.LogLogTrace("cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
-	if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
+	l4g.LogLogTrace("cycle = %d, clock = %d", fa.cycle, fa.clock)
+	if fa.cycle > 0 && fa.out.IsOverSize() {
 		fa.out.Rotate()
 	}
 
@@ -141,11 +159,11 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
 			l4g.LogLogDebug("Next time is %v", nrt.Sub(time.Now()))
-			if fa.cycle > 0 && fa.out.Size() > fa.maxsize {
+			if fa.cycle > 0 && fa.out.IsOverSize() {
 				fa.out.Rotate()
 			}
 		case <-fa.loopReset:
-			l4g.LogLogTrace("Reset. cycle = %d, clock = %d, maxsize = %d", fa.cycle, fa.clock, fa.maxsize)
+			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", fa.cycle, fa.clock)
 			nrt = nextTime(fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
 			l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
@@ -159,59 +177,6 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	return fa
 }
 
-// Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
-func strToNumSuffix(str string, mult int) (int, error) {
-	num := 1
-	if len(str) > 1 {
-		switch str[len(str)-1] {
-		case 'G', 'g':
-			num *= mult
-			fallthrough
-		case 'M', 'm':
-			num *= mult
-			fallthrough
-		case 'K', 'k':
-			num *= mult
-			str = str[0 : len(str)-1]
-		}
-	}
-	parsed, err := strconv.Atoi(str)
-	return parsed * num, err
-}
-
-func toInt(i interface{}) (int, error) {
-	if v, ok := i.(int); ok {
-		return v, nil
-	} else if v, ok := i.(string); ok { 
-		return strToNumSuffix(v, 1024)
-	}
-	return 0, l4g.ErrBadValue
-}
-
-func toSeconds(i interface{}) (int, error) {
-	if v, ok := i.(int); ok {
-		return v, nil
-	} else if v, ok := i.(string); ok {
-		// Each with optional fraction and a unit suffix, 
-		// such as "300ms", "-1.5h" or "2h45m". 
-		// Valid time units are "ns", "us", "ms", "s", "m", "h".
-		dur, err := time.ParseDuration(v)
-		return int(dur/time.Second), err
-	}
-	return 0, l4g.ErrBadValue
-}
-
-func toBool(i interface{}) (bool, error) {
-	if v, ok := i.(bool); ok {
-		return v, nil
-	} else if v, ok := i.(int); ok {
-		return (v > 0), nil
-	} else if v, ok := i.(string); ok { 
-		return strconv.ParseBool(v)
-	}
-	return false, l4g.ErrBadValue
-}
-
 /*
 Set option. checkable. Better be set before SetFilters()
 Option names include:
@@ -219,6 +184,7 @@ Option names include:
 	flush	  - Flush file cache buffer size
 	maxbackup - Max number for log file storage
 	maxsize	  - Rotate at size
+	maxlines  - Rotate at lines if maxlines > 0
 	pattern	  - Layout format pattern
 	utc	  - Log recorder time zone
 	head 	  - File head format layout pattern
@@ -227,95 +193,71 @@ Option names include:
 	clock	  - The seconds since midnight
 	daily	  - Checking rotate size at every midnight
 */
-func (fa *FileAppender) SetOption(name string, v interface{}) error {
+func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
 
-	switch name {
+	err = nil
+
+	switch k {
 	case "filename":
-		if filename, ok := v.(string); !ok {
-			return l4g.ErrBadValue
-		} else if len(filename) <= 0 {
-			return l4g.ErrBadValue
-		} else {
+		fname := ""
+		if fname, err = l4g.ToString(v); err == nil && len(fname) > 0{
 			// Directory exist already, return nil
-			err := os.MkdirAll(filepath.Dir(filename), l4g.FilePermDefault)
-			if err != nil {
-				return err
+			err = os.MkdirAll(filepath.Dir(fname), l4g.FilePermDefault)
+			if err == nil {
+				fa.out.SetFileName(fname)
 			}
-			fa.out.SetFileName(filename)
+		} else {
+			err = l4g.ErrBadValue
 		}
 	case "flush":
-		if flush, err := toInt(v); err != nil {
-			return err
-		} else {
+		flush := 0
+		if flush, err = l4g.ToInt(v); err == nil {
 			fa.out.SetFlush(flush)
 		}
 	case "maxbackup":
-		if maxbackup, err := toInt(v); err != nil {
-			return err
-		} else {
-			fa.out.SetMaxBackup(maxbackup)
+		maxbackup := 0
+		if maxbackup, err = l4g.ToInt(v); err == nil {
+			fa.out.Set("maxbackup", maxbackup)
 		}
 	case "maxsize":
-		if maxsize, err := toInt(v); err != nil {
-			return err
-		} else {
-			fa.maxsize = maxsize
-			if fa.cycle <= 0 {
-				fa.out.SetMaxSize(fa.maxsize)
-			}
+		maxsize := 0
+		if maxsize, err = l4g.ToInt(v); err == nil {
+			fa.out.Set("maxsize", maxsize)
+			fa.out.Set("rotate", (fa.cycle <= 0))
 		}
-	case "head":
-		if header, ok := v.(string); !ok {
-			return l4g.ErrBadValue
-		} else {
-			fa.out.SetHead(header)
-		}
-	case "foot":
-		if footer, ok := v.(string); !ok {
-			return l4g.ErrBadValue
-		} else {
-			fa.out.SetFoot(footer)
-		}
+	case "head", "foot":
+		return fa.out.SetOption(k, v)
 	case "cycle":
-		if cycle, err := toSeconds(v); err != nil {
-			return err
-		} else {
+		cycle := 0
+		if cycle, err = l4g.ToSeconds(v); err == nil {
 			fa.cycle = cycle
-			if fa.cycle <= 0 {
-				fa.out.SetMaxSize(fa.maxsize)
-			} else {
-				fa.out.SetMaxSize(0)
-			}
+			fa.out.Set("rotate", (fa.cycle <= 0))
 			if fa.loopRunning {
 				fa.loopReset <- time.Now()
 			}
 		}
 	case "clock", "delay0":
-		if clock, err := toSeconds(v); err != nil {
-			return err
-		} else {
+		clock := 0
+		if clock, err = l4g.ToSeconds(v); err == nil {
 			fa.clock = clock
 			if fa.loopRunning {
 				fa.loopReset <- time.Now()
 			}
 		}
 	case "daily":
-		if daily, err := toBool(v); err != nil {
-			return err
-		} else if !daily {
-			return nil
-		}
-		fa.cycle = 86400
-		fa.clock = 0
-		fa.maxsize = 0
-		fa.out.SetMaxSize(0)
-		if fa.loopRunning {
-			fa.loopReset <- time.Now()
+		daily := false
+		if daily, err = l4g.ToBool(v); err == nil && daily {
+			fa.cycle = 86400
+			fa.clock = 0
+			fa.out.Set("rotate", false)
+			if fa.loopRunning {
+				fa.loopReset <- time.Now()
+			}
 		}
 	default:
-		return fa.layout.SetOption(name, v)
+		return fa.layout.SetOption(k, v)
 	}
-	return nil
+	return
 }

@@ -27,6 +27,10 @@ func (sa *SocketAppender) Close() {
 	}
 }
 
+func init() {
+	l4g.AddAppenderNewFunc("socket", New)
+}
+
 // This creates a the socket appender with default udp 
 // protocol and endpoint.
 func New() l4g.Appender {
@@ -80,31 +84,31 @@ Option names include:
 	pattern	 - Layout format pattern
 	utc 	 - Log recorder time zone
 */
-func (sa *SocketAppender) SetOption(name string, v interface{}) error {
+func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
-	switch name {
+	err = nil
+
+	switch k {
 	case "protocol":
-		if protocol, ok := v.(string); !ok {
-			return l4g.ErrBadValue
-		} else if protocol == "" {
-			return l4g.ErrBadValue
-		} else {
+		protocol := ""
+		if protocol, err = l4g.ToString(v); err == nil && len(protocol) > 0 {
 			sa.Close()
 			sa.prot = protocol
+		} else {
+			err = l4g.ErrBadValue
 		}
 	case "endpoint":
-		if endpoint, ok := v.(string); !ok {
-			return l4g.ErrBadValue
-		} else if endpoint == "" {
-			return l4g.ErrBadValue
-		} else {
+		endpoint := ""
+		if endpoint, err = l4g.ToString(v); err == nil && len(endpoint) > 0 {
 			sa.Close()
 			sa.host = endpoint
+		} else {
+			err = l4g.ErrBadValue
 		}
 	default:
-		return sa.layout.SetOption(name, v)
+		return sa.layout.SetOption(k, v)
 	}
-	return nil
+	return
 }

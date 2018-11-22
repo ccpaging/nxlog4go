@@ -19,18 +19,23 @@ type RotateFileWriter struct {
 	header, footer string
 	// Rotate at size
 	maxsize   int
+	// Rotate at linecount
+	maxlines  int
 	// Rotate daily
 	daily     bool
 	curtime   time.Time
-	// Keep old files (.1, .2, etc)
+	// Keep old logfiles (.001, .002, etc)
+	rotate    bool
 	maxbackup int
 }
 
 // NewRotateFileWriter creates rotator which writes to the file buffer writer
-func NewRotateFileWriter(path string) *RotateFileWriter {
+func NewRotateFileWriter(fname string, rotate bool) *RotateFileWriter {
 	rfw := &RotateFileWriter {
-		FileBufWriter: NewFileBufWriter(path),
+		FileBufWriter: NewFileBufWriter(fname),
 		daily: false,
+		rotate: rotate,
+		maxbackup: 9,
 	}
 	fi, err := rfw.FileBufWriter.Stat()
 	if err != nil {
@@ -47,10 +52,18 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 	rfw.Lock()
 	defer rfw.Unlock()
 
-	if ((rfw.maxsize > 0 && rfw.Size() >= rfw.maxsize) ||
-		(rfw.daily && rfw.curtime.Day() != time.Now().Day())) {
-
-		rfw.Rotate()
+	if rfw.rotate {
+		if rfw.daily {
+			if rfw.curtime.Day() != time.Now().Day() {
+				if rfw.Size() > 0 {
+					rfw.Rotate()
+				}
+			}
+		} else {
+			if rfw.IsOverSize() {
+				rfw.Rotate()
+			}
+		}
 	}
 
 	if len(rfw.header) > 0 && rfw.Size() == 0 {
@@ -77,7 +90,7 @@ func intBackup(newName string, pattern string, backup int) {
 		err error 
 		slot string
 	)
-	for n = 1; n <= backup; n++ {
+	for n = 0; n < backup; n++ {
 		slot = path + fmt.Sprintf(".%d", n) + ext
 		_, err = os.Stat(slot)
 		if err != nil {
@@ -92,15 +105,15 @@ func intBackup(newName string, pattern string, backup int) {
 	
 	// May compress previous log file here
 	
-	for ; n > 1; n-- {
+	for ; n > 0; n-- {
 		prev := path + fmt.Sprintf(".%d", n - 1) + ext
 		LogLogTrace("Rename %s to %s", prev, slot)
 		os.Rename(prev, slot)
 		slot = prev
 	}
 	
-	LogLogTrace("Rename %s to %s", newName, path + ".1" + ext)
-	os.Rename(newName, path + ".1" + ext)
+	LogLogTrace("Rename %s to %s", newName, path + ".0" + ext)
+	os.Rename(newName, path + ".0" + ext)
 }
 
 func (rfw *RotateFileWriter) Rotate() {
@@ -135,6 +148,68 @@ func (rfw *RotateFileWriter) Rotate() {
 	intBackup(newName, name, rfw.maxbackup)
 }
 
+// Set option. chainable
+func (rfw *RotateFileWriter) Set(name string, v interface{}) *RotateFileWriter {
+	rfw.SetOption(name, v)
+	return rfw
+}
+
+/*
+Set option. checkable. Better be set before SetFilters()
+Option names include:
+	flush	  - Flush file cache buffer size
+	maxbackup - Max number for log file storage
+	maxsize	  - Rotate at size
+	head 	  - File head format layout pattern
+	foot 	  - File foot format layout pattern
+	daily	  - Checking rotate size at every midnight
+	rotate    - 
+*/
+func (rfw *RotateFileWriter) SetOption(name string, v interface{}) (err error) {
+	err = nil
+
+	switch name {
+	case "head":
+		header := ""
+		if header, err = ToString(v); err == nil {
+			rfw.header = header
+		}
+	case "foot":
+		footer := ""
+		if footer, err = ToString(v); err == nil {
+			rfw.footer = footer
+		}
+	case "maxsize":
+		maxsize := 0
+		if maxsize, err = ToInt(v); err == nil {
+			rfw.maxsize = maxsize
+		}
+	case "maxlines":
+		maxlines := 0
+		if maxlines, err = ToInt(v); err == nil {
+			rfw.maxlines = maxlines
+		}
+	case "daily":
+		daily := false
+		if daily, err = ToBool(v); err == nil {
+			rfw.daily = daily
+		}
+	case "rotate":
+		rotate := false
+		if rotate, err = ToBool(v); err == nil {
+			rfw.rotate = rotate
+		}
+	case "maxbackup":
+		maxbackup := 0
+		if maxbackup, err = ToInt(v); err == nil {
+			rfw.maxbackup = maxbackup
+		}
+	default:
+		err = ErrBadOption
+	}
+	return
+}
+
 // Set the file header(chainable).  Must be called before the first log
 // message is written.
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
@@ -146,57 +221,23 @@ func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	return rfw
 }
 
-// Set the file header(chainable).  Must be called before the first log
-// message is written.  These are formatted similar to the FormatLogRecord (e.g.
-// you can use %D and %T in your header for date and time).
-func (rfw *RotateFileWriter) SetHead(header string) *RotateFileWriter {
-	rfw.Lock()
-	defer rfw.Unlock()
-	rfw.header = header
-	return rfw
-}
-
-// Set the file footer (chainable).  Must be called before the first log
-// message is written.  These are formatted similar to the FormatLogRecord (e.g.
-// you can use %D and %T in your footer for date and time).
-func (rfw *RotateFileWriter) SetFoot(footer string) *RotateFileWriter {
-	rfw.Lock()
-	defer rfw.Unlock()
-
-	rfw.footer = footer
-	return rfw
-}
-
-// Set rotate at size (chainable). Must be called before the first log message
-// is written.
-func (rfw *RotateFileWriter) SetMaxSize(maxsize int) *RotateFileWriter {
-	rfw.Lock()
-	defer rfw.Unlock()
-
-	rfw.maxsize = maxsize
-	return rfw
-}
-
-// Set rotate daily (chainable). Must be called before the first log message is
-// written.
-func (rfw *RotateFileWriter) SetDaily(daily bool) *RotateFileWriter {
-	rfw.Lock()
-	defer rfw.Unlock()
-
-	rfw.daily = daily
-	return rfw
-}
-
-// Set max backup files. Must be called before the first log message
-// is written.
-func (rfw *RotateFileWriter) SetMaxBackup(maxbackup int) *RotateFileWriter {
-	rfw.Lock()
-	defer rfw.Unlock()
-
-	rfw.maxbackup = maxbackup
-	return rfw
-}
-
-func (rfw RotateFileWriter) GetMaxBackup() int {
+func (rfw RotateFileWriter) MaxBackup() int {
 	return rfw.maxbackup
+}
+
+func (rfw RotateFileWriter) MaxSize() int {
+	return rfw.maxsize
+}
+
+func (rfw RotateFileWriter) MaxLines() int {
+	return rfw.maxlines
+}
+
+func (rfw RotateFileWriter) IsOverSize() bool {
+	if rfw.maxsize > 0 && rfw.Size() >= rfw.maxsize {
+		return true
+	} else if rfw.maxlines > 0 && rfw.Lines() >= rfw.maxlines {
+		return true
+	}
+	return false
 }

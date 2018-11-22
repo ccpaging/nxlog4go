@@ -36,7 +36,7 @@ func main() {
 	l4g.GetLogLog().SetLevel(l4g.TRACE)
 
 	// Can also specify manually via the following: (these are the defaults)
-	rfw := l4g.NewRotateFileWriter(filename).SetMaxSize(1024 * 5).SetMaxBackup(10)
+	rfw := l4g.NewRotateFileWriter(filename, true).Set("maxsize", 1024 * 5).Set("maxbackup", 10)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
 	log := l4g.New(l4g.FINEST).SetOutput(ww).SetPattern("[%D %T] [%L] (%s) %M\n")

@@ -5,7 +5,6 @@ package nxlog4go
 import (
 	"bytes"
 	"strings"
-	"strconv"
 	"time"
 	"sync"
 )
@@ -54,7 +53,7 @@ var (
 type PatternLayout struct {
 	mu sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte // Split the pattern into pieces by % signs
-	isUTC bool
+	utc bool
 	longZone, shortZone []byte
 }
 
@@ -98,9 +97,11 @@ Known pattern codes:
 	Ignores unknown formats
 Recommended: "[%D %T] [%L] (%S) %M"
 */
-func (pl *PatternLayout) SetOption(name string, v interface{}) error {
+func (pl *PatternLayout) SetOption(name string, v interface{}) (err error) {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
+
+	err = nil
 
 	switch name {
 	case "pattern", "format":
@@ -109,31 +110,24 @@ func (pl *PatternLayout) SetOption(name string, v interface{}) error {
 		} else if value, ok := v.([]byte); ok {
 			pl.pattSlice = bytes.Split(value, []byte{'%'})
 		} else {
-			return ErrBadValue
+			err = ErrBadValue
 		}
 	case "utc":
-		if value, ok := v.(string); ok {
-			b, err := strconv.ParseBool(value)
-			if err != nil {
-				return err
-			} 
-			pl.isUTC = b
-		} else if value, ok := v.(bool); ok {
-			pl.isUTC = value
-		} else {
-			return ErrBadValue
+		utc := false
+		if utc, err = ToBool(v); err == nil {
+			t := time.Now()
+			if utc {
+				t = t.UTC()
+			}
+			pl.shortZone = []byte(t.Format("MST"))
+			pl.longZone = []byte(t.Format("Z07:00"))
+			pl.utc = utc
 		}
-		t := time.Now()
-		if pl.isUTC {
-			t = t.UTC()
-		}
-		pl.shortZone = []byte(t.Format("MST"))
-		pl.longZone = []byte(t.Format("Z07:00"))
 	default:
-		return ErrBadOption
+		err = ErrBadOption
 	}
 
-	return nil
+	return
 }
 
 // Get option
@@ -161,7 +155,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 
 	t := rec.Created
-	if pl.isUTC {
+	if pl.utc {
 		t = t.UTC()
 	}
 

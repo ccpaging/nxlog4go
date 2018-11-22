@@ -1,0 +1,56 @@
+<logging>
+  <filter enabled="true">
+    <type>stdout</type>
+    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
+    <level>DEBUG</level>
+    <!--
+      %T - Time (15:04:05 MST)
+      %t - Time (15:04)
+      %D - Date (2006/01/02)
+      %d - Date (01/02/06)
+      %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+      %S - Source
+      %M - Message
+      It ignores unknown format strings (and removes them)
+      Recommended: \"[%D %T] [%L] (%S) %M\"
+    -->
+    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+  </filter>
+  <filter enabled="true">
+    <type>loglog</type>
+    <level>DEBUG</level>
+    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+  </filter>
+  <filter enabled="true">
+    <tag>color</tag>
+    <type>color</type>
+    <level>DEBUG</level>
+  </filter>
+  <filter enabled="true">
+    <tag>file</tag>
+    <type>file</type>
+    <level>FINEST</level>
+    <property name="filename">test.log</property>
+    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
+    <property name="maxsize">10M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
+    <property name="cycle">5m</property> <!-- The cycle time with with fraction and a unit suffix -->
+  </filter>
+  <filter enabled="true">
+    <tag>xmllog</tag>
+    <type>xml</type>
+    <level>TRACE</level>
+    <property name="filename">trace.xml</property>
+    <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
+    <property name="maxsize">100M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
+    <property name="cycle">24h</property> <!-- The cycle time with with fraction and a unit suffix -->
+    <property name="clock">0</property> <!-- The cycle time with with fraction and a unit suffix -->
+  </filter>
+  <filter enabled="false"><!-- enabled=false means this logger won\'t actually be created -->
+    <tag>socket</tag>
+    <type>socket</type>
+    <level>FINEST</level>
+    <property name="endpoint">192.168.1.255:12124</property> <!-- recommend UDP broadcast -->
+    <property name="protocol">udp</property> <!-- tcp or udp -->
+  </filter>
+</logging>

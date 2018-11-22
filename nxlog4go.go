@@ -166,8 +166,8 @@ var (
 /****** Errors ******/
 
 var (
-    ErrBadOption   = errors.New("invalid or unsupported option")
-    ErrBadValue    = errors.New("invalid option value")
+    ErrBadOption   = errors.New("Invalid or unsupported option")
+    ErrBadValue    = errors.New("Invalid option value")
 )
 
 /****** LogRecord ******/
@@ -199,7 +199,7 @@ type Logger struct {
 	level  Level      // The log level
 	layout Layout     // format record for output
 
-	filters *Filters  // a collection of Filters
+	filters Filters  // a collection of Filters
 }
 
 // NewLogger creates a new Logger. The out variable sets the
@@ -343,14 +343,8 @@ func (log *Logger) SetOption(name string, v interface{}) error {
 			return ErrBadValue
 		}
 		log.SetLevel(lvl)
-	case "pattern":
-		if pattern, ok := v.(string); ok {
-			log.SetPattern(pattern)
-		} else {
-			return ErrBadValue
-		}
 	default:
-		return ErrBadOption
+		return log.layout.SetOption(name, v)
 	}
 	return nil
 }
@@ -379,14 +373,14 @@ func (log *Logger) SetLayout(layout Layout) *Logger {
 }
 
 // Filters returns the output filters for the logger.
-func (log *Logger) Filters() *Filters {
+func (log *Logger) Filters() Filters {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	return log.filters
 }
 
 // SetFilters sets the output filters for the logger.
-func (log *Logger) SetFilters(filters *Filters) *Logger {
+func (log *Logger) SetFilters(filters Filters) *Logger {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	log.filters = filters

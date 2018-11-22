@@ -19,23 +19,14 @@ func NewFilters() *Filters {
 // any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
 // Returns the Filters for chaining.
-func (fs Filters) Add(tag string, lvl Level, writer Appender) *Filters {
+func (fs Filters) Add(tag string, lvl Level, writer Appender) Filters {
 	if filt, ok := fs[tag]; ok {
 		filt.Close()
 		delete(fs, tag)
 	}
 	writer.Init()
 	fs[tag] = NewFilter(lvl, writer)
-	return &fs
-}
-
-// Get the filter with tag
-func (fs Filters) Get(tag string) *Filter {
-	if filt, ok := fs[tag]; ok {
-		return filt
-	}
-
-	return nil
+	return fs
 }
 
 // Close and remove all filters in preparation for exiting the program or a

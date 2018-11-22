@@ -139,7 +139,7 @@ func TestFileWriter(t *testing.T) {
 }
 
 func TestRotateFileWriter(t *testing.T) {
-	w := NewRotateFileWriter(testLogFile).SetFlush(0)
+	w := NewRotateFileWriter(testLogFile, false).SetFlush(0)
 
 	defer os.Remove(testLogFile)
 

@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"sync"
-	"strconv"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
@@ -31,6 +30,10 @@ type ColorAppender struct {
 	out		io.Writer  // destination for output
 	layout  l4g.Layout // format record for output
 	color	bool
+}
+
+func init() {
+	l4g.AddAppenderNewFunc("color", New)
 }
 
 // This creates the default ColorAppender output to os.Stderr.
@@ -79,36 +82,26 @@ func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 	return ca
 }
 
-func toBool(i interface{}) (bool, error) {
-	if v, ok := i.(bool); ok {
-		return v, nil
-	} else if v, ok := i.(int); ok {
-		return (v > 0), nil
-	} else if v, ok := i.(string); ok { 
-		return strconv.ParseBool(v)
-	}
-	return false, l4g.ErrBadValue
-}
-
 /* 
 Set option. checkable. Better be set before SetFilters()
 Option names include:
 	pattern	 - Layout format pattern
 	utc 	 - Log recorder time zone
 */
-func (ca *ColorAppender) SetOption(name string, v interface{}) error {
+func (ca *ColorAppender) SetOption(k string, v interface{}) (err error) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
-	switch name {
+	err = nil
+
+	switch k {
 	case "color":
-		if color, err := toBool(v); err != nil {
-			return err
-		} else {
+		color := false
+		if color, err = l4g.ToBool(v); err == nil {
 			ca.color = color
 		}
 	default:
-		return ca.layout.SetOption(name, v)
+		return ca.layout.SetOption(k, v)
 	}
-	return nil
+	return
 }
