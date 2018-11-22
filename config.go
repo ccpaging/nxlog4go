@@ -4,7 +4,6 @@ package nxlog4go
 
 import (
 	"strings"
-	"strconv"
 )
 
 type NameValue struct {
@@ -23,6 +22,26 @@ type FilterConfig struct {
 
 type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
+}
+
+func loadLogLog(l Level, pattern string) {
+	if l < SILENT {
+		loglog := GetLogLog().SetLevel(l)
+		if pattern != "" {
+			loglog.SetPattern(pattern)
+		}
+	}
+}
+
+func loadStdout(log *Logger, l Level, pattern string) {
+	if l < SILENT {
+		log.SetLevel(l)
+		if pattern != "" {
+			log.SetPattern(pattern)
+		}
+	} else {
+		log.SetOutput(nil)
+	}
 }
 
 func loadAppender(typ string, props []NameValue) (Appender, []string) {
@@ -75,45 +94,32 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 			continue
 		} 
 
-		lvl := GetLevel(fc.Level)
-
-		if fc.Type == "stdout" {
-			if lvl >= SILENT {
-				LogLogTrace("Disable \"%s\" for level \"%s\"", fc.Tag, fc.Level)
-				log.SetOutput(nil)
-			} else {
-				log.SetLevel(lvl)
-				if fc.Pattern != "" {
-					log.SetPattern(fc.Pattern)
-				}
-			}
-			continue
-		}
-
-		if lvl >= SILENT {
+		level := GetLevel(fc.Level)
+		if level >= SILENT {
 			LogLogTrace("Disable \"%s\" for level \"%s\"", fc.Tag, fc.Level)
-			continue
 		}
 
-		if fc.Type == "loglog" {
-			loglog := GetLogLog().SetLevel(lvl)
-			if fc.Pattern != "" {
-				loglog.SetPattern(fc.Pattern)
+		switch fc.Type {
+		case "loglog":
+			loadLogLog(level, fc.Pattern)
+		case "stdout":
+			loadStdout(log, level, fc.Pattern)
+		default:
+			if level >= SILENT {
+				continue
 			}
-			continue
-		}
-
-		appender, errs := loadAppender(fc.Type, fc.Properties)
-		if len(errs) > 0 {
-			for _, err := range errs {
-				LogLogWarn(err)
+			appender, errs := loadAppender(fc.Type, fc.Properties)
+			if len(errs) > 0 {
+				for _, err := range errs {
+					LogLogWarn(err)
+				}
+				LogLogTrace("Failed loading appender \"%s\"", fc.Tag)
+				continue
 			}
-			LogLogTrace("Failed loading appender \"%s\"", fc.Tag)
-			continue
+	
+			LogLogTrace("Succeeded loading appender \"%s\"", fc.Tag)
+			filters.Add(fc.Tag, level, appender)
 		}
-
-		LogLogTrace("Succeeded loading appender \"%s\"", fc.Tag)
-		filters.Add(fc.Tag, lvl, appender)
 	}
 
 	log.SetFilters(filters)
