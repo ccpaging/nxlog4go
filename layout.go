@@ -142,6 +142,15 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
+func format_hhmmss(hh, mm, ss int) []byte {
+	var b [20]byte
+	b[0] = byte('0' + hh / 10); b[1] = byte('0' + hh % 10)
+	b[2] = byte(':')
+	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
+	b[5] = byte(':')
+	b[6] = byte('0' + ss / 10); b[7] = byte('0' + ss % 10)
+	return b[:8]
+}
 
 // Format log record
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {

@@ -56,7 +56,7 @@ func TestNextTime(t *testing.T) {
 }
 
 func BenchmarkFileLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
 	sl.SetFilters(fs)
@@ -71,7 +71,7 @@ func BenchmarkFileLog(b *testing.B) {
 }
 
 func BenchmarkFileNotLogged(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
 	sl.SetFilters(fs)
@@ -116,7 +116,7 @@ func BenchmarkFileUtilNotLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
 	sl.SetFilters(fs)
@@ -131,7 +131,7 @@ func BenchmarkCacheFileLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileNotLogged(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
 	sl.SetFilters(fs)
@@ -146,7 +146,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
 	sl.SetFilters(fs)
@@ -161,7 +161,7 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
-	sl := l4g.New(l4g.INFO).SetOutput(nil).SetCaller(false)
+	sl := l4g.New(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
 	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
 	sl.SetFilters(fs)
