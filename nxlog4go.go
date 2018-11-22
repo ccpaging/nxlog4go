@@ -283,15 +283,15 @@ func (log *Logger) SetOption(k string, v interface{}) (err error) {
 			log.mu.Unlock()
 		}
 	case "level":
+		log.mu.Lock()
+		defer log.mu.Unlock()
 		switch v.(type) {
 		case int:
-			log.mu.Lock()
 			log.level = Level(v.(int))
-			log.mu.Unlock()
+		case Level:
+			log.level = v.(Level)
 		case string:
-			log.mu.Lock()
 			log.level = GetLevel(v.(string))
-			log.mu.Unlock()
 		default:
 			err = ErrBadValue
 		}
