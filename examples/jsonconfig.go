@@ -140,25 +140,6 @@ func loadConfiguration(contents []byte, debug bool) {
 	// Close filters by call log.Shutdown() when program exit
 }
 
-// Print what was logged to the file (yes, I know I'm skipping error checking)
-func PrintFile(fn string) {
-	fd, err := os.Open(fn)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	in := bufio.NewReader(fd)
-	fmt.Print("Messages logged to file were: (line numbers not included)\n")
-	for lineno := 1; ; lineno++ {
-		line, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		fmt.Printf("%3d:\t%s", lineno, line)
-	}
-	fd.Close()
-}
-
 func main() {
 	flag.Parse()
 
@@ -191,7 +172,6 @@ func main() {
 	// Close all appenders in logger
 	log.Shutdown()
 
-	PrintFile("_test.log")
 	os.Remove("_test.log")
 }
 

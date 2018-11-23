@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -16,30 +15,15 @@ const (
 	backups = "_rfw.*"
 )
 
-// Print what was logged to the file (yes, I know I'm skipping error checking)
-func PrintFile(fn string) {
-	fd, _ := os.Open(fn)
-	in := bufio.NewReader(fd)
-	fmt.Print("Messages logged to file were: (line numbers not included)\n")
-	for lineno := 1; ; lineno++ {
-		line, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		fmt.Printf("%3d:\t%s", lineno, line)
-	}
-	fd.Close()
-}
-
 func main() {
 	// Enable internal logger
-	l4g.GetLogLog().SetLevel(l4g.TRACE)
+	l4g.GetLogLog().Set("level", l4g.TRACE)
 
 	// Can also specify manually via the following: (these are the defaults)
 	rfw := l4g.NewRotateFileWriter(filename, true).Set("maxsize", 1024 * 5).Set("maxbackup", 10)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
-	log := l4g.New(l4g.FINEST).SetOutput(ww).SetPattern("[%D %T] [%L] (%s) %M\n")
+	log := l4g.New(l4g.FINEST).SetOutput(ww).Set("pattern", "[%D %T] [%L] (%s) %M\n")
 
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {

@@ -142,12 +142,12 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-func formatHHMMSS(buf *[]byte, hh, mm, ss int) {
+func format222(buf *[]byte, hh, mm, ss int, sep byte) {
 	var b [16]byte
 	b[0] = byte('0' + hh / 10); b[1] = byte('0' + hh % 10)
-	b[2] = byte(':')
+	b[2] = sep
 	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
-	b[5] = byte(':')
+	b[5] = sep
 	b[6] = byte('0' + ss / 10); b[7] = byte('0' + ss % 10)
 	*buf = append(*buf, b[:8]...)
 }
@@ -161,16 +161,6 @@ func formatCCYYMMDD(buf *[]byte, cc, yy, mm, dd int, sep byte) {
 	b[7] = sep
 	b[8] = byte('0' + dd / 10); b[9] = byte('0' + dd % 10)
 	*buf = append(*buf, b[:10]...)
-}
-
-func formatDDMMYY(buf *[]byte, yy, mm, dd int) {
-	var b [16]byte
-	b[0] = byte('0' + dd / 10); b[1] = byte('0' + dd % 10)
-	b[2] = byte('/')
-	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
-	b[5] = byte('/')
-	b[6] = byte('0' + yy / 10); b[7] = byte('0' + yy % 10)
-	*buf = append(*buf, b[:8]...)
 }
 
 func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
@@ -209,17 +199,17 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		if i > 0 && len(piece) > 0 {
 			switch piece[0] {
 			case 'U':
-				formatHHMMSS(&b, hour, minute, second)
+				format222(&b, hour, minute, second, ':')
 				b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
-			case 'T': formatHHMMSS(&b, hour, minute, second)
+			case 'T': format222(&b, hour, minute, second, ':')
 			case 'h': itoa(&b, hour, 2)
 			case 'm': itoa(&b, minute, 2)
 			case 'Z': out.Write(pl.longZone)
 			case 'z': out.Write(pl.shortZone)
 			case 'D': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
 			case 'Y': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
-			case 'd': formatDDMMYY(&b, year % 100, int(month), int(day))
+			case 'd': format222(&b, int(day), int(month), year % 100, '/')
 			case 't': out.WriteByte('\t')
 			case 'r': out.WriteByte('\r')
 			case 'n', 'R': out.WriteByte('\n')

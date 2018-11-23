@@ -16,7 +16,7 @@ import (
 
 func TestXMLConfig(t *testing.T) {
 	const (
-		configfile = "example.xml"
+		configfile = "config.xml"
 	)
 
 	fd, err := os.Create(configfile)
@@ -61,6 +61,7 @@ func TestXMLConfig(t *testing.T) {
     <property name="pattern">[%D %T] [%L] (%S) %M</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">10M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
+    <property name="maxlines">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="cycle">5m</property> <!-- The cycle time with with fraction and a unit suffix -->
   </filter>
   <filter enabled="true">
@@ -69,7 +70,8 @@ func TestXMLConfig(t *testing.T) {
     <level>TRACE</level>
     <property name="filename">trace.xml</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
-    <property name="maxsize">100M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
+    <property name="maxsize">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
+    <property name="maxlines">100</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="cycle">24h</property> <!-- The cycle time with with fraction and a unit suffix -->
     <property name="clock">0</property> <!-- The cycle time with with fraction and a unit suffix -->
   </filter>

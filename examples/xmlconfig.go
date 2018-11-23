@@ -91,21 +91,6 @@ func loadFilter(fc *FilterConfig) {
 	filters.Add(tag, lvl, appender)
 }
 
-// Print what was logged to the file (yes, I know I'm skipping error checking)
-func PrintFile(fn string) {
-	fd, _ := os.Open(fn)
-	in := bufio.NewReader(fd)
-	fmt.Print("Messages logged to file were: (line numbers not included)\n")
-	for lineno := 1; ; lineno++ {
-		line, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		fmt.Printf("%3d:\t%s", lineno, line)
-	}
-	fd.Close()
-}
-
 func main() {
 	// Open config file
 	fd, err := os.Open(filename)
@@ -147,9 +132,7 @@ func main() {
 	log.SetFilters(nil)
 	filters.Close()
 
-	PrintFile("_test.log")
 	os.Remove("_test.log")
-	PrintFile("_trace.xml")
 	os.Remove("_trace.xml")
 }
 
