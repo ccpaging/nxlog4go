@@ -142,14 +142,35 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-func format_hhmmss(hh, mm, ss int) []byte {
-	var b [20]byte
+func formatHHMMSS(buf *[]byte, hh, mm, ss int) {
+	var b [16]byte
 	b[0] = byte('0' + hh / 10); b[1] = byte('0' + hh % 10)
 	b[2] = byte(':')
 	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
 	b[5] = byte(':')
 	b[6] = byte('0' + ss / 10); b[7] = byte('0' + ss % 10)
-	return b[:8]
+	*buf = append(*buf, b[:8]...)
+}
+
+func formatCCYYMMDD(buf *[]byte, cc, yy, mm, dd int, sep byte) {
+	var b [16]byte
+	b[0] = byte('0' + cc / 10); b[1] = byte('0' + cc % 10)
+	b[2] = byte('0' + yy / 10); b[3] = byte('0' + yy % 10)
+	b[4] = sep
+	b[5] = byte('0' + mm / 10); b[6] = byte('0' + mm % 10)
+	b[7] = sep
+	b[8] = byte('0' + dd / 10); b[9] = byte('0' + dd % 10)
+	*buf = append(*buf, b[:10]...)
+}
+
+func formatDDMMYY(buf *[]byte, yy, mm, dd int) {
+	var b [16]byte
+	b[0] = byte('0' + dd / 10); b[1] = byte('0' + dd % 10)
+	b[2] = byte('/')
+	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
+	b[5] = byte('/')
+	b[6] = byte('0' + yy / 10); b[7] = byte('0' + yy % 10)
+	*buf = append(*buf, b[:8]...)
 }
 
 // Format log record
@@ -182,16 +203,13 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			switch piece[0] {
 			case 'U':
 				b = nil
-				itoa(&b, hour, 2); b = append(b, ':');
-				itoa(&b, minute, 2); b = append(b, ':');
-				itoa(&b, second, 2); b = append(b, '.')
+				formatHHMMSS(&b, hour, minute, second)
+				b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
 				out.Write(b)
 			case 'T':
 				b = nil
-				itoa(&b, hour, 2); b = append(b, ':');
- 				itoa(&b, minute, 2); b = append(b, ':');
- 				itoa(&b, second, 2)
+				formatHHMMSS(&b, hour, minute, second)
 				out.Write(b)
 			case 'h':
 				b = nil
@@ -207,21 +225,15 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				out.Write(pl.shortZone)
 			case 'D':
 				b = nil
-				itoa(&b, year, 4); b = append(b, '/')
-				itoa(&b, int(month), 2); b = append(b, '/')
-				itoa(&b, day, 2)
+				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
 				out.Write(b)
 			case 'Y':
 				b = nil
-				itoa(&b, year, 4); b = append(b, '-')
-				itoa(&b, int(month), 2); b = append(b, '-')
-				itoa(&b, day, 2)
+				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
 				out.Write(b)
 			case 'd':
 				b = nil
-				itoa(&b, day, 2); b = append(b, '/')
-				itoa(&b, int(month), 2); b = append(b, '/')
-				itoa(&b, year%100, 2)
+				formatDDMMYY(&b, year % 100, int(month), int(day))
 				out.Write(b)
 			case 'L':
 				out.WriteString(levelStrings[rec.Level])
