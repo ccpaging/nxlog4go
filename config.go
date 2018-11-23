@@ -74,28 +74,26 @@ func loadAppender(level Level, typ string, props []NameValue) Appender {
 }
 
 // Load configuration; see examples/example.xml for documentation
-func LoadConfiguration(log *Logger, lc *LoggerConfig) {
+func (log *Logger)LoadConfiguration(lc *LoggerConfig) {
 	if lc == nil {
 		LogLogWarn("Logger configuration is NIL")
 		return
 	}
-	if len(lc.Filters) <= 0 {
-		LogLogTrace("Filters configuration is NIL")
-		return
-	}
-
 	filters := make(Filters)
 	for _, fc := range lc.Filters {
 		if fc.Tag == "" && fc.Type == "" {
 			LogLogWarn("Missing tag and type")
 			continue
-		} else if fc.Tag == "" { 
+		} 
+		
+		if fc.Tag == "" { 
 			fc.Tag = fc.Type
 		} else if fc.Type == "" {
-			fc.Type = strings.ToLower(fc.Tag)
+			fc.Type = fc.Tag
 		}
+		fc.Type = strings.ToLower(fc.Type)
 
-		if enabled, err := ToBool(fc.Enabled); err != nil || !enabled{
+		if enabled, _ := ToBool(fc.Enabled); !enabled {
 			LogLogTrace("Disable \"%s\" for %s", fc.Tag, err)
 			continue
 		} 
