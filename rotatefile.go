@@ -169,6 +169,11 @@ func (rfw *RotateFileWriter) SetOption(name string, v interface{}) (err error) {
 	err = nil
 
 	switch name {
+	case "flush":
+		flush := 0
+		if flush, err = ToInt(v); err == nil {
+			rfw.SetFlush(flush)
+		}		
 	case "head":
 		header := ""
 		if header, err = ToString(v); err == nil {
@@ -197,6 +202,7 @@ func (rfw *RotateFileWriter) SetOption(name string, v interface{}) (err error) {
 	case "rotate":
 		rotate := false
 		if rotate, err = ToBool(v); err == nil {
+			LogLogTrace("Set rotate to %v", rotate)
 			rfw.rotate = rotate
 		}
 	case "maxbackup":

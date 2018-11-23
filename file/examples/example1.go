@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"time"
 	"path/filepath"
@@ -16,21 +14,6 @@ const (
 	filename = "_fb.log"
 	oldfiles = "_fb.*.log"
 )
-
-// Print what was logged to the file (yes, I know I'm skipping error checking)
-func PrintFile(fn string) {
-	fd, _ := os.Open(fn)
-	in := bufio.NewReader(fd)
-	fmt.Print("Messages logged to file were: (line numbers not included)\n")
-	for lineno := 1; ; lineno++ {
-		line, err := in.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
-		fmt.Printf("%3d:\t%s", lineno, line)
-	}
-	fd.Close()
-}
 
 func init() {
 	// Enable internal logger
@@ -50,7 +33,6 @@ func main() {
 	log.SetFilters(nil)
 	fs0.Close()
 
-	PrintFile(filenameA)
 	// Remove the file so it's not lying around
 	err := os.Remove(filenameA)
 	if err != nil {
@@ -80,7 +62,6 @@ func main() {
 	log.SetFilters(nil)
 	fs1.Close()
 
-	PrintFile(filename)
 	os.Remove(filename)
 
 	// contains a list of all files in the current directory

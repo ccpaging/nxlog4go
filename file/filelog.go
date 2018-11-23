@@ -171,6 +171,42 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 	}
 }
 
+func (fa *FileAppender) setLoop(k string, v interface{}) (err error) {
+	err = nil
+	isReset := false
+
+	switch k {
+	case "cycle":
+		cycle := 0
+		if cycle, err = l4g.ToSeconds(v); err == nil {
+			fa.cycle = cycle
+			fa.out.Set("rotate", (fa.cycle <= 0))
+			isReset = true
+		}
+	case "clock", "delay0":
+		clock := 0
+		if clock, err = l4g.ToSeconds(v); err == nil {
+			fa.clock = clock
+			isReset = true
+		}
+	case "daily":
+		daily := false
+		if daily, err = l4g.ToBool(v); err == nil && daily {
+			fa.cycle = 86400
+			fa.clock = 0
+			fa.out.Set("rotate", false)
+			isReset = true
+		}
+	default:
+		err = l4g.ErrBadOption
+	}
+
+	if isReset && fa.loopRunning {
+		fa.loopReset <- time.Now()
+	}
+	return
+}
+
 // Set option. chainable
 func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	fa.SetOption(name, v)
@@ -202,49 +238,21 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "filename":
 		fname := ""
-		if fname, err = l4g.ToString(v); err == nil && len(fname) > 0 {
+		fname, err = l4g.ToString(v)
+		if err != nil && len(fname) <= 0 {
+			err = l4g.ErrBadValue
+		} else {
 			// Directory exist already, return nil
 			err = os.MkdirAll(filepath.Dir(fname), l4g.FilePermDefault)
 			if err == nil {
+				// Keep other options
 				fa.out.SetFileName(fname)
 			}
-		} else {
-			err = l4g.ErrBadValue
 		}
-	case "flush":
-		flush := 0
-		if flush, err = l4g.ToInt(v); err == nil {
-			fa.out.SetFlush(flush)
-		}
-	case "head", "foot", "maxbackup", "maxsize", "maxlines":
+	case "flush", "head", "foot", "maxbackup", "maxsize", "maxlines":
 		err = fa.out.SetOption(k, v)
-	case "cycle":
-		cycle := 0
-		if cycle, err = l4g.ToSeconds(v); err == nil {
-			fa.cycle = cycle
-			fa.out.Set("rotate", (fa.cycle <= 0))
-			if fa.loopRunning {
-				fa.loopReset <- time.Now()
-			}
-		}
-	case "clock", "delay0":
-		clock := 0
-		if clock, err = l4g.ToSeconds(v); err == nil {
-			fa.clock = clock
-			if fa.loopRunning {
-				fa.loopReset <- time.Now()
-			}
-		}
-	case "daily":
-		daily := false
-		if daily, err = l4g.ToBool(v); err == nil && daily {
-			fa.cycle = 86400
-			fa.clock = 0
-			fa.out.Set("rotate", false)
-			if fa.loopRunning {
-				fa.loopReset <- time.Now()
-			}
-		}
+	case "cycle", "clock", "delay0", "daily":
+		err = fa.setLoop(k, v)
 	default:
 		err = fa.layout.SetOption(k, v)
 	}
