@@ -173,6 +173,16 @@ func formatDDMMYY(buf *[]byte, yy, mm, dd int) {
 	*buf = append(*buf, b[:8]...)
 }
 
+func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
+	switch piece0 {
+	case 'L': out.WriteString(levelStrings[rec.Level])
+	case 'P': out.WriteString(rec.Prefix)
+	case 'S': out.WriteString(rec.Source)
+	case 's': out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+	case 'M': out.WriteString(rec.Message)
+	}
+}
+
 // Format log record
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	pl.mu.Lock()
@@ -188,12 +198,9 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 
 	t := rec.Created
-	if pl.utc {
-		t = t.UTC()
-	}
+	if pl.utc { t = t.UTC() }
 
-	year, month, day := t.Date()
-	hour, minute, second := t.Clock()
+	year, month, day := t.Date(); hour, minute, second := t.Clock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
@@ -213,16 +220,13 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'D': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
 			case 'Y': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
 			case 'd': formatDDMMYY(&b, year % 100, int(month), int(day))
-			case 'L': out.WriteString(levelStrings[rec.Level])
-			case 'l': itoa(&b, int(rec.Level), -1)
-			case 'P': out.WriteString(rec.Prefix)
-			case 'S': out.WriteString(rec.Source)
-			case 's': out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
-			case 'N': itoa(&b, rec.Line, -1)
-			case 'M': out.WriteString(rec.Message)
 			case 't': out.WriteByte('\t')
 			case 'r': out.WriteByte('\r')
 			case 'n', 'R': out.WriteByte('\n')
+			case 'l': itoa(&b, int(rec.Level), -1)
+			case 'N': itoa(&b, rec.Line, -1)
+			default:
+				writeRecord(out, piece[0], rec)
 			}
 			if len(b) > 0 {
 				out.Write(b)
@@ -232,7 +236,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				out.Write(piece[1:])
 			}
 		} else if len(piece) > 0 {
-			out.Write(piece)
+ 			out.Write(piece)
 		}
 	}
 

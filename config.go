@@ -74,7 +74,7 @@ func loadAppender(level Level, typ string, props []NameValue) Appender {
 }
 
 // Load configuration; see examples/example.xml for documentation
-func (log *Logger)LoadConfiguration(lc *LoggerConfig) {
+func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 	if lc == nil {
 		LogLogWarn("Logger configuration is NIL")
 		return
@@ -86,14 +86,16 @@ func (log *Logger)LoadConfiguration(lc *LoggerConfig) {
 			continue
 		} 
 		
+		/*
 		if fc.Tag == "" { 
 			fc.Tag = fc.Type
 		} else if fc.Type == "" {
 			fc.Type = fc.Tag
 		}
+		*/
 		fc.Type = strings.ToLower(fc.Type)
 
-		if enabled, _ := ToBool(fc.Enabled); !enabled {
+		if enabled, err := ToBool(fc.Enabled); !enabled {
 			LogLogTrace("Disable \"%s\" for %s", fc.Tag, err)
 			continue
 		} 
