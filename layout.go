@@ -202,44 +202,31 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		if i > 0 && len(piece) > 0 {
 			switch piece[0] {
 			case 'U':
-				b = nil
 				formatHHMMSS(&b, hour, minute, second)
 				b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
-				out.Write(b)
 			case 'T':
 				b = nil
 				formatHHMMSS(&b, hour, minute, second)
 				out.Write(b)
 			case 'h':
-				b = nil
 				itoa(&b, hour, 2)
-				out.Write(b)
 			case 'm':
-				b = nil
 				itoa(&b, minute, 2)
-				out.Write(b)
 			case 'Z':
 				out.Write(pl.longZone)
 			case 'z':
 				out.Write(pl.shortZone)
 			case 'D':
-				b = nil
 				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
-				out.Write(b)
 			case 'Y':
-				b = nil
 				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
-				out.Write(b)
 			case 'd':
-				b = nil
 				formatDDMMYY(&b, year % 100, int(month), int(day))
-				out.Write(b)
 			case 'L':
 				out.WriteString(levelStrings[rec.Level])
 			case 'l':
-				b = nil; itoa(&b, int(rec.Level), -1)
-				out.Write(b)
+				itoa(&b, int(rec.Level), -1)
 			case 'P':
                 out.WriteString(rec.Prefix)
 			case 'S':
@@ -247,8 +234,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 's':
 				out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
 			case 'N':
-				b = nil; itoa(&b, rec.Line, -1)
-				out.Write(b)
+				itoa(&b, rec.Line, -1)
 			case 'M':
 				out.WriteString(rec.Message)
 			case 't':
@@ -257,6 +243,10 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				out.WriteByte('\r')
 			case 'n', 'R':
 				out.WriteByte('\n')
+			}
+			if len(b) > 0 {
+				out.Write(b)
+				b = nil
 			}
 			if len(piece) > 1 {
 				out.Write(piece[1:])
