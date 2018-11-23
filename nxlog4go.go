@@ -309,13 +309,6 @@ func (log *Logger) SetOutput(w io.Writer) *Logger {
 	return log
 }
 
-// Layout returns the output Layout for the logger.
-func (log *Logger) Layout() Layout {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.layout
-}
-
 // SetLayout sets the output layout for the logger.
 func (log *Logger) SetLayout(layout Layout) *Logger {
 	log.mu.Lock()

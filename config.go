@@ -86,13 +86,12 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 			continue
 		} 
 		
-		/*
 		if fc.Tag == "" { 
 			fc.Tag = fc.Type
-		} else if fc.Type == "" {
+		}
+		if fc.Type == "" {
 			fc.Type = fc.Tag
 		}
-		*/
 		fc.Type = strings.ToLower(fc.Type)
 
 		if enabled, err := ToBool(fc.Enabled); !enabled {
