@@ -205,44 +205,24 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				formatHHMMSS(&b, hour, minute, second)
 				b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
-			case 'T':
-				b = nil
-				formatHHMMSS(&b, hour, minute, second)
-				out.Write(b)
-			case 'h':
-				itoa(&b, hour, 2)
-			case 'm':
-				itoa(&b, minute, 2)
-			case 'Z':
-				out.Write(pl.longZone)
-			case 'z':
-				out.Write(pl.shortZone)
-			case 'D':
-				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
-			case 'Y':
-				formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
-			case 'd':
-				formatDDMMYY(&b, year % 100, int(month), int(day))
-			case 'L':
-				out.WriteString(levelStrings[rec.Level])
-			case 'l':
-				itoa(&b, int(rec.Level), -1)
-			case 'P':
-                out.WriteString(rec.Prefix)
-			case 'S':
-				out.WriteString(rec.Source)
-			case 's':
-				out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
-			case 'N':
-				itoa(&b, rec.Line, -1)
-			case 'M':
-				out.WriteString(rec.Message)
-			case 't':
-				out.WriteByte('\t')
-			case 'r':
-				out.WriteByte('\r')
-			case 'n', 'R':
-				out.WriteByte('\n')
+			case 'T': formatHHMMSS(&b, hour, minute, second)
+			case 'h': itoa(&b, hour, 2)
+			case 'm': itoa(&b, minute, 2)
+			case 'Z': out.Write(pl.longZone)
+			case 'z': out.Write(pl.shortZone)
+			case 'D': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
+			case 'Y': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
+			case 'd': formatDDMMYY(&b, year % 100, int(month), int(day))
+			case 'L': out.WriteString(levelStrings[rec.Level])
+			case 'l': itoa(&b, int(rec.Level), -1)
+			case 'P': out.WriteString(rec.Prefix)
+			case 'S': out.WriteString(rec.Source)
+			case 's': out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+			case 'N': itoa(&b, rec.Line, -1)
+			case 'M': out.WriteString(rec.Message)
+			case 't': out.WriteByte('\t')
+			case 'r': out.WriteByte('\r')
+			case 'n', 'R': out.WriteByte('\n')
 			}
 			if len(b) > 0 {
 				out.Write(b)
