@@ -149,8 +149,8 @@ func (rfw *RotateFileWriter) Rotate() {
 }
 
 // Set option. chainable
-func (rfw *RotateFileWriter) Set(name string, v interface{}) *RotateFileWriter {
-	rfw.SetOption(name, v)
+func (rfw *RotateFileWriter) Set(k string, v interface{}) *RotateFileWriter {
+	rfw.SetOption(k, v)
 	return rfw
 }
 
@@ -165,10 +165,10 @@ Option names include:
 	daily	  - Checking rotate size at every midnight
 	rotate    - 
 */
-func (rfw *RotateFileWriter) SetOption(name string, v interface{}) (err error) {
+func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 	err = nil
 
-	switch name {
+	switch k {
 	case "flush":
 		flush := 0
 		if flush, err = ToInt(v); err == nil {

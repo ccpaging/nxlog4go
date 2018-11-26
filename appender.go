@@ -8,11 +8,11 @@ package nxlog4go
 type Appender interface {
 	// Set option about the Layout. The options should be set as default.
 	// Chainable.
-	Set(name string, v interface{}) Appender
+	Set(k string, v interface{}) Appender
 
 	// Set option about the Layout. The options should be set as default.
 	// Checkable
-	SetOption(name string, v interface{}) error
+	SetOption(k string, v interface{}) error
 
 	// Init is called by the filters.Add() function to allow the appender
 	// protocol to perform any initialization steps it needs. 

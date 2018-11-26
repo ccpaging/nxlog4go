@@ -50,8 +50,8 @@ func NewPatternLayout(pattern string) Layout {
 }
 
 // Set option. chainable
-func (pl *PatternLayout) Set(name string, v interface{}) Layout {
-	pl.SetOption(name, v)
+func (pl *PatternLayout) Set(k string, v interface{}) Layout {
+	pl.SetOption(k, v)
 	return pl
 }
 
@@ -80,13 +80,13 @@ Known pattern codes:
 	Ignores unknown formats
 Recommended: "[%D %T] [%L] (%S) %M"
 */
-func (pl *PatternLayout) SetOption(name string, v interface{}) (err error) {
+func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
 
 	err = nil
 
-	switch name {
+	switch k {
 	case "pattern", "format":
 		if value, ok := v.(string); ok {
 			pl.pattSlice = bytes.Split([]byte(value), []byte{'%'})

@@ -251,8 +251,8 @@ func (log *Logger) SetPrefix(prefix string) *Logger {
 }
 
 // Set option. chainable
-func (log *Logger) Set(name string, v interface{}) *Logger {
-	log.SetOption(name, v)
+func (log *Logger) Set(k string, v interface{}) *Logger {
+	log.SetOption(k, v)
 	return log
 }
 
