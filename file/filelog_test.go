@@ -8,15 +8,23 @@ import (
 	"runtime"
 	"testing"
 	"time"
+	"path/filepath"
 	"fmt"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
 const testLogFile = "_logtest.log"
+const oldfiles = "_logtest.*.log"
+
 const benchLogFile = "_benchlog.log"
 
 var now time.Time = time.Unix(0, 1234567890123456789).In(time.UTC)
+
+func init() {
+	// Enable internal logger
+	l4g.GetLogLog().Set("level", l4g.TRACE)
+}
 
 func newLogRecord(lvl l4g.Level, src string, msg string) *l4g.LogRecord {
 	return &l4g.LogRecord{
@@ -42,17 +50,153 @@ func TestFileAppender(t *testing.T) {
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
 	} else if len(contents) != 52 {
-		t.Errorf("malformed filelog: %q (%d bytes)", string(contents), len(contents))
+		t.Errorf("malformed FileAppender: %q (%d bytes)", string(contents), len(contents))
 	}
 }
 
+func writeSomethingToLogFile(log *l4g.Logger) {
+	log.Finest("Everything is created now (notice that I will not be printing to the file)")
+	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
+	log.Critical("Time to close out!")
+}
+
+func TestFileLog(t *testing.T) {
+	// Get a new logger instance
+	log := l4g.New(l4g.FINE).SetOutput(nil)
+
+	// Create a default logger that is logging messages of FINE or higher
+	filters := l4g.NewFilters().Add("file", l4g.FINE, NewFileAppender(testLogFile, false))
+	log.SetFilters(filters)
+	writeSomethingToLogFile(log)
+	log.SetFilters(nil)
+	filters.Close()
+
+	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
+		t.Errorf("read(%q): %s", testLogFile, err)
+	} else if len(contents) != 168 {
+		t.Errorf("malformed FileLog: %q (%d bytes)", string(contents), len(contents))
+	}
+
+	// Remove the file so it's not lying around
+	err := os.Remove(testLogFile)
+	if err != nil {
+		t.Errorf("remove (%q): %s", testLogFile, err)
+	}
+}
+
+func TestFileLogRotate(t *testing.T) {
+	// Get a new logger instance
+	log := l4g.New(l4g.FINE).SetOutput(nil)
+
+	/* Can also specify manually via the following: (these are the defaults) */
+	filter := NewFileAppender(testLogFile, true).Set("maxbackup", 10)
+	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
+	filter.Set("cycle", 5).Set("clock", -1).Set("maxsize", "5k")
+
+	filters := l4g.NewFilters().Add("file", l4g.FINE, filter)
+	log.SetFilters(filters)
+
+	// Log some experimental messages
+	for j := 0; j < 15; j++ {
+		time.Sleep(1 * time.Second)
+		for i := 0; i < 200 / (j+1); i++ {
+			writeSomethingToLogFile(log)
+		}
+		//time.Sleep(1 * time.Second)
+	}
+	// Close the log filters
+	log.SetFilters(nil)
+	// DO NOT FORGET CLOSING
+	filters.Close()
+
+	os.Remove(testLogFile)
+
+	// contains a list of all files in the current directory
+	files, _ := filepath.Glob(oldfiles)
+    fmt.Printf("%d files match %s\n", len(files), oldfiles)
+	if len(files) != 3 {
+		t.Errorf("FileRotateLog create %d files which should be 3", len(files))
+	}
+    for _, fname := range files {
+		err := os.Remove(fname)
+		if err != nil {
+			t.Errorf("remove (%q): %s", fname, err)
+		}
+    }
+}
+
+func TestRotateFile(t *testing.T) {
+	// Get a new logger instance
+	log := l4g.New(l4g.FINE).SetOutput(nil)
+
+	/* Can also specify manually via the following: (these are the defaults) */
+	filter := NewFileAppender(testLogFile, true).Set("maxbackup", 10)
+	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
+	filter.Set("cycle", 0).Set("maxsize", "5k")
+
+	filters := l4g.NewFilters().Add("file", l4g.FINE, filter)
+	log.SetFilters(filters)
+
+	// Log some experimental messages
+	for j := 0; j < 15; j++ {
+		time.Sleep(1 * time.Second)
+		for i := 0; i < 200 / (j+1); i++ {
+			writeSomethingToLogFile(log)
+		}
+		//time.Sleep(1 * time.Second)
+	}
+	// Close the log filters
+	log.SetFilters(nil)
+	// DO NOT FORGET CLOSING
+	filters.Close()
+
+	os.Remove(testLogFile)
+
+	// contains a list of all files in the current directory
+	files, _ := filepath.Glob(oldfiles)
+    fmt.Printf("%d files match %s\n", len(files), oldfiles)
+	if len(files) != 10 {
+		t.Errorf("FileRotateLog create %d files which should be 10", len(files))
+	}
+    for _, fname := range files {
+		err := os.Remove(fname)
+		if err != nil {
+			t.Errorf("remove (%q): %s", fname, err)
+		}
+    }
+}
+
 func TestNextTime(t *testing.T) {
-	fmt.Println("now:", time.Now())
-	fmt.Println("After 10 minutes:", nextTime(600, -1).Sub(time.Now()))
-	fmt.Println("Correct invalid value. cycle = 300 / clock = 0. After 5 minutes:", nextTime(300, 0).Sub(time.Now()))
-	fmt.Println("Next midnight:", nextTime(86400, 0).Sub(time.Now()))
-	fmt.Println("Next 3:00am:", nextTime(86400, 10800).Sub(time.Now()))
-	fmt.Println("Next weekly midnight:", nextTime(86400 * 7, 0).Sub(time.Now()))
+	d0 := nextTime(now, 600, -1).Sub(now)
+	d1, _ := time.ParseDuration("10m")
+	if d0 != d1 {
+		t.Errorf("Incorrect nextTime duration (10 minutes): %v should be %v", d0, d1)
+	}
+	// Correct invalid value cycle = 300，clock = 0 to clock = -1
+	// for cycle < 86400
+	d0 = nextTime(now, 300, 0).Sub(now)
+	d1, _ = time.ParseDuration("5m")
+	if d0 != d1 {
+		t.Errorf("Incorrect nextTime duration (5 minutes): %v should be %v", d0, d1)
+	}
+	d0 = nextTime(now, 86400, 0).Sub(now)
+	t1 := time.Date(now.Year(), now.Month(), now.Day() + 1, 0, 0, 0, 0, now.Location())
+	d1 = t1.Sub(now)
+	if d0 != d1 {
+		t.Errorf("Incorrect nextTime duration (next midnight): %v should be %v", d0, d1)
+	}
+	d0 = nextTime(now, 86400, 10800).Sub(now)
+	t1 = time.Date(now.Year(), now.Month(), now.Day() + 1, 3, 0, 0, 0, now.Location())
+	d1 = t1.Sub(now)
+	if d0 != d1 {
+		t.Errorf("Incorrect nextTime duration (next 3:00am): %v should be %v", d0, d1)
+	}
+	d0 = nextTime(now, 86400 * 7, 0).Sub(now)
+	t1 = time.Date(now.Year(), now.Month(), now.Day() + 7, 0, 0, 0, 0, now.Location())
+	d1 = t1.Sub(now)
+	if d0 != d1 {
+		t.Errorf("Incorrect nextTime duration (next weekly midnight): %v should be %v", d0, d1)
+	}
 }
 
 func BenchmarkFileLog(b *testing.B) {

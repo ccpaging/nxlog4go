@@ -102,14 +102,14 @@ func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	}
 }
 
-func nextTime(cycle, clock int) time.Time {
+func nextTime(now time.Time, cycle, clock int) time.Time {
 	if cycle <= 0 {
 		cycle = 86400
 	}
 	if cycle < 86400 { // Correct invalid clock
 		clock = -1
 	}
-	nrt := time.Now()
+	nrt := now
 	if clock < 0 {
 		// Now + cycle
 		return nrt.Add(time.Duration(cycle) * time.Second)
@@ -131,7 +131,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		fa.out.Rotate()
 	}
 
-	nrt := nextTime(fa.cycle, fa.clock)
+	nrt := nextTime(time.Now(), fa.cycle, fa.clock)
 	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
 	l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
 
@@ -156,7 +156,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 				return
 			}
 		case <-rotTimer.C:
-			nrt = nextTime(fa.cycle, fa.clock)
+			nrt = nextTime(time.Now(), fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
 			l4g.LogLogDebug("Next time is %v", nrt.Sub(time.Now()))
 			if fa.cycle > 0 && fa.out.IsOverSize() {
@@ -164,7 +164,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 			}
 		case <-fa.loopReset:
 			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", fa.cycle, fa.clock)
-			nrt = nextTime(fa.cycle, fa.clock)
+			nrt = nextTime(time.Now(), fa.cycle, fa.clock)
 			rotTimer.Reset(nrt.Sub(time.Now()))
 			l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
 		}
