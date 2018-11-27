@@ -136,7 +136,7 @@ func TestXMLConfig(t *testing.T) {
 	}
 
 	// Make sure they're the right type
-	if filters["color1"].Appender == nil {
+	if filters["color"].Appender.Write == nil {
 		t.Fatalf("XMLConfig: Expected stdout to be ConsoleLogWriter, found %T", filters["color"].Appender.Write)
 	}
 	/*

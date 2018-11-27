@@ -71,8 +71,8 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 }
 
 // Set option. chainable
-func (sa *SocketAppender) Set(name string, v interface{}) l4g.Appender {
-	sa.SetOption(name, v)
+func (sa *SocketAppender) Set(k string, v interface{}) l4g.Appender {
+	sa.SetOption(k, v)
 	return sa
 }
 

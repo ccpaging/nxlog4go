@@ -11,7 +11,7 @@ var	log = l4g.New(l4g.DEBUG)
 
 func main() {
 	// Enable internal log
-	l4g.GetLogLog().SetLevel(l4g.WARNING)
+	l4g.GetLogLog().Set("level", l4g.WARNING)
 
 	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewSocketAppender("udp", "127.0.0.1:12124"))
 	defer func() {
