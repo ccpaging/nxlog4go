@@ -207,6 +207,13 @@ func (fa *FileAppender) setLoop(k string, v interface{}) (err error) {
 	return
 }
 
+func (fa *FileAppender) Name() string {
+	if fa.out != nil {
+		return fa.out.Name()
+	}
+	return ""
+}
+
 // Set option. chainable
 func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	fa.SetOption(name, v)

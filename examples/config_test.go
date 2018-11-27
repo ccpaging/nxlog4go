@@ -10,7 +10,7 @@ import (
 	"encoding/xml"
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/color"
-	_ "github.com/ccpaging/nxlog4go/file"
+	"github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
 )
 
@@ -136,38 +136,37 @@ func TestXMLConfig(t *testing.T) {
 	}
 
 	// Make sure they're the right type
-	if filters["color1"].Appender == nil {
-		t.Fatalf("XMLConfig: Expected stdout to be ConsoleLogWriter, found %T", filters["color"].Appender.Write)
+	if fmt.Sprintf("%T", filters["color"].Write) != "func(*nxlog4go.LogRecord)" {
+		t.Fatalf("XMLConfig: Expected color log write, found %T", filters["color"].Write)
 	}
-	/*
-	if _, ok := filters.Get("file").LogWriter.(*FileLogWriter); !ok {
-		t.Fatalf("XMLConfig: Expected file to be *FileLogWriter, found %T", log["file"].LogWriter)
+	if fmt.Sprintf("%T", filters["file"].Write) != "func(*nxlog4go.LogRecord)" {
+		t.Fatalf("XMLConfig: Expected file log write, found %T", filters["file"].Write)
 	}
-	if _, ok := filters.Get("xmllog").LogWriter.(*FileLogWriter); !ok {
-		t.Fatalf("XMLConfig: Expected xmllog to be *FileLogWriter, found %T", log["xmllog"].LogWriter)
+	if fmt.Sprintf("%T", filters["xmllog"].Write) != "func(*nxlog4go.LogRecord)" {
+		t.Fatalf("XMLConfig: Expected xmllog log write, found %T", filters["xmllog"].Write)
 	}
-
 	// Make sure levels are set
-	if lvl := filters.Get("stdout").Level; lvl != DEBUG {
-		t.Errorf("XMLConfig: Expected stdout to be set to level %d, found %d", DEBUG, lvl)
+	if level := filters["color"].Level; level != l4g.DEBUG {
+		t.Errorf("XMLConfig: Expected stdout to be set to level %d, found %d", l4g.DEBUG, level)
 	}
-	if lvl := filters.Get("file").Level; lvl != FINEST {
-		t.Errorf("XMLConfig: Expected file to be set to level %d, found %d", FINEST, lvl)
+	if level := filters["file"].Level; level != l4g.FINEST {
+		t.Errorf("XMLConfig: Expected file to be set to level %d, found %d", l4g.FINEST, level)
 	}
-	if lvl := filters.Get("xmlog").Level; lvl != TRACE {
-		t.Errorf("XMLConfig: Expected xmllog to be set to level %d, found %d", TRACE, lvl)
+	if level := filters["xmllog"].Level; level != l4g.TRACE {
+		t.Errorf("XMLConfig: Expected xmllog to be set to level %d, found %d", l4g.TRACE, level)
 	}
 
 	// Make sure the w is open and points to the right file
-	if fname := filters.Get("file").LogWriter.(*FileLogWriter).file.Name(); fname != "test.log" {
+	if fname := filters["file"].Appender.(*filelog.FileAppender).Name(); fname != "test.log" {
 		t.Errorf("XMLConfig: Expected file to have opened %s, found %s", "test.log", fname)
 	}
 
 	// Make sure the XLW is open and points to the right file
-	if fname := filters.Get("xmllog").LogWriter.(*FileLogWriter).file.Name(); fname != "trace.xml" {
+	if fname := filters["xmllog"].Appender.(*filelog.FileAppender).Name(); fname != "trace.xml" {
 		t.Errorf("XMLConfig: Expected xmllog to have opened %s, found %s", "trace.xml", fname)
 	}
 
+	/*
 	// Move XML log file
 	os.Rename(configfile, "examples/"+configfile) // Keep this so that an example with the documentation is available
 	*/
