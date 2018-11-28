@@ -261,7 +261,7 @@ func (log *Logger) Set(k string, v interface{}) *Logger {
 	return log
 }
 
-// Setoption sets options of logger. checkable
+// SetOption sets options of logger. checkable
 // Option names include:
 //	prefix  - The output prefix
 //	caller	- Enable or disable the runtime caller function
