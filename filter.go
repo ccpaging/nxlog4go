@@ -19,9 +19,9 @@ type Filter struct {
 }
 
 // Create a new filter
-func NewFilter(lvl Level, writer Appender) *Filter {
+func NewFilter(level Level, writer Appender) *Filter {
 	f := &Filter {
-		Level:		lvl,
+		Level:		level,
 		Appender:	writer,
 
 		rec: 		make(chan *LogRecord, LogBufferLength),

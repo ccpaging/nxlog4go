@@ -8,23 +8,14 @@ import (
 	"os"
 	"testing"
 	"encoding/xml"
+	"encoding/json"
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
 )
 
-func TestXMLConfig(t *testing.T) {
-	const (
-		configfile = "config.xml"
-	)
-
-	fd, err := os.Create(configfile)
-	if err != nil {
-		t.Fatalf("Could not open %s for writing: %s", configfile, err)
-	}
-
-	fmt.Fprint(fd, 
+var xmlBuf = 
 `<logging>
   <filter enabled="true">
     <type>stdout</type>
@@ -39,14 +30,14 @@ func TestXMLConfig(t *testing.T) {
       %S - Source
       %M - Message
       It ignores unknown format strings (and removes them)
-      Recommended: \"[%D %T] [%L] (%S) %M\"
+      Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M</property>
   </filter>
   <filter enabled="true">
     <type>loglog</type>
     <level>DEBUG</level>
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
     <tag>color</tag>
@@ -57,8 +48,8 @@ func TestXMLConfig(t *testing.T) {
     <tag>file</tag>
     <type>file</type>
     <level>FINEST</level>
-    <property name="filename">test.log</property>
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="filename">_test.log</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">10M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
@@ -68,7 +59,7 @@ func TestXMLConfig(t *testing.T) {
     <tag>xmllog</tag>
     <type>xml</type>
     <level>TRACE</level>
-    <property name="filename">trace.xml</property>
+    <property name="filename">_trace.xml</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">100</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
@@ -82,24 +73,35 @@ func TestXMLConfig(t *testing.T) {
     <property name="endpoint">192.168.1.255:12124</property> <!-- recommend UDP broadcast -->
     <property name="protocol">udp</property> <!-- tcp or udp -->
   </filter>
-</logging>`)
+</logging>`
+
+var xmlFile = "config.xml"
+var jsonFile = "config.json"
+
+func TestXMLConfig(t *testing.T) {
+	fd, err := os.Create(xmlFile)
+	if err != nil {
+		t.Fatalf("Could not open %s for writing: %s", xmlFile, err)
+	}
+
+	fmt.Fprint(fd, xmlBuf)
 
 	fd.Close()
 
 	// Open the configuration file
-	fd, err = os.Open(configfile)
+	fd, err = os.Open(xmlFile)
 	if err != nil {
-		t.Fatalf("XMLConfig: Could not open %q for reading: %s\n", configfile, err)
+		t.Fatalf("XMLConfig: Could not open %q for reading: %s\n", xmlFile, err)
 	}
 
 	contents, err := ioutil.ReadAll(fd)
 	if err != nil {
-		t.Fatalf("XMLConfig: Could not read %q: %s\n", configfile, err)
+		t.Fatalf("XMLConfig: Could not read %q: %s\n", xmlFile, err)
 	}
 
 	lc := new(l4g.LoggerConfig)
 	if err := xml.Unmarshal(contents, lc); err != nil {
-		t.Fatalf("XMLConfig: Could not parse XML configuration in %q: %s\n", configfile, err)
+		t.Fatalf("XMLConfig: Could not parse XML configuration in %q: %s\n", xmlFile, err)
 	}
 	
 	log := l4g.New(l4g.INFO)
@@ -157,18 +159,24 @@ func TestXMLConfig(t *testing.T) {
 	}
 
 	// Make sure the w is open and points to the right file
-	if fname := filters["file"].Appender.(*filelog.FileAppender).Name(); fname != "test.log" {
-		t.Errorf("XMLConfig: Expected file to have opened %s, found %s", "test.log", fname)
+	if fname := filters["file"].Appender.(*filelog.FileAppender).Name(); fname != "_test.log" {
+		t.Errorf("XMLConfig: Expected file to have opened %s, found %s", "_test.log", fname)
 	}
 
 	// Make sure the XLW is open and points to the right file
-	if fname := filters["xmllog"].Appender.(*filelog.FileAppender).Name(); fname != "trace.xml" {
-		t.Errorf("XMLConfig: Expected xmllog to have opened %s, found %s", "trace.xml", fname)
+	if fname := filters["xmllog"].Appender.(*filelog.FileAppender).Name(); fname != "_trace.xml" {
+		t.Errorf("XMLConfig: Expected xmllog to have opened %s, found %s", "_trace.xml", fname)
 	}
 
-	/*
-	// Move XML log file
-	os.Rename(configfile, "examples/"+configfile) // Keep this so that an example with the documentation is available
-	*/
-}
+	// Keep xmlFile so that an example with the documentation is available
 
+	// Create xmlFile so that an example with the documentation is available 
+	jsonBuf, _ := json.MarshalIndent(lc, "", "    ")
+
+	fd, err = os.Create(jsonFile)
+	if err != nil {
+		t.Fatalf("Could not open %s for writing: %s", jsonFile, err)
+	}
+	fmt.Fprint(fd, string(jsonBuf))
+	fd.Close()
+}

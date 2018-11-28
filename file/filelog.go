@@ -80,7 +80,7 @@ func NewXml() l4g.Appender {
 	appender.SetOption("pattern", 
 `	<record level="%L">
 		<timestamp>%D %T</timestamp>
-		<source>%S</source>
+		<source>%s</source>
 		<message>%M</message>
 	</record>%R`)
 			

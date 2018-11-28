@@ -1,44 +1,121 @@
 {
-	"LogConfig" : {
-		"filters": [
-		{
-		  "tag": "color",
-		  "level": "INFO",
-		  "properties": [
-			{
-			  "name": "pattern",
-			  "value": "[%T] [%L] (%s) %M%R"
-			}
-		  ]
-		},
-		{
-		  "tag": "file",
-		  "level": "FINEST",
-		  "properties": [
-			{
-			  "name": "filename",
-			  "value": "_test.log"
-			},
-			{
-			  "name": "pattern",
-			  "value": "[%D %T] [%L] (%s) %M%R"
-			}
-		  ]
-		},
-		{
-		  "tag": "socket",
-		  "level": "SILENT",
-		  "properties": [
-			{
-			  "name": "protocol",
-			  "value": "udp"
-			},
-			{
-			  "name": "endpoint",
-			  "value": "127.0.0.1:12124"
-			}
-		  ]
-		}
-		]
-	}
+    "filters": [
+        {
+            "enabled": "true",
+            "tag": "",
+            "type": "stdout",
+            "level": "DEBUG",
+            "format": "",
+            "properties": [
+                {
+                    "name": "pattern",
+                    "value": "[%D %T] [%L] (%s) %M"
+                }
+            ]
+        },
+        {
+            "enabled": "true",
+            "tag": "",
+            "type": "loglog",
+            "level": "DEBUG",
+            "format": "",
+            "properties": [
+                {
+                    "name": "pattern",
+                    "value": "[%D %T] [%L] (%s) %M%R"
+                }
+            ]
+        },
+        {
+            "enabled": "true",
+            "tag": "color",
+            "type": "color",
+            "level": "DEBUG",
+            "format": "",
+            "properties": null
+        },
+        {
+            "enabled": "true",
+            "tag": "file",
+            "type": "file",
+            "level": "FINEST",
+            "format": "",
+            "properties": [
+                {
+                    "name": "filename",
+                    "value": "_test.log"
+                },
+                {
+                    "name": "pattern",
+                    "value": "[%D %T] [%L] (%s) %M%R"
+                },
+                {
+                    "name": "maxbackup",
+                    "value": "7"
+                },
+                {
+                    "name": "maxsize",
+                    "value": "10M"
+                },
+                {
+                    "name": "maxlines",
+                    "value": "0"
+                },
+                {
+                    "name": "cycle",
+                    "value": "5m"
+                }
+            ]
+        },
+        {
+            "enabled": "true",
+            "tag": "xmllog",
+            "type": "xml",
+            "level": "TRACE",
+            "format": "",
+            "properties": [
+                {
+                    "name": "filename",
+                    "value": "_trace.xml"
+                },
+                {
+                    "name": "maxbackup",
+                    "value": "7"
+                },
+                {
+                    "name": "maxsize",
+                    "value": "0"
+                },
+                {
+                    "name": "maxlines",
+                    "value": "100"
+                },
+                {
+                    "name": "cycle",
+                    "value": "24h"
+                },
+                {
+                    "name": "clock",
+                    "value": "0"
+                }
+            ]
+        },
+        {
+            "enabled": "false",
+            "tag": "socket",
+            "type": "socket",
+            "level": "FINEST",
+            "format": "",
+            "properties": [
+                {
+                    "name": "endpoint",
+                    "value": "192.168.1.255:12124"
+                },
+                {
+                    "name": "protocol",
+                    "value": "udp"
+                }
+            ]
+        }
+    ]
 }

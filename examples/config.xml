@@ -12,14 +12,14 @@
       %S - Source
       %M - Message
       It ignores unknown format strings (and removes them)
-      Recommended: \"[%D %T] [%L] (%S) %M\"
+      Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M</property>
   </filter>
   <filter enabled="true">
     <type>loglog</type>
     <level>DEBUG</level>
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
     <tag>color</tag>
@@ -30,8 +30,8 @@
     <tag>file</tag>
     <type>file</type>
     <level>FINEST</level>
-    <property name="filename">test.log</property>
-    <property name="pattern">[%D %T] [%L] (%S) %M</property>
+    <property name="filename">_test.log</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">10M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
@@ -41,7 +41,7 @@
     <tag>xmllog</tag>
     <type>xml</type>
     <level>TRACE</level>
-    <property name="filename">trace.xml</property>
+    <property name="filename">_trace.xml</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">100</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->

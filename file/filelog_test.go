@@ -21,9 +21,9 @@ const benchLogFile = "_benchlog.log"
 
 var now time.Time = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newLogRecord(lvl l4g.Level, src string, msg string) *l4g.LogRecord {
+func newLogRecord(level l4g.Level, src string, msg string) *l4g.LogRecord {
 	return &l4g.LogRecord{
-		Level:   lvl,
+		Level:   level,
 		Source:  src,
 		Created: now,
 		Message: msg,

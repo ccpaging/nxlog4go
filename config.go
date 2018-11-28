@@ -95,7 +95,7 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		fc.Type = strings.ToLower(fc.Type)
 
 		if enabled, err := ToBool(fc.Enabled); !enabled {
-			LogLogTrace("Disable \"%s\" for %s", fc.Tag, err)
+			LogLogTrace("Disable \"%s\" for %v", fc.Tag, err)
 			continue
 		} 
 
