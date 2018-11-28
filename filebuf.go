@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	// Default flush size of cache writing file
+	// FileFlushDefault is the default flush size.
 	FileFlushDefault = os.Getpagesize() * 2
-	// Default log file and directory permission
+	// FilePermDefault is the default log file and directory permission.
 	// permission to:  owner      group      other     
 	//                 /```\      /```\      /```\
 	// octal:            6          6          6
@@ -23,10 +23,11 @@ var (
 	//                  group: the users from group that owner is member
 	//                  other: all other users
 	FilePermDefault = os.FileMode(0660)
+	// FileLineSize is the average line size when calculating lines by file size
 	FileLineSize = 256
 )
 
-// File buffer writer
+// FileBufWriter represents the buffered writer with lock, current size and lines.
 type FileBufWriter struct {
 	sync.RWMutex
 	*bufio.Writer
@@ -37,6 +38,8 @@ type FileBufWriter struct {
 	curlines int
 }
 
+// NewFileBufWriter creates an active buffered writer. 
+// The file should opened on demand.
 func NewFileBufWriter(fname string) *FileBufWriter {
 	return &FileBufWriter {
 		name: fname,
@@ -44,6 +47,7 @@ func NewFileBufWriter(fname string) *FileBufWriter {
 	}
 }
 
+// Close active buffered writer.
 func (fbw *FileBufWriter) Close() error {
 	fbw.Flush()
 
@@ -62,6 +66,7 @@ func (fbw *FileBufWriter) Close() error {
 	return nil
 }
 
+// Write bytes to file and calculate current size and lines.
 func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	fbw.Lock()
 	defer fbw.Unlock()
@@ -95,6 +100,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	return n, err 
 }
 
+// Flush to file.
 func (fbw *FileBufWriter) Flush() {
 	fbw.Lock()
 	defer fbw.Unlock()
@@ -108,6 +114,7 @@ func (fbw *FileBufWriter) Flush() {
 	}
 }
 
+// Size returns the size of current file.
 func (fbw *FileBufWriter) Size() int {
 	if fbw.cursize <= 0 {
 		fi, err := fbw.Stat()
@@ -118,6 +125,7 @@ func (fbw *FileBufWriter) Size() int {
 	return fbw.cursize
 }
 
+// Lines returns the lines of current file.
 func (fbw *FileBufWriter) Lines() int {
 	if fbw.curlines <= 0 {
 		fbw.curlines = fbw.Size() / FileLineSize
@@ -125,6 +133,8 @@ func (fbw *FileBufWriter) Lines() int {
 	return fbw.curlines
 }
 
+// Stat returns the FileInfo structure describing file. 
+// If there is an error, it will be of type *PathError. 
 func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 	if fbw.file != nil {
 		return fbw.file.Stat()
@@ -132,11 +142,13 @@ func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 	return os.Stat(fbw.name)
 }
 
+// Name returns the name of the file as presented to Open.
 func (fbw *FileBufWriter) Name() string {
 	return fbw.name
 }
 
-// flush <= 0, no bufio
+// SetFlush sets the flush size. 
+// If flush <= 0, no buffer.
 func (fbw *FileBufWriter) SetFlush(flush int) *FileBufWriter {
 	fbw.Close()
 	fbw.flush = flush
