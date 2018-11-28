@@ -89,10 +89,10 @@ import (
 
 // Version information
 const (
-	NXLog4Go_Version = "nxlog4go-v0.4.4"
-	NXLog4Go_Major   = 0
-	NXLog4Go_Minor   = 4
-	NXLog4Go_Build   = 4
+	Version = "nxlog4go-v0.4.4"
+	Major   = 0
+	Minor   = 4
+	Build   = 4
 )
 
 /****** Constants ******/
@@ -261,14 +261,12 @@ func (log *Logger) Set(k string, v interface{}) *Logger {
 	return log
 }
 
-/*
-Setoption sets options of logger. checkable
-Option names include:
-	prefix  - The output prefix
-	caller	- Enable or disable the runtime caller function
-	level   - The output level
-	pattern	- The pattern of Layout format
-*/
+// Setoption sets options of logger. checkable
+// Option names include:
+//	prefix  - The output prefix
+//	caller	- Enable or disable the runtime caller function
+//	level   - The output level
+//	pattern	- The pattern of Layout format
 func (log *Logger) SetOption(k string, v interface{}) (err error) {
 	err = nil
 

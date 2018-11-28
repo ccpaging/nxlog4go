@@ -31,7 +31,7 @@ func newLogRecord(lvl Level, prefix, src string, msg string) *LogRecord {
 }
 
 func TestELog(t *testing.T) {
-	fmt.Printf("Testing %s\n", NXLog4Go_Version)
+	fmt.Printf("Testing %s\n", Version)
 	lr := newLogRecord(CRITICAL, "prefix", "source", "message")
 	if lr.Level != CRITICAL {
 		t.Errorf("Incorrect level: %d should be %d", lr.Level, CRITICAL)
