@@ -1,6 +1,8 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 // Copyright (C) 2010, Kyle Lemons <kyle@kylelemons.net>.  All rights reserved.
-
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// 
 // Package nxlog4go provides simple, fast, low cost, and extensible logging.
 // It can be used in test, development, and production environment.
 //
