@@ -1,13 +1,11 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 // Copyright (C) 2010, Kyle Lemons <kyle@kylelemons.net>.  All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-// 
+//
 // Package nxlog4go provides simple, fast, low cost, and extensible logging.
 // It can be used in test, development, and production environment.
 //
 // Logger
-// 
+//
 // - prefix, to write at beginning of each line
 // - Enable / disable caller func since it's expensive.
 // - The default console output compatibility with go log
@@ -15,13 +13,13 @@
 // 	 out, io.Writer / io.MultiWriter
 //   layout, specifies how the data will be written
 // - filters, point to filters map
-// 
+//
 // Filters
-// 
+//
 // - The filters map indexed with tag name
-// 
+//
 // Filter
-// 
+//
 // - level, the log level
 // 	 FINEST
 //	 FINE
@@ -32,49 +30,49 @@
 //	 ERROR
 //	 CRITICAL
 // - appender
-// 
+//
 // Appender
-// 
+//
 // - An interface for anything
 // - Write function should be able to write logs
 // - Close function clean up anything lingering about the Appender
 // - SetOption function. Configurable
 // - Extensible. Anyone can port own appender as part of nxlog4go.
-// 
+//
 // Layout
-// 
+//
 // - With time stamp cached
 // - fast byte convert
 // - The default PatternLayout is easy to use.
-// 
+//
 // Enhanced Logging
 //
 // This is inspired by the logging functionality in log4go. Essentially, you create a Logger
-// object with a console writer or create output filters for it. You can send whatever you 
-// want to the Logger, and it will filter and formatter that based on your settings and 
-// send it to the outputs. This way, you can put as much debug code in your program as 
-// you want, and when you're done you can filter out the mundane messages so only 
+// object with a console writer or create output filters for it. You can send whatever you
+// want to the Logger, and it will filter and formatter that based on your settings and
+// send it to the outputs. This way, you can put as much debug code in your program as
+// you want, and when you're done you can filter out the mundane messages so only
 // the important ones show up as the pattern you want.
-// 
-// Utility functions are provided to make life easier. 
+//
+// Utility functions are provided to make life easier.
 //
 // You may using your configuration file format as same as your project's.
-// 
+//
 // You may extend your own appender for your needs.
-// 
+//
 // Here is some example code to get started:
 //
 // log := nxlog4go.New(nxlog4go.DEBUG)
 // log.Info("The time is now: %s", time.LocalTime().Format("15:04:05 MST 2006/01/02"))
-// 
+//
 // Usage notes:
 // - The utility functions (Info, Debug, Warn, etc) derive their source from the
 //   calling function, and this incurs extra overhead. It can be disabled.
 // - New field prefix is adding to LogRecorder to identify different module/package
-//   in large project  
+//   in large project
 //
 // Changes from log4go
-// 
+//
 // The most of interfaces and the internals have been changed have been changed, then you will
 // have to update your code. Sorry! I hope it is worth.
 
@@ -82,26 +80,27 @@ package nxlog4go
 
 import (
 	"errors"
+	"io"
 	"os"
 	"strings"
-	"time"
 	"sync"
-	"io"
+	"time"
 )
 
 // Version information
 const (
-	NXLOG4GO_VERSION = "nxlog4go-v0.4.4"
-	NXLOG4GO_MAJOR   = 0
-	NXLOG4GO_MINOR   = 4
-	NXLOG4GO_BUILD   = 4
+	NXLog4Go_Version = "nxlog4go-v0.4.4"
+	NXLog4Go_Major   = 0
+	NXLog4Go_Minor   = 4
+	NXLog4Go_Build   = 4
 )
 
 /****** Constants ******/
 
-// These are the integer logging levels used by the logger
+// Level is the integer logging levels
 type Level int
 
+// logging levels used by the logger
 const (
 	FINEST Level = iota
 	FINE
@@ -119,6 +118,7 @@ var (
 	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT"}
 )
 
+// String return the string of integer Level
 func (l Level) String() string {
 	if l < 0 || int(l) >= len(levelStrings) {
 		return "UNKNOWN"
@@ -126,6 +126,7 @@ func (l Level) String() string {
 	return levelStrings[int(l)]
 }
 
+// GetLevel return the integer level of string
 func GetLevel(s string) (level Level) {
 	switch strings.ToUpper(s) {
 	case "FINEST", FINEST.String():
@@ -155,7 +156,7 @@ func GetLevel(s string) (level Level) {
 /****** Variables ******/
 
 var (
-	// Default skip passed to runtime.Caller to get file name/line
+	// LogCallerDepth is the default skip passed to runtime.Caller to get file name/line
 	// May require tweaking if you want to wrap the logger
 	LogCallerDepth = 2
 	// LogBufferLength specifies how many log messages a particular log4go
@@ -166,8 +167,10 @@ var (
 /****** Errors ******/
 
 var (
-    ErrBadOption   = errors.New("Invalid or unsupported option")
-    ErrBadValue    = errors.New("Invalid option value")
+	// ErrBadOption is the errors of bad option
+	ErrBadOption = errors.New("Invalid or unsupported option")
+	// ErrBadValue is the errors of bad value
+	ErrBadValue = errors.New("Invalid option value")
 )
 
 /****** LogRecord ******/
@@ -178,28 +181,28 @@ type LogRecord struct {
 	Created time.Time // The time at which the log message was created (nanoseconds)
 	Prefix  string    // The message prefix
 	Source  string    // The message source
-	Line	int 	  // The source line
+	Line    int       // The source line
 	Message string    // The log message
 }
 
 /****** Logger ******/
 
 // A Logger represents an active logging object that generates lines of
-// output to an io.Writer, and a collection of Filters through which 
+// output to an io.Writer, and a collection of Filters through which
 // log messages are written. Each logging operation makes a single call to
 // the Writer's Write method. A Logger can be used simultaneously from
 // multiple goroutines; it guarantees to serialize access to the Writer.
 type Logger struct {
-	mu     sync.Mutex // ensures atomic writes; protects the following fields
+	mu sync.Mutex // ensures atomic writes; protects the following fields
 
-	prefix string     // prefix to write at beginning of each line
-	caller bool  	  // runtime caller skip
+	prefix string // prefix to write at beginning of each line
+	caller bool   // runtime caller skip
 
-	out    io.Writer  // destination for output
-	level  Level      // The log level
-	layout Layout     // format record for output
+	out    io.Writer // destination for output
+	level  Level     // The log level
+	layout Layout    // format record for output
 
-	filters Filters  // a collection of Filters
+	filters Filters // a collection of Filters
 }
 
 // NewLogger creates a new Logger. The out variable sets the
@@ -208,24 +211,24 @@ type Logger struct {
 // The flag argument defines the logging properties.
 func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger {
 	return &Logger{
-		out: out,
-		level: lvl,
-		caller: true,
-		prefix: prefix,
-		layout: NewPatternLayout(pattern),
+		out:     out,
+		level:   lvl,
+		caller:  true,
+		prefix:  prefix,
+		layout:  NewPatternLayout(pattern),
 		filters: nil,
 	}
 }
 
-// New Creates a new logger with a "stderr" writer to send 
+// New Creates a new logger with a "stderr" writer to send
 // log messages at or above lvl to standard output.
 func New(lvl Level) *Logger {
 	return NewLogger(os.Stderr, lvl, "", PATTERN_DEFAULT)
 }
 
-// Closes all log filters in preparation for exiting the program.
-// Calling this is not really imperative, unless you want to 
-// guarantee that all log messages are written.  Close removes
+// Shutdown closes all log filters in preparation for exiting the program.
+// Calling this is not really imperative, unless you want to
+// guarantee that all log messages are written.  Close() removes
 // all filters (and thus all appenders) from the logger.
 func (log *Logger) Shutdown() {
 	log.mu.Lock()
@@ -259,7 +262,7 @@ func (log *Logger) Set(k string, v interface{}) *Logger {
 }
 
 /*
-Set option. checkable
+Setoption sets options of logger. checkable
 Option names include:
 	prefix  - The output prefix
 	caller	- Enable or disable the runtime caller function
@@ -334,7 +337,7 @@ func (log *Logger) SetFilters(filters Filters) *Logger {
 
 /******* Logging *******/
 
-// Send a log message with manual level, source, and message.
+// Log sends a log message with manual level, source, and message.
 func (log Logger) Log(lvl Level, source string, line int, message string) {
 	log.mu.Lock()
 	defer log.mu.Unlock()
@@ -350,7 +353,7 @@ func (log Logger) Log(lvl Level, source string, line int, message string) {
 	}
 
 	if log.out != nil {
-    	log.out.Write(log.layout.Format(rec))
+		log.out.Write(log.layout.Format(rec))
 	}
 
 	if log.filters != nil {
