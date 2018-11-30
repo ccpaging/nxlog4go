@@ -1,31 +1,30 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package configtest
+package config_test
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"testing"
-	"encoding/xml"
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
+	"io/ioutil"
+	"os"
+	"testing"
 )
 
-var xmlBuf = 
-`<logging>
+var xmlBuf = `<logging>
   <filter enabled="true">
     <type>stdout</type>
     <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
     <level>DEBUG</level>
     <!--
       %T - Time (15:04:05 MST)
-      %`+`t - Time (15:04)
+      %` + `t - Time (15:04)
       %D - Date (2006/01/02)
-      %`+`d - Date (01/02/06)
+      %` + `d - Date (01/02/06)
       %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
       %S - Source
       %M - Message
@@ -103,18 +102,18 @@ func TestXMLConfig(t *testing.T) {
 	if err := xml.Unmarshal(contents, lc); err != nil {
 		t.Fatalf("XMLConfig: Could not parse XML configuration in %q: %s\n", xmlFile, err)
 	}
-	
+
 	log := l4g.New(l4g.INFO)
 	log.LoadConfiguration(lc)
 	filters := log.Filters()
 
-	defer os.Remove("trace.xml")
-	defer os.Remove("test.log")
 	defer func() {
 		log.SetFilters(nil)
 		if filters != nil {
 			filters.Close()
 		}
+		os.Remove("_trace.xml")
+		os.Remove("_test.log")
 	}()
 
 	// Make sure we got all loggers
@@ -170,7 +169,7 @@ func TestXMLConfig(t *testing.T) {
 
 	// Keep xmlFile so that an example with the documentation is available
 
-	// Create xmlFile so that an example with the documentation is available 
+	// Create xmlFile so that an example with the documentation is available
 	jsonBuf, _ := json.MarshalIndent(lc, "", "    ")
 
 	fd, err = os.Create(jsonFile)

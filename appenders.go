@@ -2,9 +2,6 @@
 
 package nxlog4go
 
-import (
-)
-
 /****** Appenders map ******/
 
 // AppenderNewFunc represents a function that create a new appender interface
@@ -12,7 +9,7 @@ type AppenderNewFunc func() Appender
 
 var appenders = make(map[string]AppenderNewFunc)
 
-// AddAppenderNewFunc is called by 3rd appender's init() function 
+// AddAppenderNewFunc is called by 3rd appender's init() function
 // to register New() function that creates and returns Appender interface.
 func AddAppenderNewFunc(typ string, newFunc AppenderNewFunc) {
 	if typ == "" {

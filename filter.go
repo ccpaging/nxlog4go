@@ -14,28 +14,28 @@ type Filter struct {
 	Level Level
 	Appender
 
-	rec 	chan *LogRecord	// write queue
-	closing	bool	// true if filter was closed at API level
+	rec     chan *LogRecord // write queue
+	closing bool            // true if filter was closed at API level
 }
 
 // Create a new filter
 func NewFilter(level Level, writer Appender) *Filter {
-	f := &Filter {
-		Level:		level,
-		Appender:	writer,
+	f := &Filter{
+		Level:    level,
+		Appender: writer,
 
-		rec: 		make(chan *LogRecord, LogBufferLength),
-		closing: 	false,
+		rec:     make(chan *LogRecord, LogBufferLength),
+		closing: false,
 	}
 
 	ready := make(chan struct{})
 	go f.run(ready)
-	<- ready
+	<-ready
 	return f
 }
 
 // This is the filter's output method. This will block if the output
-// buffer is full. 
+// buffer is full.
 func (f *Filter) writeToChan(rec *LogRecord) {
 	if f.closing {
 		LogLogError("Channel closed. Can not write Message [%s]", rec.Message)

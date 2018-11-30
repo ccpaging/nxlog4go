@@ -78,17 +78,17 @@ func ToInt(i interface{}) (n int, err error) {
 }
 
 // ToSeconds casts an interface to an seconds.
-func ToSeconds(i interface{}) (s int, err error) {
-	s = 0
+func ToSeconds(i interface{}) (n int, err error) {
+	n = 0
 	err = nil
 
 	switch i.(type) {
 	case int:
-		s = i.(int)
+		n = i.(int)
 	case string:
-		dur_int64, err0 := time.ParseDuration(i.(string))
-		s = int(dur_int64 / time.Second)
-		err = err0
+		var dur time.Duration
+		dur, err = time.ParseDuration(i.(string))
+		n = int(dur / time.Second)
 	default:
 		err = ErrBadValue
 	}

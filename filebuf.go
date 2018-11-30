@@ -95,7 +95,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	}
 	if err == nil {
 		fbw.cursize += n
-		fbw.curlines += 1
+		fbw.curlines++
 	}
 	return n, err
 }

@@ -4,38 +4,39 @@ package nxlog4go
 
 import (
 	"errors"
-	"os"
 	"fmt"
-	"strings"
+	"os"
 	"runtime"
+	"strings"
 )
 
-func intMsg(arg0 interface{}, args ...interface{}) string {
+func intMsg(arg0 interface{}, args ...interface{}) (s string) {
 	switch first := arg0.(type) {
 	case string:
 		if len(args) == 0 {
-			return first
+			s = first
 		} else {
 			// Use the string as a format string
-			return fmt.Sprintf(first, args...)
+			s = fmt.Sprintf(first, args...)
 		}
 	case func() string:
 		// Log the closure (no other arguments used)
-		return first()
+		s = first()
 	default:
 		// Build a format string so that it will be similar to Sprint
-		return fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
+		s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
 	}
+	return
 }
 
-// Determine if any logging will be done
+// Determine if any logging will be done.
 func (log Logger) skip(lvl Level) bool {
 	if log.out != nil && lvl >= log.level {
-        return false
-    }
+		return false
+	}
 
 	if log.filters != nil {
-		if log.filters.Skip(lvl) == false{
+		if log.filters.Skip(lvl) == false {
 			return false
 		}
 	}
@@ -148,66 +149,66 @@ func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
 
 var global = New(DEBUG)
 
-// Return the default logger 
+// GetLogger returns the default logger.
 func GetLogger() *Logger {
 	return global
 }
 
-// Compatibility with `log`
+// Panic is compatible with `log`.
 func Panic(arg0 interface{}, args ...interface{}) {
 	msg := intMsg(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
 
-// Compatibility with `log`
+// Panic is compatible with `log`.
 func Panicln(arg0 interface{}, args ...interface{}) {
 	msg := intMsg(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
 
-// Compatibility with `log`
+// Panicf is compatible with `log`.
 func Panicf(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
 	global.intLog(CRITICAL, s)
 	panic(s)
 }
 
-// Compatibility with `log`
+// Fatal is compatible with `log`.
 func Fatal(arg0 interface{}, args ...interface{}) {
 	global.intLog(ERROR, intMsg(arg0, args...))
 	os.Exit(0)
 }
 
-// Compatibility with `log`
+// Fatalln is compatible with `log`.
 func Fatalln(arg0 interface{}, args ...interface{}) {
 	global.intLog(ERROR, intMsg(arg0, args...))
 	os.Exit(0)
 }
 
-// Compatibility with `log`
+// compatible with `log`.
 func Fatalf(format string, v ...interface{}) {
 	global.intLog(ERROR, fmt.Sprintf(format, v...))
 	os.Exit(0)
 }
 
-// Compatibility with `log`
+// Print is compatible with `log`.
 func Print(arg0 interface{}, args ...interface{}) {
 	global.intLog(INFO, intMsg(arg0, args...))
 }
 
-// Compatibility with `log`
+// Println is compatible with `log`.
 func Println(arg0 interface{}, args ...interface{}) {
 	global.intLog(INFO, intMsg(arg0, args...))
 }
 
-// Compatibility with `log`
+// Printf is compatible with `log`.
 func Printf(format string, v ...interface{}) {
 	global.intLog(INFO, fmt.Sprintf(format, v...))
 }
 
-// Utility for finest log messages (see Debug() for parameter explanation)
+// Finest log messages (see Debug() for parameter explanation).
 // Wrapper for (*Logger).Finest
 func Finest(arg0 interface{}, args ...interface{}) {
 	if global.skip(FINEST) {
@@ -216,7 +217,7 @@ func Finest(arg0 interface{}, args ...interface{}) {
 	global.intLog(FINEST, intMsg(arg0, args...))
 }
 
-// Utility for fine log messages (see Debug() for parameter explanation)
+// Fine log messages (see Debug() for parameter explanation).
 // Wrapper for (*Logger).Fine
 func Fine(arg0 interface{}, args ...interface{}) {
 	if global.skip(FINE) {
@@ -225,10 +226,14 @@ func Fine(arg0 interface{}, args ...interface{}) {
 	global.intLog(FINE, intMsg(arg0, args...))
 }
 
-// Utility for debug log messages
-// When given a string as the first argument, this behaves like Logf but with the DEBUG log level (e.g. the first argument is interpreted as a format for the latter arguments)
-// When given a closure of type func()string, this logs the string returned by the closure iff it will be logged.  The closure runs at most one time.
-// When given anything else, the log message will be each of the arguments formatted with %v and separated by spaces (ala Sprint).
+// Debug log messages.
+// When given a string as the first argument, this behaves like Log
+// but with the DEBUG log level (e.g. the first argument is interpreted
+// as a format for the latter arguments)
+// When given a closure of type func()string, this logs the string returned
+// by the closure if it will be logged.  The closure runs at most one time.
+// When given anything else, the log message will be each of the arguments
+// formatted with %v and separated by spaces (ala Sprint).
 // Wrapper for (*Logger).Debug
 func Debug(arg0 interface{}, args ...interface{}) {
 	if global.skip(DEBUG) {
@@ -237,7 +242,7 @@ func Debug(arg0 interface{}, args ...interface{}) {
 	global.intLog(DEBUG, intMsg(arg0, args...))
 }
 
-// Utility for trace log messages (see Debug() for parameter explanation)
+// Trace log messages (see Debug() for parameter explanation).
 // Wrapper for (*Logger).Trace
 func Trace(arg0 interface{}, args ...interface{}) {
 	if global.skip(TRACE) {
@@ -246,7 +251,7 @@ func Trace(arg0 interface{}, args ...interface{}) {
 	global.intLog(TRACE, intMsg(arg0, args...))
 }
 
-// Utility for info log messages (see Debug() for parameter explanation)
+// Info log messages (see Debug() for parameter explanation).
 // Wrapper for (*Logger).Info
 func Info(arg0 interface{}, args ...interface{}) {
 	if global.skip(INFO) {
@@ -255,8 +260,8 @@ func Info(arg0 interface{}, args ...interface{}) {
 	global.intLog(INFO, intMsg(arg0, args...))
 }
 
-// Utility for warn log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
-// These functions will execute a closure exactly once, to build the error message for the return
+// Warn log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
+// These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Warn
 func Warn(arg0 interface{}, args ...interface{}) error {
 	msg := intMsg(arg0, args...)
@@ -266,8 +271,8 @@ func Warn(arg0 interface{}, args ...interface{}) error {
 	return errors.New(msg)
 }
 
-// Utility for error log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
-// These functions will execute a closure exactly once, to build the error message for the return
+// Error log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
+// These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Error
 func Error(arg0 interface{}, args ...interface{}) error {
 	msg := intMsg(arg0, args...)
@@ -277,8 +282,8 @@ func Error(arg0 interface{}, args ...interface{}) error {
 	return errors.New(msg)
 }
 
-// Utility for critical log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
-// These functions will execute a closure exactly once, to build the error message for the return
+// Critical log messages (returns an error for easy function returns) (see Debug() for parameter explanation)
+// These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Critical
 func Critical(arg0 interface{}, args ...interface{}) error {
 	msg := intMsg(arg0, args...)
