@@ -5,11 +5,11 @@ package nxlog4go
 import (
 	"bytes"
 	"strings"
-	"time"
 	"sync"
+	"time"
 )
 
-// This is an interface for formatting log record
+// Layout is is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
 	// Chainable.
@@ -19,44 +19,46 @@ type Layout interface {
 	// Checkable
 	SetOption(name string, v interface{}) error
 
-	// Get(name string) string
-
 	// This will be called to log a LogRecord message.
 	Format(rec *LogRecord) []byte
 }
 
 var (
-	PATTERN_DEFAULT = "[%D %T %z] [%L] (%s:%N) %M\n"
-	PATTERN_SHORT   = "[%h:%m %d] [%L] %M\n"
-	PATTERN_ABBREV  = "[%L] %M\n"
-	PATTERN_JSON	= "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
+	// PatternDefault includes date, time, zone, level, source, lines, and message 
+	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M\n"
+	// PatternShort includes short time, short date, level and message 
+	PatternShort   = "[%h:%m %d] [%L] %M\n"
+	// PatternAbbrev includes level and message
+	PatternAbbrev  = "[%L] %M\n"
+	// PatternJson is json format include everyone of log record
+	PatternJson    = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
 )
 
-// This layout formats log record by pattern
+// PatternLayout formats log record with pattern
 type PatternLayout struct {
-	mu sync.Mutex // ensures atomic writes; protects the following fields
-	pattSlice [][]byte // Split the pattern into pieces by % signs
-	utc bool
+	mu                  sync.Mutex // ensures atomic writes; protects the following fields
+	pattSlice           [][]byte   // Split the pattern into pieces by % signs
+	utc                 bool
 	longZone, shortZone []byte
 }
 
-// NewPatternLayout creates a new layout which format log record by pattern
+// NewPatternLayout creates a new layout which format log record by pattern.
+// Using PatternDefault if pattern is empty string.
 func NewPatternLayout(pattern string) Layout {
 	if pattern == "" {
-		pattern = PATTERN_DEFAULT
+		pattern = PatternDefault
 	}
 	pl := &PatternLayout{}
 	return pl.Set("pattern", pattern).Set("utc", false)
 }
 
-// Set option. chainable
+// Set option of layout. chainable
 func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 	pl.SetOption(k, v)
 	return pl
 }
 
-/* 
-Set option. checkable. Better be set before the first log message is written.
+/* SetOption sets options.
 Known pattern codes:
 	%U - Time (15:04:05.000000)
 	%T - Time (15:04:05)
@@ -113,18 +115,6 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-/*
-// Get option
-func (pl PatternLayout) Get(name string) string {
-	pl.mu.Lock()
-	defer pl.mu.Unlock()
-	if name == "pattern" {
-		return string(bytes.Join(pl.pattSlice, []byte{'%'}))
-	}
-	return ""
-}
-*/
-
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
 func itoa(buf *[]byte, i int, wid int) {
 	// Assemble decimal in reverse order.
@@ -144,36 +134,49 @@ func itoa(buf *[]byte, i int, wid int) {
 
 func format222(buf *[]byte, hh, mm, ss int, sep byte) {
 	var b [16]byte
-	b[0] = byte('0' + hh / 10); b[1] = byte('0' + hh % 10)
+	b[0] = byte('0' + hh/10)
+	b[1] = byte('0' + hh%10)
 	b[2] = sep
-	b[3] = byte('0' + mm / 10); b[4] = byte('0' + mm % 10)
+	b[3] = byte('0' + mm/10)
+	b[4] = byte('0' + mm%10)
 	b[5] = sep
-	b[6] = byte('0' + ss / 10); b[7] = byte('0' + ss % 10)
+	b[6] = byte('0' + ss/10)
+	b[7] = byte('0' + ss%10)
 	*buf = append(*buf, b[:8]...)
 }
 
 func formatCCYYMMDD(buf *[]byte, cc, yy, mm, dd int, sep byte) {
 	var b [16]byte
-	b[0] = byte('0' + cc / 10); b[1] = byte('0' + cc % 10)
-	b[2] = byte('0' + yy / 10); b[3] = byte('0' + yy % 10)
+	b[0] = byte('0' + cc/10)
+	b[1] = byte('0' + cc%10)
+	b[2] = byte('0' + yy/10)
+	b[3] = byte('0' + yy%10)
 	b[4] = sep
-	b[5] = byte('0' + mm / 10); b[6] = byte('0' + mm % 10)
+	b[5] = byte('0' + mm/10)
+	b[6] = byte('0' + mm%10)
 	b[7] = sep
-	b[8] = byte('0' + dd / 10); b[9] = byte('0' + dd % 10)
+	b[8] = byte('0' + dd/10)
+	b[9] = byte('0' + dd%10)
 	*buf = append(*buf, b[:10]...)
 }
 
 func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
 	switch piece0 {
-	case 'L': out.WriteString(levelStrings[rec.Level])
-	case 'P': out.WriteString(rec.Prefix)
-	case 'S': out.WriteString(rec.Source)
-	case 's': out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
-	case 'M': out.WriteString(rec.Message)
+	case 'L':
+		out.WriteString(levelStrings[rec.Level])
+	case 'P':
+		out.WriteString(rec.Prefix)
+	case 'S':
+		out.WriteString(rec.Source)
+	case 's':
+		out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+	case 'M':
+		out.WriteString(rec.Message)
 	}
 }
 
-// Format log record
+// Format log record.
+// Return bytes.
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()
@@ -188,9 +191,12 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 
 	t := rec.Created
-	if pl.utc { t = t.UTC() }
+	if pl.utc {
+		t = t.UTC()
+	}
 
-	year, month, day := t.Date(); hour, minute, second := t.Clock()
+	year, month, day := t.Date()
+	hour, minute, second := t.Clock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
@@ -202,19 +208,32 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				format222(&b, hour, minute, second, ':')
 				b = append(b, '.')
 				itoa(&b, t.Nanosecond()/1e3, 6)
-			case 'T': format222(&b, hour, minute, second, ':')
-			case 'h': itoa(&b, hour, 2)
-			case 'm': itoa(&b, minute, 2)
-			case 'Z': out.Write(pl.longZone)
-			case 'z': out.Write(pl.shortZone)
-			case 'D': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
-			case 'Y': formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '-')
-			case 'd': format222(&b, int(day), int(month), year % 100, '/')
-			case 't': out.WriteByte('\t')
-			case 'r': out.WriteByte('\r')
-			case 'n', 'R': out.WriteByte('\n')
-			case 'l': itoa(&b, int(rec.Level), -1)
-			case 'N': itoa(&b, rec.Line, -1)
+			case 'T':
+				format222(&b, hour, minute, second, ':')
+			case 'h':
+				itoa(&b, hour, 2)
+			case 'm':
+				itoa(&b, minute, 2)
+			case 'Z':
+				out.Write(pl.longZone)
+			case 'z':
+				out.Write(pl.shortZone)
+			case 'D':
+				formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '/')
+			case 'Y':
+				formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '-')
+			case 'd':
+				format222(&b, int(day), int(month), year%100, '/')
+			case 't':
+				out.WriteByte('\t')
+			case 'r':
+				out.WriteByte('\r')
+			case 'n', 'R':
+				out.WriteByte('\n')
+			case 'l':
+				itoa(&b, int(rec.Level), -1)
+			case 'N':
+				itoa(&b, rec.Line, -1)
 			default:
 				writeRecord(out, piece[0], rec)
 			}
@@ -226,7 +245,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 				out.Write(piece[1:])
 			}
 		} else if len(piece) > 0 {
- 			out.Write(piece)
+			out.Write(piece)
 		}
 	}
 

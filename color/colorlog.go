@@ -45,7 +45,7 @@ func New() l4g.Appender {
 func NewColorAppender(w io.Writer) l4g.Appender {
 	return &ColorAppender {
 		out:	w,
-		layout: l4g.NewPatternLayout(l4g.PATTERN_DEFAULT),
+		layout: l4g.NewPatternLayout(""),
 		color: 	(os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
 			os.Getenv("ConEmuANSI") == "ON",
 	}

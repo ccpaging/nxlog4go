@@ -24,7 +24,7 @@ func TestFormatDDMMYY(t *testing.T) {
 	now := time.Now()
 	year, month, day := now.Date()
 	var b []byte
-	format222(&b, int(day), int(month), year % 100, '/')
+	format222(&b, int(day), int(month), year%100, '/')
 	s0 := string(b)
 	s1 := now.Format("02/01/06")
 	if s0 != s1 {
@@ -36,7 +36,7 @@ func TestFormatCCYYMMDD(t *testing.T) {
 	now := time.Now()
 	year, month, day := now.Date()
 	var b []byte
-	formatCCYYMMDD(&b, year / 100, year % 100, int(month), int(day), '/')
+	formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '/')
 	s0 := string(b)
 	s1 := now.Format("2006/01/02")
 	if s0 != s1 {

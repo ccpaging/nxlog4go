@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	l4g "github.com/ccpaging/nxlog4go"
 	"net"
 	"os"
-	"encoding/json"
-	l4g "github.com/ccpaging/nxlog4go"
 )
 
 var (
@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	// Bind to the port
-	bind, err := net.ResolveUDPAddr("udp", "0.0.0.0:" + *port)
+	bind, err := net.ResolveUDPAddr("udp", "0.0.0.0:"+*port)
 	e(err)
 
 	// Create listener

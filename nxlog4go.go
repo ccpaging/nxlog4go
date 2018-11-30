@@ -223,7 +223,7 @@ func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger 
 // New Creates a new logger with a "stderr" writer to send
 // log messages at or above lvl to standard output.
 func New(lvl Level) *Logger {
-	return NewLogger(os.Stderr, lvl, "", PATTERN_DEFAULT)
+	return NewLogger(os.Stderr, lvl, "", "")
 }
 
 // Shutdown closes all log filters in preparation for exiting the program.

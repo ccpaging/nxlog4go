@@ -3,6 +3,9 @@
 package nxlog4go
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,9 +13,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
 )
 
 const testLogFile = "_logtest.log"
@@ -48,8 +48,8 @@ func TestELog(t *testing.T) {
 }
 
 var patternTests = []struct {
-	Test    string
-	Record  *LogRecord
+	Test     string
+	Record   *LogRecord
 	Patterns map[string]string
 }{
 	{
@@ -62,9 +62,9 @@ var patternTests = []struct {
 		},
 		Patterns: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			PATTERN_DEFAULT: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
-			PATTERN_SHORT:   "[23:31 13/02/09] [EROR] message\n",
-			PATTERN_ABBREV:  "[EROR] message\n",
+			PatternDefault: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
+			PatternShort:   "[23:31 13/02/09] [EROR] message\n",
+			PatternAbbrev:  "[EROR] message\n",
 		},
 	},
 }
@@ -105,7 +105,7 @@ func TestConsoleWriter(t *testing.T) {
 
 	buf := make([]byte, 1024)
 
-	layout := NewPatternLayout(PATTERN_DEFAULT).Set("utc", true)
+	layout := NewPatternLayout("").Set("utc", true)
 	for _, test := range logRecordWriteTests {
 		name := test.Test
 
@@ -113,7 +113,7 @@ func TestConsoleWriter(t *testing.T) {
 		go w.Write(layout.Format(test.Record))
 
 		n, _ := r.Read(buf)
-		if got, want := string(buf[:n]), test.Console; got != (want+"\n") {
+		if got, want := string(buf[:n]), test.Console; got != (want + "\n") {
 			t.Errorf("%s:  got %q", name, got)
 			t.Errorf("%s: want %q", name, want)
 		}
@@ -125,7 +125,7 @@ func TestFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	layout := NewPatternLayout(PATTERN_DEFAULT)
+	layout := NewPatternLayout("")
 	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
@@ -143,7 +143,7 @@ func TestRotateFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	layout := NewPatternLayout(PATTERN_DEFAULT)
+	layout := NewPatternLayout("")
 	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
@@ -306,7 +306,7 @@ func BenchmarkPatternLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	lo := NewPatternLayout(PATTERN_DEFAULT)
+	lo := NewPatternLayout("")
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
 		lo.Format(rec)
@@ -337,7 +337,7 @@ func BenchmarkJsonLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	lo := NewPatternLayout(PATTERN_JSON)
+	lo := NewPatternLayout(PatternJson)
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
 		lo.Format(rec)

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"os"
-	"time"
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/socket"
+	"os"
+	"time"
 )
 
-var	log = l4g.New(l4g.DEBUG)
+var log = l4g.New(l4g.DEBUG)
 
 func main() {
 	// Enable internal log
