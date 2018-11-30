@@ -12,11 +12,11 @@ type NameValue struct {
 }
 
 type FilterConfig struct {
-	Enabled string `xml:"enabled,attr" json:"enabled"`
-	Tag     string `xml:"tag" json:"tag"`
-	Type    string `xml:"type" json:"type"`
-	Level   string `xml:"level" json:"level"`
-	Pattern string `xml:"format" json:"format"`
+	Enabled    string      `xml:"enabled,attr" json:"enabled"`
+	Tag        string      `xml:"tag" json:"tag"`
+	Type       string      `xml:"type" json:"type"`
+	Level      string      `xml:"level" json:"level"`
+	Pattern    string      `xml:"format" json:"format"`
 	Properties []NameValue `xml:"property" json:"properties"`
 }
 
@@ -53,7 +53,7 @@ func loadAppender(level Level, typ string, props []NameValue) Appender {
 		return nil
 	}
 
-	newFunc := GetAppenderNewFunc(typ)
+	newFunc := getAppenderNewFunc(typ)
 	if newFunc == nil {
 		LogLogWarn("Unknown appender type \"%s\"", typ)
 		return nil
@@ -84,9 +84,9 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		if fc.Tag == "" && fc.Type == "" {
 			LogLogWarn("Missing tag and type")
 			continue
-		} 
-		
-		if fc.Tag == "" { 
+		}
+
+		if fc.Tag == "" {
 			fc.Tag = fc.Type
 		}
 		if fc.Type == "" {
@@ -97,7 +97,7 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		if enabled, err := ToBool(fc.Enabled); !enabled {
 			LogLogTrace("Disable \"%s\" for %v", fc.Tag, err)
 			continue
-		} 
+		}
 
 		level := GetLevel(fc.Level)
 

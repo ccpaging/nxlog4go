@@ -7,12 +7,13 @@ import (
 
 /****** Appenders map ******/
 
+// AppenderNewFunc represents a function that create a new appender interface
 type AppenderNewFunc func() Appender
 
-type Appenders map[string]AppenderNewFunc
+var appenders = make(map[string]AppenderNewFunc)
 
-var appenders = make(Appenders)
-
+// AddAppenderNewFunc is called by 3rd appender's init() function 
+// to register New() function that creates and returns Appender interface.
 func AddAppenderNewFunc(typ string, newFunc AppenderNewFunc) {
 	if typ == "" {
 		return
@@ -24,7 +25,7 @@ func AddAppenderNewFunc(typ string, newFunc AppenderNewFunc) {
 	appenders[typ] = newFunc
 }
 
-func GetAppenderNewFunc(typ string) AppenderNewFunc {
+func getAppenderNewFunc(typ string) AppenderNewFunc {
 	if newFunc, ok := appenders[typ]; ok {
 		return newFunc
 	}

@@ -12,7 +12,7 @@ var (
 	// FileFlushDefault is the default flush size.
 	FileFlushDefault = os.Getpagesize() * 2
 	// FilePermDefault is the default log file and directory permission.
-	// permission to:  owner      group      other     
+	// permission to:  owner      group      other
 	//                 /```\      /```\      /```\
 	// octal:            6          6          6
 	// binary:         1 1 0      1 1 0      1 1 0
@@ -31,18 +31,18 @@ var (
 type FileBufWriter struct {
 	sync.RWMutex
 	*bufio.Writer
-	file	 *os.File
-	name	 string
+	file     *os.File
+	name     string
 	flush    int
 	cursize  int
 	curlines int
 }
 
-// NewFileBufWriter creates an active buffered writer. 
+// NewFileBufWriter creates an active buffered writer.
 // The file should opened on demand.
 func NewFileBufWriter(fname string) *FileBufWriter {
-	return &FileBufWriter {
-		name: fname,
+	return &FileBufWriter{
+		name:  fname,
 		flush: FileFlushDefault,
 	}
 }
@@ -76,7 +76,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 		if err != nil {
 			return 0, err
 		}
-	
+
 		fbw.file = file
 		fbw.cursize = 0
 		fbw.curlines = 0
@@ -97,7 +97,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 		fbw.cursize += n
 		fbw.curlines += 1
 	}
-	return n, err 
+	return n, err
 }
 
 // Flush to file.
@@ -133,8 +133,8 @@ func (fbw *FileBufWriter) Lines() int {
 	return fbw.curlines
 }
 
-// Stat returns the FileInfo structure describing file. 
-// If there is an error, it will be of type *PathError. 
+// Stat returns the FileInfo structure describing file.
+// If there is an error, it will be of type *PathError.
 func (fbw *FileBufWriter) Stat() (os.FileInfo, error) {
 	if fbw.file != nil {
 		return fbw.file.Stat()
@@ -147,7 +147,7 @@ func (fbw *FileBufWriter) Name() string {
 	return fbw.name
 }
 
-// SetFlush sets the flush size. 
+// SetFlush sets the flush size.
 // If flush <= 0, no buffer.
 func (fbw *FileBufWriter) SetFlush(flush int) *FileBufWriter {
 	fbw.Close()

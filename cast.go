@@ -1,8 +1,8 @@
 package nxlog4go
 
 import (
-	"time"
 	"strconv"
+	"time"
 )
 
 // ToString casts an interface to a string type.
@@ -10,7 +10,7 @@ func ToString(i interface{}) (s string, err error) {
 	s = ""
 	err = nil
 
-	switch  i.(type) {
+	switch i.(type) {
 	case string:
 		s = i.(string)
 	case []byte:
@@ -25,7 +25,7 @@ func ToString(i interface{}) (s string, err error) {
 func ToBool(i interface{}) (b bool, err error) {
 	b = false
 	err = nil
-	
+
 	switch i.(type) {
 	case bool:
 		b = i.(bool)
@@ -65,7 +65,7 @@ func strToNumSuffix(str string, mult int) (int, error) {
 func ToInt(i interface{}) (n int, err error) {
 	n = 0
 	err = nil
-	
+
 	switch i.(type) {
 	case int:
 		n = i.(int)
@@ -87,11 +87,10 @@ func ToSeconds(i interface{}) (s int, err error) {
 		s = i.(int)
 	case string:
 		dur_int64, err0 := time.ParseDuration(i.(string))
-		s = int(dur_int64/time.Second)
+		s = int(dur_int64 / time.Second)
 		err = err0
 	default:
 		err = ErrBadValue
 	}
 	return
 }
-
