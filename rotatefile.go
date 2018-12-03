@@ -3,14 +3,14 @@
 package nxlog4go
 
 import (
+	"fmt"
+	"os"
+	"path"
 	"sync"
 	"time"
-	"os"
-	"fmt"
-	"path"
 )
 
-// Rotate File buffer writer
+// RotateFileWriter represents the buffered writer with lock, header, footer and rotating.
 type RotateFileWriter struct {
 	sync.RWMutex
 	// The opened file buffer writer
@@ -18,12 +18,12 @@ type RotateFileWriter struct {
 	// File header/trailer
 	header, footer string
 	// Rotate at size
-	maxsize   int
+	maxsize int
 	// Rotate at linecount
-	maxlines  int
+	maxlines int
 	// Rotate daily
-	daily     bool
-	curtime   time.Time
+	daily   bool
+	curtime time.Time
 	// Keep old logfiles (.001, .002, etc)
 	rotate    bool
 	maxbackup int
@@ -31,11 +31,11 @@ type RotateFileWriter struct {
 
 // NewRotateFileWriter creates rotator which writes to the file buffer writer
 func NewRotateFileWriter(fname string, rotate bool) *RotateFileWriter {
-	rfw := &RotateFileWriter {
+	rfw := &RotateFileWriter{
 		FileBufWriter: NewFileBufWriter(fname),
-		daily: false,
-		rotate: rotate,
-		maxbackup: 9,
+		daily:         false,
+		rotate:        rotate,
+		maxbackup:     9,
 	}
 	fi, err := rfw.FileBufWriter.Stat()
 	if err != nil {
@@ -75,19 +75,19 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 }
 
 // Rename history log files to "<name>.???.<ext>"
-func intBackup(newName string, pattern string, backup int) {
+func renameHistoryFiles(newName string, pattern string, backup int) {
 	// May compress new log file here
 
 	LogLogTrace("Backup %s", newName)
 
-	ext := path.Ext(pattern) // like ".log"
-	path := pattern[0:len(pattern)-len(ext)] // include dir
+	ext := path.Ext(pattern)                   // like ".log"
+	path := pattern[0 : len(pattern)-len(ext)] // include dir
 
 	// May create backup directory here
 
 	var (
-		n int
-		err error 
+		n    int
+		err  error
 		slot string
 	)
 	for n = 0; n < backup; n++ {
@@ -102,20 +102,21 @@ func intBackup(newName string, pattern string, backup int) {
 		os.Remove(slot)
 		n--
 	}
-	
+
 	// May compress previous log file here
-	
+
 	for ; n > 0; n-- {
-		prev := path + fmt.Sprintf(".%d", n - 1) + ext
+		prev := path + fmt.Sprintf(".%d", n-1) + ext
 		LogLogTrace("Rename %s to %s", prev, slot)
 		os.Rename(prev, slot)
 		slot = prev
 	}
-	
-	LogLogTrace("Rename %s to %s", newName, path + ".0" + ext)
-	os.Rename(newName, path + ".0" + ext)
+
+	LogLogTrace("Rename %s to %s", newName, path+".0"+ext)
+	os.Rename(newName, path+".0"+ext)
 }
 
+// Rotate current log file if necessary
 func (rfw *RotateFileWriter) Rotate() {
 	defer func() {
 		rfw.curtime = time.Now()
@@ -129,7 +130,7 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	LogLogTrace("Close %s", rfw.FileBufWriter.Name())
 	rfw.FileBufWriter.Close()
-	
+
 	name := rfw.FileBufWriter.Name()
 	if rfw.maxbackup <= 0 {
 		os.Remove(name)
@@ -144,8 +145,8 @@ func (rfw *RotateFileWriter) Rotate() {
 		LogLogError(err)
 		return
 	}
-	
-	intBackup(newName, name, rfw.maxbackup)
+
+	renameHistoryFiles(newName, name, rfw.maxbackup)
 }
 
 // Set option. chainable
@@ -154,17 +155,15 @@ func (rfw *RotateFileWriter) Set(k string, v interface{}) *RotateFileWriter {
 	return rfw
 }
 
-/*
-Set option. checkable. Better be set before SetFilters()
-Option names include:
-	flush	  - Flush file cache buffer size
-	maxbackup - Max number for log file storage
-	maxsize	  - Rotate at size
-	head 	  - File head format layout pattern
-	foot 	  - File foot format layout pattern
-	daily	  - Checking rotate size at every midnight
-	rotate    - 
-*/
+// SetOption sets option.
+// Option names include:
+// 	flush	  - Flush file cache buffer size
+// 	maxbackup - Max number for log file storage
+// 	maxsize	  - Rotate at size
+// 	head 	  - File head format layout pattern
+// 	foot 	  - File foot format layout pattern
+// 	daily	  - Checking rotate size at every midnight
+// 	rotate    -
 func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 	err = nil
 
@@ -173,7 +172,7 @@ func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 		flush := 0
 		if flush, err = ToInt(v); err == nil {
 			rfw.SetFlush(flush)
-		}		
+		}
 	case "head":
 		header := ""
 		if header, err = ToString(v); err == nil {
@@ -216,8 +215,8 @@ func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-// Set the file header(chainable).  Must be called before the first log
-// message is written.
+// SetFileName sets the file name. Must be called before the first log message 
+// is written.
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	rfw.Lock()
 	defer rfw.Unlock()
@@ -227,18 +226,22 @@ func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	return rfw
 }
 
+// MaxBackup returns max number of history log files
 func (rfw RotateFileWriter) MaxBackup() int {
 	return rfw.maxbackup
 }
 
+// MaxSize returns max size of log file
 func (rfw RotateFileWriter) MaxSize() int {
 	return rfw.maxsize
 }
 
+// MaxLines returns max log records of log file
 func (rfw RotateFileWriter) MaxLines() int {
 	return rfw.maxlines
 }
 
+// IsOverSize checks current log file is overflowed or not, and return the result. 
 func (rfw RotateFileWriter) IsOverSize() bool {
 	if rfw.maxsize > 0 && rfw.Size() >= rfw.maxsize {
 		return true

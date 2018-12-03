@@ -261,12 +261,13 @@ func (log *Logger) Set(k string, v interface{}) *Logger {
 	return log
 }
 
-// SetOption sets options of logger. checkable
+// SetOption sets options of logger.
 // Option names include:
 //	prefix  - The output prefix
 //	caller	- Enable or disable the runtime caller function
 //	level   - The output level
 //	pattern	- The pattern of Layout format
+// Return errors.
 func (log *Logger) SetOption(k string, v interface{}) (err error) {
 	err = nil
 

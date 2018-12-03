@@ -4,7 +4,7 @@ package nxlog4go
 
 var loglog *Logger = nil
 
-// Return internal logger.
+// GetLogLog creates internal logger if not existed, and returns it.
 // This logger used to output log statements from within the package.
 // Do not set any filters.
 func GetLogLog() *Logger {
@@ -14,6 +14,7 @@ func GetLogLog() *Logger {
 	return loglog
 }
 
+// LogLogDebug logs a message at the debug log level.
 func LogLogDebug(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
@@ -21,9 +22,10 @@ func LogLogDebug(arg0 interface{}, args ...interface{}) {
 	if loglog.skip(DEBUG) {
 		return
 	}
-	loglog.intLog(DEBUG, intMsg(arg0, args ...))
+	loglog.intLog(DEBUG, intMsg(arg0, args...))
 }
 
+// LogLogTrace logs a message at the trace log level.
 func LogLogTrace(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
@@ -31,9 +33,10 @@ func LogLogTrace(arg0 interface{}, args ...interface{}) {
 	if loglog.skip(TRACE) {
 		return
 	}
-	loglog.intLog(TRACE, intMsg(arg0, args ...))
+	loglog.intLog(TRACE, intMsg(arg0, args...))
 }
 
+// LogLogInfo logs a message at the info log level.
 func LogLogInfo(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
@@ -41,9 +44,10 @@ func LogLogInfo(arg0 interface{}, args ...interface{}) {
 	if loglog.skip(INFO) {
 		return
 	}
-	loglog.intLog(INFO, intMsg(arg0, args ...))
+	loglog.intLog(INFO, intMsg(arg0, args...))
 }
 
+// LogLogWarn logs a message at the warn log level.
 func LogLogWarn(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
@@ -51,9 +55,10 @@ func LogLogWarn(arg0 interface{}, args ...interface{}) {
 	if loglog.skip(WARNING) {
 		return
 	}
-	loglog.intLog(WARNING, intMsg(arg0, args ...))
+	loglog.intLog(WARNING, intMsg(arg0, args...))
 }
 
+// LogLogError logs a message at the error log level.
 func LogLogError(arg0 interface{}, args ...interface{}) {
 	if loglog == nil {
 		return
@@ -61,5 +66,5 @@ func LogLogError(arg0 interface{}, args ...interface{}) {
 	if loglog.skip(ERROR) {
 		return
 	}
-	loglog.intLog(ERROR,intMsg(arg0, args ...))
+	loglog.intLog(ERROR, intMsg(arg0, args...))
 }
