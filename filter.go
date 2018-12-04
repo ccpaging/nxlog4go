@@ -8,7 +8,7 @@ import (
 
 /****** Filter ******/
 
-// A Filter represents the log level below which no log records are written to
+// Filter represents the log level below which no log records are written to
 // the associated Appender.
 type Filter struct {
 	Level Level
@@ -18,7 +18,7 @@ type Filter struct {
 	closing bool            // true if filter was closed at API level
 }
 
-// Create a new filter
+// NewFilter creates a new filter.
 func NewFilter(level Level, writer Appender) *Filter {
 	f := &Filter{
 		Level:    level,

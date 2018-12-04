@@ -6,9 +6,11 @@ import ()
 
 /****** Filters map ******/
 
+// Filters represents a collection of Appenders through which log messages are
+// written.
 type Filters map[string]*Filter
 
-// Make a new filters
+// NewFilters creates a new filters
 func NewFilters() Filters {
 	return Filters{}
 }
@@ -40,8 +42,7 @@ func (fs Filters) Close() {
 	}
 }
 
-// Check log level
-// Return skip or not
+// Skip check log level and return whether skip or not
 func (fs Filters) Skip(lvl Level) bool {
 	for _, filt := range fs {
 		if lvl >= filt.Level {

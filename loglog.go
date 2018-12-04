@@ -2,7 +2,7 @@
 
 package nxlog4go
 
-var loglog *Logger = nil
+var loglog *Logger
 
 // GetLogLog creates internal logger if not existed, and returns it.
 // This logger used to output log statements from within the package.

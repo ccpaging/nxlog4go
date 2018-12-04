@@ -18,7 +18,7 @@ import (
 const testLogFile = "_logtest.log"
 const benchLogFile = "_benchlog.log"
 
-var now time.Time = time.Unix(0, 1234567890123456789).In(time.UTC)
+var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
 func newLogRecord(lvl Level, prefix, src string, msg string) *LogRecord {
 	return &LogRecord{
