@@ -437,14 +437,16 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 }
 
 // go test -bench=.
-// Benchmark results (windows amd64 10g)
-// BenchmarkPatternLayout-4                 2000000               952 ns/op
-// BenchmarkJson-4                           500000              3040 ns/op
-// BenchmarkJsonLayout-4                    1000000              1458 ns/op
-// BenchmarkConsoleWriter-4                 1000000              1334 ns/op
-// BenchmarkConsoleUtilWriter-4              300000              3936 ns/op
-// BenchmarkConsoleUtilNotWriter-4         50000000                30.2 ns/op
-// BenchmarkFileWriter-4                     200000              6505 ns/op
-// BenchmarkFileUtilWriter-4                 200000              7540 ns/op
-// BenchmarkFileBufWriter-4                 1000000              1705 ns/op
-// BenchmarkFileBufUtilWriter-4              500000              2158 ns/op
+// goos: windows
+// goarch: amd64
+// pkg: vendor/github.com/ccpaging/nxlog4go
+// BenchmarkPatternLayout-4                 2000000               824 ns/op
+// BenchmarkJson-4                           500000              3176 ns/op
+// BenchmarkJsonLayout-4                    1000000              1220 ns/op
+// BenchmarkConsoleWriter-4                 1000000              1187 ns/op
+// BenchmarkConsoleUtilWriter-4              500000              3870 ns/op
+// BenchmarkConsoleUtilNotWriter-4         50000000                29.9 ns/op
+// BenchmarkFileWriter-4                     200000              6445 ns/op
+// BenchmarkFileUtilWriter-4                 200000              7465 ns/op
+// BenchmarkFileBufWriter-4                 1000000              1546 ns/op
+// BenchmarkFileBufUtilWriter-4             1000000              1847 ns/op

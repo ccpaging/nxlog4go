@@ -177,6 +177,12 @@ func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
 		out.Write(b)
 	case 'M':
 		out.WriteString(rec.Message)
+	case 't':
+		out.WriteByte('\t')
+	case 'r':
+		out.WriteByte('\r')
+	case 'n', 'R':
+		out.WriteByte('\n')
 	}
 }
 
@@ -193,50 +199,56 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		return nil
 	}
 
-	out := bytes.NewBuffer(make([]byte, 0, 64))
-
 	t := rec.Created
 	if pl.utc {
 		t = t.UTC()
 	}
-
 	year, month, day := t.Date()
 	hour, minute, second := t.Clock()
-	// Split the string into pieces by % signs
-	//pieces := bytes.Split([]byte(format), []byte{'%'})
+
+	out := bytes.NewBuffer(make([]byte, 0, 64))
 	var b []byte
 	// Iterate over the pieces, replacing known formats
+	// Split the string into pieces by % signs
+	// pieces := bytes.Split([]byte(format), []byte{'%'})
 	for i, piece := range pl.pattSlice {
-		if i > 0 && len(piece) > 0 {
-			switch piece[0] {
-			case 'U':
-				format222(&b, hour, minute, second, ':')
-				b = append(b, '.')
-				itoa(&b, t.Nanosecond()/1e3, 6)
-			case 'T': format222(&b, hour, minute, second, ':')
-			case 'h': itoa(&b, hour, 2)
-			case 'm': itoa(&b, minute, 2)
-			case 'Z': out.Write(pl.longZone)
-			case 'z': out.Write(pl.shortZone)
-			case 'D': formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '/')
-			case 'Y': formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '-')
-			case 'd': format222(&b, int(day), int(month), year%100, '/')
-			case 't': out.WriteByte('\t')
-			case 'r': out.WriteByte('\r')
-			case 'n', 'R':
-				out.WriteByte('\n')
-			default:
-				writeRecord(out, piece[0], rec)
-			}
-			if len(b) > 0 {
-				out.Write(b)
-				b = nil
-			}
-			if len(piece) > 1 {
-				out.Write(piece[1:])
-			}
-		} else if len(piece) > 0 {
+		if i == 0 && len(piece) > 0 {
 			out.Write(piece)
+			continue
+		}
+		if len(piece) <= 0 {
+			continue
+		}
+		switch piece[0] {
+		case 'U':
+			format222(&b, hour, minute, second, ':')
+			b = append(b, '.')
+			itoa(&b, t.Nanosecond()/1e3, 6)
+		case 'T':
+			format222(&b, hour, minute, second, ':')
+		case 'h':
+			itoa(&b, hour, 2)
+		case 'm':
+			itoa(&b, minute, 2)
+		case 'Z':
+			out.Write(pl.longZone)
+		case 'z':
+			out.Write(pl.shortZone)
+		case 'D':
+			formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '/')
+		case 'Y':
+			formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '-')
+		case 'd':
+			format222(&b, int(day), int(month), year%100, '/')
+		default:
+			writeRecord(out, piece[0], rec)
+		}
+		if len(b) > 0 {
+			out.Write(b)
+			b = nil
+		}
+		if len(piece) > 1 {
+			out.Write(piece[1:])
 		}
 	}
 
