@@ -170,6 +170,14 @@ func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
 		out.WriteString(rec.Source)
 	case 's':
 		out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+	case 'l':
+		var b []byte
+ 		itoa(&b, int(rec.Level), -1)
+		out.Write(b)
+	case 'N':
+ 		var b []byte
+		itoa(&b, rec.Line, -1)
+		out.Write(b)
 	case 'M':
 		out.WriteString(rec.Message)
 	}
@@ -195,8 +203,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		t = t.UTC()
 	}
 
-	year, month, day := t.Date()
-	hour, minute, second := t.Clock()
+	year, month, day := t.Date(); hour, minute, second := t.Clock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
@@ -219,10 +226,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 't': out.WriteByte('\t')
 			case 'r': out.WriteByte('\r')
 			case 'n', 'R': out.WriteByte('\n')
-			case 'l': itoa(&b, int(rec.Level), -1)
-			case 'N': itoa(&b, rec.Line, -1)
-			default:
-				writeRecord(out, piece[0], rec)
+			default:  writeRecord(out, piece[0], rec)
 			}
 			if len(b) > 0 {
 				out.Write(b)
