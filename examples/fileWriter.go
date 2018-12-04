@@ -14,8 +14,7 @@ const (
 	filename = "_fw.log"
 )
 
-// Print what was logged to the file (yes, I know I'm skipping error checking)
-func PrintFile(fn string) {
+func printFile(fn string) {
 	fd, _ := os.Open(fn)
 	in := bufio.NewReader(fd)
 	fmt.Print("Messages logged to file were: (line numbers not included)\n")
@@ -40,7 +39,7 @@ func main() {
 	log.Critical("Time to close out!")
 	fbw.Close()
 
-	PrintFile(filename)
+	printFile(filename)
 	// Remove the file so it's not lying around
 	os.Remove(filename)
 }

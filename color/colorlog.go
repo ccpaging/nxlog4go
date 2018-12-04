@@ -82,7 +82,7 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 	ca.out.Write(ca.layout.Format(rec))
 }
 
-// Set option. 
+// Set option.
 // Return Appender interface.
 func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 	ca.SetOption(name, v)

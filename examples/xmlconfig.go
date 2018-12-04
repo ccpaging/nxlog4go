@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-var fname string = "config.xml"
+var fname = "config.xml"
 
 var log = l4g.GetLogger()
 

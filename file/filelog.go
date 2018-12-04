@@ -73,7 +73,7 @@ func New() l4g.Appender {
 	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
 }
 
-// NewXML creates a new file appender which XML format. 
+// NewXML creates a new file appender which XML format.
 func NewXML() l4g.Appender {
 	base := filepath.Base(os.Args[0])
 	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
@@ -217,7 +217,7 @@ func (fa *FileAppender) Name() string {
 	return ""
 }
 
-// Set option. 
+// Set option.
 // Return Appender interface.
 func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	fa.SetOption(name, v)

@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package config_test
+package main
 
 import (
 	"encoding/json"

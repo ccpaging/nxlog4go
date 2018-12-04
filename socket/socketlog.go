@@ -49,8 +49,8 @@ func NewSocketAppender(prot, host string) l4g.Appender {
 	}
 }
 
-// Write a log recorder to a socket. 
-// Connecting to the server on demand. 
+// Write a log recorder to a socket.
+// Connecting to the server on demand.
 func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
@@ -72,7 +72,7 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 	}
 }
 
-// Set option. 
+// Set option.
 // Return Appender interface.
 func (sa *SocketAppender) Set(k string, v interface{}) l4g.Appender {
 	sa.SetOption(k, v)
