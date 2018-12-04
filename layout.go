@@ -129,7 +129,8 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-func format222(buf *[]byte, hh, mm, ss int, sep byte) {
+func formatHMS(out *bytes.Buffer, t *time.Time, sep byte) {
+	hh, mm, ss := t.Clock()
 	var b [16]byte
 	b[0] = byte('0' + hh/10)
 	b[1] = byte('0' + hh%10)
@@ -139,22 +140,40 @@ func format222(buf *[]byte, hh, mm, ss int, sep byte) {
 	b[5] = sep
 	b[6] = byte('0' + ss/10)
 	b[7] = byte('0' + ss%10)
-	*buf = append(*buf, b[:8]...)
+	out.Write(b[:8])
 }
 
-func formatCCYYMMDD(buf *[]byte, cc, yy, mm, dd int, sep byte) {
+func formatDMY(out *bytes.Buffer, t *time.Time, sep byte) {
+	y, m, d := t.Date()
+	y %= 100
 	var b [16]byte
-	b[0] = byte('0' + cc/10)
-	b[1] = byte('0' + cc%10)
-	b[2] = byte('0' + yy/10)
-	b[3] = byte('0' + yy%10)
+	b[0] = byte('0' + d/10)
+	b[1] = byte('0' + d%10)
+	b[2] = sep
+	b[3] = byte('0' + m/10)
+	b[4] = byte('0' + m%10)
+	b[5] = sep
+	b[6] = byte('0' + y/10)
+	b[7] = byte('0' + y%10)
+	out.Write(b[:8])
+}
+
+func formatCYMD(out *bytes.Buffer, t *time.Time, sep byte) {
+	y, m, d := t.Date()
+	c := y/100
+	y %= 100
+	var b [16]byte
+	b[0] = byte('0' + c/10)
+	b[1] = byte('0' + c%10)
+	b[2] = byte('0' + y/10)
+	b[3] = byte('0' + y%10)
 	b[4] = sep
-	b[5] = byte('0' + mm/10)
-	b[6] = byte('0' + mm%10)
+	b[5] = byte('0' + m/10)
+	b[6] = byte('0' + m%10)
 	b[7] = sep
-	b[8] = byte('0' + dd/10)
-	b[9] = byte('0' + dd%10)
-	*buf = append(*buf, b[:10]...)
+	b[8] = byte('0' + d/10)
+	b[9] = byte('0' + d%10)
+	out.Write(b[:10])
 }
 
 func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
@@ -186,6 +205,45 @@ func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
 	}
 }
 
+func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece []byte, rec *LogRecord) {
+	// assert len(pieces) > 0
+	t := rec.Created
+	if pl.utc {
+		t = t.UTC()
+	}
+	var b []byte
+	switch piece[0] {
+	case 'U':
+		formatHMS(out, &t, ':')
+		b = append(b, '.')
+		itoa(&b, t.Nanosecond()/1e3, 6)
+		out.Write(b)
+	case 'T':
+		formatHMS(out, &t, ':')
+	case 'h':
+		itoa(&b, t.Hour(), 2)
+		out.Write(b)
+	case 'm':
+		itoa(&b, t.Minute(), 2)
+		out.Write(b)
+	case 'Z':
+		out.Write(pl.longZone)
+	case 'z':
+		out.Write(pl.shortZone)
+	case 'D':
+		formatCYMD(out, &t, '/')
+	case 'Y':
+		formatCYMD(out, &t, '-')
+	case 'd':
+		formatDMY(out, &t, '/')
+	default:
+		writeRecord(out, piece[0], rec)
+	}
+	if len(piece) > 1 {
+		out.Write(piece[1:])
+	}
+}
+
 // Format log record.
 // Return bytes.
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
@@ -199,15 +257,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		return nil
 	}
 
-	t := rec.Created
-	if pl.utc {
-		t = t.UTC()
-	}
-	year, month, day := t.Date()
-	hour, minute, second := t.Clock()
-
 	out := bytes.NewBuffer(make([]byte, 0, 64))
-	var b []byte
 	// Iterate over the pieces, replacing known formats
 	// Split the string into pieces by % signs
 	// pieces := bytes.Split([]byte(format), []byte{'%'})
@@ -219,37 +269,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		if len(piece) <= 0 {
 			continue
 		}
-		switch piece[0] {
-		case 'U':
-			format222(&b, hour, minute, second, ':')
-			b = append(b, '.')
-			itoa(&b, t.Nanosecond()/1e3, 6)
-		case 'T':
-			format222(&b, hour, minute, second, ':')
-		case 'h':
-			itoa(&b, hour, 2)
-		case 'm':
-			itoa(&b, minute, 2)
-		case 'Z':
-			out.Write(pl.longZone)
-		case 'z':
-			out.Write(pl.shortZone)
-		case 'D':
-			formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '/')
-		case 'Y':
-			formatCCYYMMDD(&b, year/100, year%100, int(month), int(day), '-')
-		case 'd':
-			format222(&b, int(day), int(month), year%100, '/')
-		default:
-			writeRecord(out, piece[0], rec)
-		}
-		if len(b) > 0 {
-			out.Write(b)
-			b = nil
-		}
-		if len(piece) > 1 {
-			out.Write(piece[1:])
-		}
+		pl.writePiece(out, piece, rec)
 	}
 
 	return out.Bytes()
