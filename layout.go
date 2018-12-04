@@ -160,7 +160,7 @@ func formatDMY(out *bytes.Buffer, t *time.Time, sep byte) {
 
 func formatCYMD(out *bytes.Buffer, t *time.Time, sep byte) {
 	y, m, d := t.Date()
-	c := y/100
+	c := y / 100
 	y %= 100
 	var b [16]byte
 	b[0] = byte('0' + c/10)
