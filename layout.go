@@ -24,14 +24,14 @@ type Layout interface {
 }
 
 var (
-	// PatternDefault includes date, time, zone, level, source, lines, and message 
+	// PatternDefault includes date, time, zone, level, source, lines, and message
 	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M\n"
-	// PatternShort includes short time, short date, level and message 
-	PatternShort   = "[%h:%m %d] [%L] %M\n"
+	// PatternShort includes short time, short date, level and message
+	PatternShort = "[%h:%m %d] [%L] %M\n"
 	// PatternAbbrev includes level and message
-	PatternAbbrev  = "[%L] %M\n"
+	PatternAbbrev = "[%L] %M\n"
 	// PatternJson is json format include everyone of log record
-	PatternJson    = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
+	PatternJson = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
 )
 
 // PatternLayout formats log record with pattern
@@ -195,7 +195,8 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		t = t.UTC()
 	}
 
-	year, month, day := t.Date(); hour, minute, second := t.Clock()
+	year, month, day := t.Date()
+	hour, minute, second := t.Clock()
 	// Split the string into pieces by % signs
 	//pieces := bytes.Split([]byte(format), []byte{'%'})
 	var b []byte
@@ -220,7 +221,8 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'n', 'R': out.WriteByte('\n')
 			case 'l': itoa(&b, int(rec.Level), -1)
 			case 'N': itoa(&b, rec.Line, -1)
-			default:  writeRecord(out, piece[0], rec)
+			default:
+				writeRecord(out, piece[0], rec)
 			}
 			if len(b) > 0 {
 				out.Write(b)

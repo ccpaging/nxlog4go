@@ -3,13 +3,13 @@
 package filelog
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
-	"path/filepath"
-	"fmt"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
@@ -98,7 +98,7 @@ func TestFileLogRotate(t *testing.T) {
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {
 		time.Sleep(1 * time.Second)
-		for i := 0; i < 200 / (j+1); i++ {
+		for i := 0; i < 200/(j+1); i++ {
 			writeSomethingToLogFile(log)
 		}
 		//time.Sleep(1 * time.Second)
@@ -112,16 +112,16 @@ func TestFileLogRotate(t *testing.T) {
 
 	// contains a list of all files in the current directory
 	files, _ := filepath.Glob(oldfiles)
-    fmt.Printf("%d files match %s\n", len(files), oldfiles)
+	fmt.Printf("%d files match %s\n", len(files), oldfiles)
 	if len(files) != 3 {
 		t.Errorf("FileRotateLog create %d files which should be 3", len(files))
 	}
-    for _, fname := range files {
+	for _, fname := range files {
 		err := os.Remove(fname)
 		if err != nil {
 			t.Errorf("remove (%q): %s", fname, err)
 		}
-    }
+	}
 }
 
 func TestRotateFile(t *testing.T) {
@@ -143,7 +143,7 @@ func TestRotateFile(t *testing.T) {
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {
 		time.Sleep(1 * time.Second)
-		for i := 0; i < 200 / (j+1); i++ {
+		for i := 0; i < 200/(j+1); i++ {
 			writeSomethingToLogFile(log)
 		}
 		//time.Sleep(1 * time.Second)
@@ -157,44 +157,44 @@ func TestRotateFile(t *testing.T) {
 
 	// contains a list of all files in the current directory
 	files, _ := filepath.Glob(oldfiles)
-    fmt.Printf("%d files match %s\n", len(files), oldfiles)
+	fmt.Printf("%d files match %s\n", len(files), oldfiles)
 	if len(files) != 10 {
 		t.Errorf("FileRotateLog create %d files which should be 10", len(files))
 	}
-    for _, fname := range files {
+	for _, fname := range files {
 		err := os.Remove(fname)
 		if err != nil {
 			t.Errorf("remove (%q): %s", fname, err)
 		}
-    }
+	}
 }
 
 func TestNextTime(t *testing.T) {
-	d0, d1 := nextTime(now, 600, -1).Sub(now), time.Duration(10 * time.Minute)
+	d0, d1 := nextTime(now, 600, -1).Sub(now), time.Duration(10*time.Minute)
 	if d0 != d1 {
 		t.Errorf("Incorrect nextTime duration (10 minutes): %v should be %v", d0, d1)
 	}
 	// Correct invalid value cycle = 300，clock = 0 to clock = -1
 	// for cycle < 86400
-	d0, d1 = nextTime(now, 300, 0).Sub(now), time.Duration(5 * time.Minute)
+	d0, d1 = nextTime(now, 300, 0).Sub(now), time.Duration(5*time.Minute)
 	if d0 != d1 {
 		t.Errorf("Incorrect nextTime duration (5 minutes): %v should be %v", d0, d1)
 	}
 
-	t1 := time.Date(now.Year(), now.Month(), now.Day() + 1, 0, 0, 0, 0, now.Location())
+	t1 := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
 	d0, d1 = nextTime(now, 86400, 0).Sub(now), t1.Sub(now)
 	if d0 != d1 {
 		t.Errorf("Incorrect nextTime duration (next midnight): %v should be %v", d0, d1)
 	}
 
-	t1 = time.Date(now.Year(), now.Month(), now.Day() + 1, 3, 0, 0, 0, now.Location())
+	t1 = time.Date(now.Year(), now.Month(), now.Day()+1, 3, 0, 0, 0, now.Location())
 	d0, d1 = nextTime(now, 86400, 10800).Sub(now), t1.Sub(now)
 	if d0 != d1 {
 		t.Errorf("Incorrect nextTime duration (next 3:00am): %v should be %v", d0, d1)
 	}
 
-	t1 = time.Date(now.Year(), now.Month(), now.Day() + 7, 0, 0, 0, 0, now.Location())
-	d0, d1 = nextTime(now, 86400 * 7, 0).Sub(now), t1.Sub(now)
+	t1 = time.Date(now.Year(), now.Month(), now.Day()+7, 0, 0, 0, 0, now.Location())
+	d0, d1 = nextTime(now, 86400*7, 0).Sub(now), t1.Sub(now)
 	if d0 != d1 {
 		t.Errorf("Incorrect nextTime duration (next weekly midnight): %v should be %v", d0, d1)
 	}

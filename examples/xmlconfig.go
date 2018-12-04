@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/xml"
-	"os"
 	"fmt"
-	"io/ioutil"
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/color"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
+	"io/ioutil"
+	"os"
 )
 
 var fname string = "config.xml"
@@ -62,4 +62,3 @@ func main() {
 	os.Remove("_test.log")
 	os.Remove("_trace.xml")
 }
-

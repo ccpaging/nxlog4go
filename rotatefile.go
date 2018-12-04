@@ -215,7 +215,7 @@ func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-// SetFileName sets the file name. Must be called before the first log message 
+// SetFileName sets the file name. Must be called before the first log message
 // is written.
 func (rfw *RotateFileWriter) SetFileName(path string) *RotateFileWriter {
 	rfw.Lock()
@@ -241,7 +241,7 @@ func (rfw RotateFileWriter) MaxLines() int {
 	return rfw.maxlines
 }
 
-// IsOverSize checks current log file is overflowed or not, and return the result. 
+// IsOverSize checks current log file is overflowed or not, and return the result.
 func (rfw RotateFileWriter) IsOverSize() bool {
 	if rfw.maxsize > 0 && rfw.Size() >= rfw.maxsize {
 		return true

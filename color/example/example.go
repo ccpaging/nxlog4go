@@ -1,10 +1,10 @@
 package main
 
 import (
-	"time"
-	"os"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"time"
 
 	log "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/color"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	fmt.Println("    TERM:", os.Getenv("TERM"))
-	fmt.Println("    ConEmuANSI:", os.Getenv("ConEmuANSI"))  
+	fmt.Println("    ConEmuANSI:", os.Getenv("ConEmuANSI"))
 	// Get global logger of logs
 	// disable default term output of logger
 	logger := log.GetLogger().SetOutput(ioutil.Discard)

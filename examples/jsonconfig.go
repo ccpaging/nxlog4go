@@ -3,16 +3,16 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"os"
 	"fmt"
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/color"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
+	"os"
 )
 
 var (
-	debug    = flag.Bool("debug", false, "")
+	debug = flag.Bool("debug", false, "")
 	fname = flag.String("conf", "config.json", "config file")
 )
 
@@ -49,4 +49,3 @@ func main() {
 	os.Remove("_test.log")
 	os.Remove("_trace.xml")
 }
-

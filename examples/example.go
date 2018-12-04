@@ -1,13 +1,12 @@
 package main
 
 import (
-	"time"
-	"os"
 	"io/ioutil"
+	"os"
+	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
-
 
 var glog = l4g.New(l4g.DEBUG).Set("prefix", "example").Set("pattern", "[%T %D %Z] [%L] (%P:%s) %M\n")
 

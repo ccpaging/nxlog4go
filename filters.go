@@ -2,8 +2,7 @@
 
 package nxlog4go
 
-import (
-)
+import ()
 
 /****** Filters map ******/
 
@@ -15,7 +14,7 @@ func NewFilters() Filters {
 }
 
 // Add a new filter to the filters map which will only log messages at lvl or
-// higher. And call Appender.Init() to allow the appender protocol to perform 
+// higher. And call Appender.Init() to allow the appender protocol to perform
 // any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
 // Returns the Filters for chaining.
@@ -43,7 +42,7 @@ func (fs Filters) Close() {
 
 // Check log level
 // Return skip or not
-func (fs Filters) Skip (lvl Level) bool {
+func (fs Filters) Skip(lvl Level) bool {
 	for _, filt := range fs {
 		if lvl >= filt.Level {
 			return false

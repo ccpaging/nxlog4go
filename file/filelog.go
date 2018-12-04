@@ -3,18 +3,18 @@
 package filelog
 
 import (
-	"sync"
-	"time"
+	l4g "github.com/ccpaging/nxlog4go"
 	"os"
 	"path/filepath"
 	"strings"
-	l4g "github.com/ccpaging/nxlog4go"
+	"sync"
+	"time"
 )
 
 // This log appender sends output to a file
 type FileAppender struct {
-	mu sync.Mutex 		 // ensures atomic writes; protects the following fields
-	layout l4g.Layout 	 // format record for output
+	mu     sync.Mutex // ensures atomic writes; protects the following fields
+	layout l4g.Layout // format record for output
 	// 2nd cache, formatted message
 	messages chan []byte
 	// 3nd cache, destination for output with buffered and rotated
@@ -23,7 +23,7 @@ type FileAppender struct {
 	cycle, clock int
 	// write loop
 	loopRunning bool
-	loopReset chan time.Time
+	loopReset   chan time.Time
 }
 
 // Write log record
@@ -65,25 +65,25 @@ func init() {
 	l4g.AddAppenderNewFunc("xml", NewXml)
 }
 
-// This creates a new file appender which writes to the file 
+// This creates a new file appender which writes to the file
 // named '<exe path base name>.log' without rotation.
 func New() l4g.Appender {
 	base := filepath.Base(os.Args[0])
-	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", false)
+	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
 }
 
 func NewXml() l4g.Appender {
 	base := filepath.Base(os.Args[0])
-	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base)) + ".log", false)
-	appender.SetOption("head","<log created=\"%D %T\">%R")
-			
-	appender.SetOption("pattern", 
-`	<record level="%L">
+	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
+	appender.SetOption("head", "<log created=\"%D %T\">%R")
+
+	appender.SetOption("pattern",
+		`	<record level="%L">
 		<timestamp>%D %T</timestamp>
 		<source>%s</source>
 		<message>%M</message>
 	</record>%R`)
-			
+
 	appender.SetOption("foot", "</log>%R")
 	return appender
 }
@@ -92,13 +92,13 @@ func NewXml() l4g.Appender {
 // has rotation enabled if maxbackup > 0.
 func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	return &FileAppender{
-		layout: 	 l4g.NewPatternLayout(""),	
-		messages: 	 make(chan []byte,  l4g.LogBufferLength),
-		out: 		 l4g.NewRotateFileWriter(fname, rotate),
-		cycle:		 86400,
-		clock:		 -1,
+		layout:      l4g.NewPatternLayout(""),
+		messages:    make(chan []byte, l4g.LogBufferLength),
+		out:         l4g.NewRotateFileWriter(fname, rotate),
+		cycle:       86400,
+		clock:       -1,
 		loopRunning: false,
-		loopReset: 	 make(chan time.Time, l4g.LogBufferLength),
+		loopReset:   make(chan time.Time, l4g.LogBufferLength),
 	}
 }
 
@@ -116,8 +116,8 @@ func nextTime(now time.Time, cycle, clock int) time.Time {
 	}
 	// clock >= 0, next cycle midnight + clock
 	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
-	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(), 
-					0, 0, 0, 0, nextCycle.Location())
+	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(),
+		0, 0, 0, 0, nextCycle.Location())
 	return nrt.Add(time.Duration(clock) * time.Second)
 }
 
@@ -145,9 +145,9 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 				fa.out.Flush()
 			}
 			fa.mu.Unlock()
-			
+
 			if !ok {
- 				// drain the log channel and write directly
+				// drain the log channel and write directly
 				fa.mu.Lock()
 				for bb := range fa.messages {
 					fa.out.Write(bb)
