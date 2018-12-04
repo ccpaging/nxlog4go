@@ -30,8 +30,8 @@ var (
 	PatternShort = "[%h:%m %d] [%L] %M\n"
 	// PatternAbbrev includes level and message
 	PatternAbbrev = "[%L] %M\n"
-	// PatternJson is json format include everyone of log record
-	PatternJson = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
+	// PatternJSON is json format include everyone of log record
+	PatternJSON = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
 )
 
 // PatternLayout formats log record with pattern
@@ -58,30 +58,27 @@ func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 	return pl
 }
 
-/* SetOption sets options.
-Known pattern codes:
-	%U - Time (15:04:05.000000)
-	%T - Time (15:04:05)
-	%h - hour
-	%m - minute
-	%Z - Zone (-0700)
-	%z - Zone (MST)
-	%D - Date (2006/01/02)
-	%Y - Date (2006-01-02)
-	%d - Date (01/02/06)
-	%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
-	%l - Level
-	%P - Prefix
-	%S - Source
-	%s - Short Source
-	%N - Line number
-	%M - Message
-	%t - Return (\t)
-	%r - Return (\r)
-	%n - Return (\n)
-	Ignores unknown formats
-Recommended: "[%D %T] [%L] (%S) %M"
-*/
+// SetOption sets options. Known pattern codes are:
+//	%U - Time (15:04:05.000000)
+//	%T - Time (15:04:05)
+//	%h - hour
+//	%m - minute
+//	%Z - Zone (-0700)
+//	%z - Zone (MST)
+//	%D - Date (2006/01/02)
+//	%Y - Date (2006-01-02)
+//	%d - Date (01/02/06)
+//	%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+//	%l - Level
+//	%P - Prefix
+//	%S - Source
+//	%s - Short Source
+//	%N - Line number
+//	%M - Message
+//	%t - Return (\t)
+//	%r - Return (\r)
+//	%n - Return (\n)
+//	Ignores other unknown formats
 func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	pl.mu.Lock()
 	defer pl.mu.Unlock()

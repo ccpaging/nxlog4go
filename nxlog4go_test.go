@@ -337,7 +337,7 @@ func BenchmarkJsonLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	lo := NewPatternLayout(PatternJson)
+	lo := NewPatternLayout(PatternJSON)
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
 		lo.Format(rec)

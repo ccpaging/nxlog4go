@@ -41,7 +41,7 @@ func New() l4g.Appender {
 // socket protocol and endpoint.
 func NewSocketAppender(prot, host string) l4g.Appender {
 	return &SocketAppender{
-		layout: l4g.NewPatternLayout(l4g.PatternJson),
+		layout: l4g.NewPatternLayout(l4g.PatternJSON),
 		sock:   nil,
 		prot:   prot,
 		host:   host,

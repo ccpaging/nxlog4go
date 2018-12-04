@@ -161,7 +161,7 @@ func Panic(arg0 interface{}, args ...interface{}) {
 	panic(msg)
 }
 
-// Panic is compatible with `log`.
+// Panicln is compatible with `log`.
 func Panicln(arg0 interface{}, args ...interface{}) {
 	msg := intMsg(arg0, args...)
 	global.intLog(CRITICAL, msg)
@@ -187,7 +187,7 @@ func Fatalln(arg0 interface{}, args ...interface{}) {
 	os.Exit(0)
 }
 
-// compatible with `log`.
+// Fatalf is compatible with `log`.
 func Fatalf(format string, v ...interface{}) {
 	global.intLog(ERROR, fmt.Sprintf(format, v...))
 	os.Exit(0)

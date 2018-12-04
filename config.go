@@ -6,11 +6,14 @@ import (
 	"strings"
 )
 
+// NameValue stores every single option's name and value.
 type NameValue struct {
 	Name  string `xml:"name,attr" json:"name"`
 	Value string `xml:",chardata" json:"value"`
 }
 
+// FilterConfig offers a declarative way to construct a logger's default writer, 
+// internal log and 3rd appenders
 type FilterConfig struct {
 	Enabled    string      `xml:"enabled,attr" json:"enabled"`
 	Tag        string      `xml:"tag" json:"tag"`
@@ -20,6 +23,8 @@ type FilterConfig struct {
 	Properties []NameValue `xml:"property" json:"properties"`
 }
 
+// LoggerConfig offers a declarative way to construct a logger. 
+// See examples/config.xml and examples/config.json for documentation
 type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
 }
@@ -73,7 +78,7 @@ func loadAppender(level Level, typ string, props []NameValue) Appender {
 	return appender
 }
 
-// Load configuration; see examples/example.xml for documentation
+// LoadConfiguration sets options of logger, and creates/loads/sets appenders.
 func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 	if lc == nil {
 		LogLogWarn("Logger configuration is NIL")
