@@ -223,8 +223,10 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			case 'd': format222(&b, int(day), int(month), year%100, '/')
 			case 't': out.WriteByte('\t')
 			case 'r': out.WriteByte('\r')
-			case 'n', 'R': out.WriteByte('\n')
-			default: writeRecord(out, piece[0], rec)
+			case 'n', 'R':
+				out.WriteByte('\n')
+			default:
+				writeRecord(out, piece[0], rec)
 			}
 			if len(b) > 0 {
 				out.Write(b)

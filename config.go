@@ -12,7 +12,7 @@ type NameValue struct {
 	Value string `xml:",chardata" json:"value"`
 }
 
-// FilterConfig offers a declarative way to construct a logger's default writer, 
+// FilterConfig offers a declarative way to construct a logger's default writer,
 // internal log and 3rd appenders
 type FilterConfig struct {
 	Enabled    string      `xml:"enabled,attr" json:"enabled"`
@@ -23,7 +23,7 @@ type FilterConfig struct {
 	Properties []NameValue `xml:"property" json:"properties"`
 }
 
-// LoggerConfig offers a declarative way to construct a logger. 
+// LoggerConfig offers a declarative way to construct a logger.
 // See examples/config.xml and examples/config.json for documentation
 type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
