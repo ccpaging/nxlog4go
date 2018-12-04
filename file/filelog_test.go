@@ -19,7 +19,7 @@ const oldfiles = "_logtest.*.log"
 
 const benchLogFile = "_benchlog.log"
 
-var now time.Time = time.Unix(0, 1234567890123456789).In(time.UTC)
+var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
 func newLogRecord(level l4g.Level, src string, msg string) *l4g.LogRecord {
 	return &l4g.LogRecord{

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// This log appender sends output to a file
+// FileAppender represents the log appender that sends output to a file
 type FileAppender struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
 	layout l4g.Layout // format record for output
@@ -26,11 +26,12 @@ type FileAppender struct {
 	loopReset   chan time.Time
 }
 
-// Write log record
+// Write log record to channel
 func (fa *FileAppender) Write(rec *l4g.LogRecord) {
 	fa.messages <- fa.layout.Format(rec)
 }
 
+// Init starts write loop
 func (fa *FileAppender) Init() {
 	if fa.loopRunning {
 		return
@@ -41,7 +42,7 @@ func (fa *FileAppender) Init() {
 	<-ready
 }
 
-// Close file
+// Close drops write loop and closes opened file
 func (fa *FileAppender) Close() {
 	close(fa.messages)
 
@@ -62,17 +63,18 @@ func (fa *FileAppender) Close() {
 
 func init() {
 	l4g.AddAppenderNewFunc("file", New)
-	l4g.AddAppenderNewFunc("xml", NewXml)
+	l4g.AddAppenderNewFunc("xml", NewXML)
 }
 
-// This creates a new file appender which writes to the file
-// named '<exe path base name>.log' without rotation.
+// New creates a new file appender which writes to the file
+// named '<exe path base name>.log', and without rotation as default.
 func New() l4g.Appender {
 	base := filepath.Base(os.Args[0])
 	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
 }
 
-func NewXml() l4g.Appender {
+// NewXML creates a new file appender which XML format. 
+func NewXML() l4g.Appender {
 	base := filepath.Base(os.Args[0])
 	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
 	appender.SetOption("head", "<log created=\"%D %T\">%R")
@@ -207,6 +209,7 @@ func (fa *FileAppender) setLoop(k string, v interface{}) (err error) {
 	return
 }
 
+// Name returns file name.
 func (fa *FileAppender) Name() string {
 	if fa.out != nil {
 		return fa.out.Name()
@@ -214,28 +217,27 @@ func (fa *FileAppender) Name() string {
 	return ""
 }
 
-// Set option. chainable
+// Set option. 
+// Return Appender interface.
 func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 	fa.SetOption(name, v)
 	return fa
 }
 
-/*
-Set option. checkable. Better be set before SetFilters()
-Option names include:
-	filename  - The opened file
-	flush	  - Flush file cache buffer size
-	maxbackup - Max number for log file storage
-	maxsize	  - Rotate at size
-	maxlines  - Rotate at lines if maxlines > 0
-	pattern	  - Layout format pattern
-	utc	  - Log recorder time zone
-	head 	  - File head format layout pattern
-	foot 	  - File foot format layout pattern
-	cycle	  - The cycle seconds of checking rotate size
-	clock	  - The seconds since midnight
-	daily	  - Checking rotate size at every midnight
-*/
+// SetOption sets option with:
+//	filename  - The opened file
+//	flush	  - Flush file cache buffer size
+//	maxbackup - Max number for log file storage
+//	maxsize	  - Rotate at size
+//	maxlines  - Rotate at lines if maxlines > 0
+//	pattern	  - Layout format pattern
+//	utc	  - Log recorder time zone
+//	head 	  - File head format layout pattern
+//	foot 	  - File foot format layout pattern
+//	cycle	  - The cycle seconds of checking rotate size
+//	clock	  - The seconds since midnight
+//	daily	  - Checking rotate size at every midnight
+// Return errors
 func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
