@@ -36,10 +36,11 @@ var (
 
 // PatternLayout formats log record with pattern
 type PatternLayout struct {
-	mu                  sync.Mutex // ensures atomic writes; protects the following fields
-	pattSlice           [][]byte   // Split the pattern into pieces by % signs
-	utc                 bool
-	longZone, shortZone []byte
+	mu        sync.Mutex // ensures atomic writes; protects the following fields
+	pattSlice [][]byte   // Split the pattern into pieces by % signs
+	utc       bool
+	longZone
+	shortZone []byte
 }
 
 // NewPatternLayout creates a new layout which format log record by pattern.
