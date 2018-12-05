@@ -231,7 +231,7 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 //	maxsize	  - Rotate at size
 //	maxlines  - Rotate at lines if maxlines > 0
 //	pattern	  - Layout format pattern
-//	utc	  - Log recorder time zone
+//	utc		  - Log recorder time zone
 //	head 	  - File head format layout pattern
 //	foot 	  - File foot format layout pattern
 //	cycle	  - The cycle seconds of checking rotate size
