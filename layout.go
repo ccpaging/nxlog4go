@@ -39,7 +39,7 @@ type PatternLayout struct {
 	mu        sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte   // Split the pattern into pieces by % signs
 	utc       bool
-	longZone
+	longZone  []byte
 	shortZone []byte
 }
 
@@ -181,50 +181,17 @@ func formatCYMD(out *bytes.Buffer, t *time.Time, sep byte) {
 	out.Write(b[:10])
 }
 
-func writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) {
-	switch piece0 {
-	case 'L':
-		out.WriteString(levelStrings[rec.Level])
-	case 'P':
-		out.WriteString(rec.Prefix)
-	case 'S':
-		out.WriteString(rec.Source)
-	case 's':
-		out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
-	case 'l':
-		var b []byte
-		itoa(&b, int(rec.Level), -1)
-		out.Write(b)
-	case 'N':
-		var b []byte
-		itoa(&b, rec.Line, -1)
-		out.Write(b)
-	case 'M':
-		out.WriteString(rec.Message)
-	case 't':
-		out.WriteByte('\t')
-	case 'r':
-		out.WriteByte('\r')
-	case 'n', 'R':
-		out.WriteByte('\n')
-	}
-}
-
-func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece []byte, rec *LogRecord) {
+func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece0 byte, rec *LogRecord, t *time.Time) {
 	// assert len(pieces) > 0
-	t := rec.Created
-	if pl.utc {
-		t = t.UTC()
-	}
 	var b []byte
-	switch piece[0] {
+	switch piece0 {
 	case 'U':
-		formatHMS(out, &t, ':')
+		formatHMS(out, t, ':')
 		b = append(b, '.')
 		itoa(&b, t.Nanosecond()/1e3, 6)
 		out.Write(b)
 	case 'T':
-		formatHMS(out, &t, ':')
+		formatHMS(out, t, ':')
 	case 'h':
 		itoa(&b, t.Hour(), 2)
 		out.Write(b)
@@ -236,16 +203,33 @@ func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece []byte, rec *LogRec
 	case 'z':
 		out.Write(pl.shortZone)
 	case 'D':
-		formatCYMD(out, &t, '/')
+		formatCYMD(out, t, '/')
 	case 'Y':
-		formatCYMD(out, &t, '-')
+		formatCYMD(out, t, '-')
 	case 'd':
-		formatDMY(out, &t, '/')
-	default:
-		writeRecord(out, piece[0], rec)
-	}
-	if len(piece) > 1 {
-		out.Write(piece[1:])
+		formatDMY(out, t, '/')
+	case 'L':
+		out.WriteString(levelStrings[rec.Level])
+	case 'P':
+		out.WriteString(rec.Prefix)
+	case 'S':
+		out.WriteString(rec.Source)
+	case 's':
+		out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+	case 'l':
+		itoa(&b, int(rec.Level), -1)
+		out.Write(b)
+	case 'N':
+		itoa(&b, rec.Line, -1)
+		out.Write(b)
+	case 'M':
+		out.WriteString(rec.Message)
+	case 't':
+		out.WriteByte('\t')
+	case 'r':
+		out.WriteByte('\r')
+	case 'n', 'R':
+		out.WriteByte('\n')
 	}
 }
 
@@ -261,6 +245,10 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	if len(pl.pattSlice) == 0 {
 		return nil
 	}
+	t := rec.Created
+	if pl.utc {
+		t = t.UTC()
+	}
 
 	out := bytes.NewBuffer(make([]byte, 0, 64))
 	// Iterate over the pieces, replacing known formats
@@ -274,7 +262,10 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		if len(piece) <= 0 {
 			continue
 		}
-		pl.writePiece(out, piece, rec)
+		pl.writePiece(out, piece[0], rec, &t)
+		if len(piece) > 1 {
+			out.Write(piece[1:])
+		}
 	}
 
 	return out.Bytes()
