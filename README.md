@@ -1,13 +1,22 @@
 # nxlog4go - Next logging package based on log4go 
 [![License](https://img.shields.io/pypi/l/Django.svg)](https://github.com/ccpaging/nxlog4go/blob/master/LICENSE) [![GoDoc](https://godoc.org/github.com/ccpaging/nxlog4go?status.svg)](https://godoc.org/github.com/ccpaging/nxlog4go) [![Build Status](https://travis-ci.org/ccpaging/nxlog4go.svg?branch=master)](https://travis-ci.org/ccpaging/nxlog4go) [![Maintainability](https://codeclimate.com/github/ccpaging/nxlog4go/badges/gpa.svg)](https://codeclimate.com/github/ccpaging/nxlog4go/maintainability)
 
-Installation:
+## Installation
 
 - Run `go get github.com/ccpaging/nxlog4go`
 
 OR
 
 - Run `go install github.com/ccpaging/nxlog4go`
+
+## Features:
+
+* **Structured**
+* **Fast** - see benchmark
+* **Extendable**
+* **Configurable**
+* **Robust**
+* **No external dependencies** - plain ol' Go stdlib
 
 Usage:
 
