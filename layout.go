@@ -26,6 +26,8 @@ type Layout interface {
 var (
 	// PatternDefault includes date, time, zone, level, source, lines, and message
 	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M\n"
+	// PatternConsole includes time, source, level and message
+	PatternConsole = "%T %L (%s:%N) %M\n"
 	// PatternShort includes short time, short date, level and message
 	PatternShort = "[%h:%m %d] [%L] %M\n"
 	// PatternAbbrev includes level and message

@@ -86,18 +86,14 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 	}
 	filters := make(Filters)
 	for _, fc := range lc.Filters {
-		if fc.Tag == "" && fc.Type == "" {
-			LogLogWarn("Missing tag and type")
+		if fc.Type == "" {
+			LogLogWarn("Missing type")
 			continue
 		}
-
 		if fc.Tag == "" {
-			fc.Tag = fc.Type
+			LogLogWarn("Missing tag")
+			continue
 		}
-		if fc.Type == "" {
-			fc.Type = fc.Tag
-		}
-		fc.Type = strings.ToLower(fc.Type)
 
 		if enabled, err := ToBool(fc.Enabled); !enabled {
 			LogLogTrace("Disable \"%s\" for %v", fc.Tag, err)

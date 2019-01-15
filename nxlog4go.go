@@ -351,7 +351,7 @@ func (log Logger) Log(lvl Level, source string, line int, message string) {
 		Message: message,
 	}
 
-	if log.out != nil {
+	if log.out != nil && lvl >= log.level {
 		log.out.Write(log.layout.Format(rec))
 	}
 
