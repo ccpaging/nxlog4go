@@ -39,18 +39,6 @@ func init() {
 	l4g.AddAppenderNewFunc("color", New)
 }
 
-// SetAsDefault replaces logger's default output writer with ColorAppender
-func SetAsDefault(logger *l4g.Logger, level l4g.Level) {
-	logger.Set("level", l4g.SILENT)
-	//logger.SetOutput(nil)
-	filters := logger.Filters()
-	if filters == nil {
-		filters = l4g.NewFilters()
-	}
-	filters.Add("color", level, NewColorAppender(os.Stderr).Set("format", l4g.PatternConsole))
-	logger.SetFilters(filters)
-}
-
 // New creates the default ColorAppender output to os.Stderr.
 func New() l4g.Appender {
 	return NewColorAppender(os.Stderr)
