@@ -49,7 +49,7 @@ func LogLogWarn(arg0 interface{}, args ...interface{}) error {
 }
 
 // LogLogError logs a message at the error log level.
-func LogLogError(arg0 interface{}, args ...interface{})  error {
+func LogLogError(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0, args...)
 	if loglog != nil {
 		loglog.intLog(ERROR, arg0, args...)
