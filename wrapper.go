@@ -10,7 +10,9 @@ import (
 	"strings"
 )
 
-func intMsg(arg0 interface{}, args ...interface{}) (s string) {
+// FormatMessage builds a format string by the arguments 
+// Return a format string
+func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
 	switch first := arg0.(type) {
 	case string:
 		if len(args) == 0 {
@@ -52,11 +54,11 @@ func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
 		return
 	}
 	if !log.caller {
-		log.Log(lvl, "", 0, intMsg(arg0, args...))
+		log.Log(lvl, "", 0, FormatMessage(arg0, args...))
 	} else {
 		// Determine caller func - it's expensive.
 		_, source, line, _ := runtime.Caller(LogCallerDepth)
-		log.Log(lvl, source, line, intMsg(arg0, args...))
+		log.Log(lvl, source, line, FormatMessage(arg0, args...))
 	}
 }
 
@@ -106,7 +108,7 @@ func (log Logger) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
 func (log Logger) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	log.intLog(WARNING, msg)
 	return errors.New(msg)
 }
@@ -115,7 +117,7 @@ func (log Logger) Warn(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Error(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	log.intLog(ERROR, msg)
 	return errors.New(msg)
 }
@@ -124,7 +126,7 @@ func (log Logger) Error(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (log Logger) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	log.intLog(CRITICAL, msg)
 	return errors.New(msg)
 }
@@ -138,14 +140,14 @@ func GetLogger() *Logger {
 
 // Panic is compatible with `log`.
 func Panic(arg0 interface{}, args ...interface{}) {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
 
 // Panicln is compatible with `log`.
 func Panicln(arg0 interface{}, args ...interface{}) {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	panic(msg)
 }
@@ -231,7 +233,7 @@ func Info(arg0 interface{}, args ...interface{}) {
 // These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Warn
 func Warn(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	global.intLog(WARNING, msg)
 	return errors.New(msg)
 }
@@ -240,7 +242,7 @@ func Warn(arg0 interface{}, args ...interface{}) error {
 // These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Error
 func Error(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	global.intLog(ERROR, msg)
 	return errors.New(msg)
 }
@@ -249,7 +251,7 @@ func Error(arg0 interface{}, args ...interface{}) error {
 // These functions will execute a closure exactly once, to build the error message for the return.
 // Wrapper for (*Logger).Critical
 func Critical(arg0 interface{}, args ...interface{}) error {
-	msg := intMsg(arg0, args...)
+	msg := FormatMessage(arg0, args...)
 	global.intLog(CRITICAL, msg)
 	return errors.New(msg)
 }

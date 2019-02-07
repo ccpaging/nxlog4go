@@ -182,7 +182,7 @@ func formatCYMD(out *bytes.Buffer, t *time.Time, sep byte) {
 	out.Write(b[:10])
 }
 
-func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece0 byte, rec *LogRecord, t *time.Time) {
+func (pl *PatternLayout) writeTime(out *bytes.Buffer, piece0 byte, t *time.Time) bool {
 	// assert len(pieces) > 0
 	var b []byte
 	switch piece0 {
@@ -209,8 +209,21 @@ func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece0 byte, rec *LogReco
 		formatCYMD(out, t, '-')
 	case 'd':
 		formatDMY(out, t, '/')
+	default:
+		return false
+	}
+	return true
+}
+
+func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) bool {
+	// assert len(pieces) > 0
+	var b []byte
+	switch piece0 {
 	case 'L':
 		out.WriteString(levelStrings[rec.Level])
+	case 'l':
+		itoa(&b, int(rec.Level), -1)
+		out.Write(b)
 	case 'P':
 		out.WriteString(rec.Prefix)
 	case 'S':
@@ -224,21 +237,15 @@ func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece0 byte, rec *LogReco
 			}
 		}
 		out.WriteString(short)
-	case 'l':
-		itoa(&b, int(rec.Level), -1)
-		out.Write(b)
 	case 'N':
 		itoa(&b, rec.Line, -1)
 		out.Write(b)
 	case 'M':
 		out.WriteString(rec.Message)
-	case 't':
-		out.WriteByte('\t')
-	case 'r':
-		out.WriteByte('\r')
-	case 'n', 'R':
-		out.WriteByte('\n')
+	default:
+		return false
 	}
+	return true
 }
 
 // Format log record.
@@ -253,6 +260,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	if len(pl.pattSlice) == 0 {
 		return nil
 	}
+
 	t := rec.Created
 	if pl.utc {
 		t = t.UTC()
@@ -270,7 +278,20 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 		if len(piece) <= 0 {
 			continue
 		}
-		pl.writePiece(out, piece[0], rec, &t)
+		if pl.writeTime(out, piece[0], &t) == false {
+			if pl.writeRecord(out, piece[0], rec) == false {
+				switch piece[0] {
+				case 't':
+					out.WriteByte('\t')
+				case 'r':
+					out.WriteByte('\r')
+				case 'n', 'R':
+					out.WriteByte('\n')
+				default:
+					// unknown format
+				}
+			}
+		}
 		if len(piece) > 1 {
 			out.Write(piece[1:])
 		}

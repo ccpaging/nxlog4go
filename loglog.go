@@ -2,6 +2,10 @@
 
 package nxlog4go
 
+import (
+	"errors"
+)
+
 var loglog *Logger
 
 // GetLogLog creates internal logger if not existed, and returns it.
@@ -16,55 +20,39 @@ func GetLogLog() *Logger {
 
 // LogLogDebug logs a message at the debug log level.
 func LogLogDebug(arg0 interface{}, args ...interface{}) {
-	if loglog == nil {
-		return
+	if loglog != nil {
+		loglog.intLog(DEBUG, arg0, args...)
 	}
-	if loglog.skip(DEBUG) {
-		return
-	}
-	loglog.intLog(DEBUG, intMsg(arg0, args...))
 }
 
 // LogLogTrace logs a message at the trace log level.
 func LogLogTrace(arg0 interface{}, args ...interface{}) {
-	if loglog == nil {
-		return
+	if loglog != nil {
+		loglog.intLog(TRACE, arg0, args...)
 	}
-	if loglog.skip(TRACE) {
-		return
-	}
-	loglog.intLog(TRACE, intMsg(arg0, args...))
 }
 
 // LogLogInfo logs a message at the info log level.
 func LogLogInfo(arg0 interface{}, args ...interface{}) {
-	if loglog == nil {
-		return
+	if loglog != nil {
+		loglog.intLog(INFO, arg0, args...)
 	}
-	if loglog.skip(INFO) {
-		return
-	}
-	loglog.intLog(INFO, intMsg(arg0, args...))
 }
 
 // LogLogWarn logs a message at the warn log level.
-func LogLogWarn(arg0 interface{}, args ...interface{}) {
-	if loglog == nil {
-		return
+func LogLogWarn(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
+	if loglog != nil {
+		loglog.intLog(WARNING, msg)
 	}
-	if loglog.skip(WARNING) {
-		return
-	}
-	loglog.intLog(WARNING, intMsg(arg0, args...))
+	return errors.New(msg)
 }
 
 // LogLogError logs a message at the error log level.
-func LogLogError(arg0 interface{}, args ...interface{}) {
-	if loglog == nil {
-		return
+func LogLogError(arg0 interface{}, args ...interface{})  error {
+	msg := FormatMessage(arg0, args...)
+	if loglog != nil {
+		loglog.intLog(ERROR, arg0, args...)
 	}
-	if loglog.skip(ERROR) {
-		return
-	}
-	loglog.intLog(ERROR, intMsg(arg0, args...))
+	return errors.New(msg)
 }
