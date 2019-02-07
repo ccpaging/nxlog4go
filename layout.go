@@ -4,7 +4,6 @@ package nxlog4go
 
 import (
 	"bytes"
-	"strings"
 	"sync"
 	"time"
 )
@@ -217,7 +216,14 @@ func (pl *PatternLayout) writePiece(out *bytes.Buffer, piece0 byte, rec *LogReco
 	case 'S':
 		out.WriteString(rec.Source)
 	case 's':
-		out.WriteString(rec.Source[strings.LastIndex(rec.Source, "/")+1:])
+		short := rec.Source
+		for i := len(rec.Source) - 1; i > 0; i-- {
+			if rec.Source[i] == '/' {
+				short = rec.Source[i+1:]
+				break
+			}
+		}
+		out.WriteString(short)
 	case 'l':
 		itoa(&b, int(rec.Level), -1)
 		out.Write(b)
