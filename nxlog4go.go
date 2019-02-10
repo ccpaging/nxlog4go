@@ -303,7 +303,7 @@ func (log *Logger) SetOutput(w io.Writer) *Logger {
 	return log
 }
 
-// Layout returns the output layout for the logger.
+// GetLayout returns the output layout for the logger.
 func (log *Logger) GetLayout() Layout {
 	log.mu.Lock()
 	defer log.mu.Unlock()
@@ -318,7 +318,7 @@ func (log *Logger) SetLayout(layout Layout) *Logger {
 	return log
 }
 
-// Filters returns the output filters for the logger.
+// GetFilters returns the output filters for the logger.
 func (log *Logger) GetFilters() Filters {
 	log.mu.Lock()
 	defer log.mu.Unlock()

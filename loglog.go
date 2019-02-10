@@ -15,11 +15,11 @@ var loglog *Logger
 func GetLogLog() *Logger {
 	if loglog == nil {
 		loglog = &Logger{
-			out:     os.Stderr,
-			level:   DEBUG,
-			caller:  true,
-			prefix:  "logg",
-			layout:  NewPatternLayout("%T %P %L %M\n"),
+			out:    os.Stderr,
+			level:  DEBUG,
+			caller: true,
+			prefix: "logg",
+			layout: NewPatternLayout("%T %P %L %M\n"),
 		}
 	}
 	return loglog
