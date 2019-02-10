@@ -13,46 +13,46 @@ func GetLogger() *Logger {
 	return std
 }
 
-// Wrapper for (*Logger).Finest
+// Finest is a wrapper for (*Logger).Finest
 func Finest(arg0 interface{}, args ...interface{}) {
 	std.intLog(FINEST, arg0, args...)
 }
 
-// Wrapper for (*Logger).Fine
+// Fine is a wrapper for (*Logger).Fine
 func Fine(arg0 interface{}, args ...interface{}) {
 	std.intLog(FINE, arg0, args...)
 }
 
-// Wrapper for (*Logger).Debug
+// Debug is a wrapper for (*Logger).Debug
 func Debug(arg0 interface{}, args ...interface{}) {
 	std.intLog(DEBUG, arg0, args...)
 }
 
-// Wrapper for (*Logger).Trace
+// Trace is a wrapper for (*Logger).Trace
 func Trace(arg0 interface{}, args ...interface{}) {
 	std.intLog(TRACE, arg0, args...)
 }
 
-// Wrapper for (*Logger).Info
+// Info is a wrapper for (*Logger).Info
 func Info(arg0 interface{}, args ...interface{}) {
 	std.intLog(INFO, arg0, args...)
 }
 
-// Wrapper for (*Logger).Warn
+// Warn is a wrapper for (*Logger).Warn
 func Warn(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0, args...)
 	std.intLog(WARNING, msg)
 	return errors.New(msg)
 }
 
-// Wrapper for (*Logger).Error
+// Error is a wrapper for (*Logger).Error
 func Error(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0, args...)
 	std.intLog(ERROR, msg)
 	return errors.New(msg)
 }
 
-// Wrapper for (*Logger).Critical
+// Critical is a wrapper for (*Logger).Critical
 func Critical(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0, args...)
 	std.intLog(CRITICAL, msg)
