@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package main
+package nxlog4go_test
 
 import (
 	"encoding/json"
@@ -17,6 +17,7 @@ import (
 
 var xmlBuf = `<logging>
   <filter enabled="true">
+    <tag>stdout</tag>
     <type>stdout</type>
     <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
     <level>DEBUG</level>
@@ -34,6 +35,7 @@ var xmlBuf = `<logging>
     <property name="pattern">[%D %T] [%L] (%s) %M</property>
   </filter>
   <filter enabled="true">
+    <tag>color</tag>
     <type>loglog</type>
     <level>DEBUG</level>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
@@ -74,8 +76,8 @@ var xmlBuf = `<logging>
   </filter>
 </logging>`
 
-var xmlFile = "config.xml"
-var jsonFile = "config.json"
+var xmlFile = "examples/config.xml"
+var jsonFile = "examples/config.json"
 
 func TestXMLConfig(t *testing.T) {
 	fd, err := os.Create(xmlFile)
@@ -103,9 +105,9 @@ func TestXMLConfig(t *testing.T) {
 		t.Fatalf("XMLConfig: Could not parse XML configuration in %q: %s\n", xmlFile, err)
 	}
 
-	log := l4g.New(l4g.INFO)
+	log := new(l4g.Logger)
 	log.LoadConfiguration(lc)
-	filters := log.Filters()
+	filters := log.GetFilters()
 
 	defer func() {
 		log.SetFilters(nil)

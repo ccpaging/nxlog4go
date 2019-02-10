@@ -23,7 +23,7 @@ func main() {
 	rfw := l4g.NewRotateFileWriter(filename, true).Set("maxsize", 1024*5).Set("maxbackup", 10)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
-	log := l4g.New(l4g.FINEST).SetOutput(ww).Set("pattern", "[%D %T] [%L] (%s) %M\n")
+	log := l4g.NewLogger(l4g.FINEST).SetOutput(ww).Set("pattern", "[%D %T] [%L] (%s) %M\n")
 
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {

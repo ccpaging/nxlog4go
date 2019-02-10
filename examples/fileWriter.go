@@ -15,7 +15,11 @@ const (
 )
 
 func printFile(fn string) {
-	fd, _ := os.Open(fn)
+	fd, err := os.Open(fn)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	in := bufio.NewReader(fd)
 	fmt.Print("Messages logged to file were: (line numbers not included)\n")
 	for lineno := 1; ; lineno++ {
@@ -29,10 +33,13 @@ func printFile(fn string) {
 }
 
 func main() {
+	// Enable internal logger
+	l4g.GetLogLog().Set("level", l4g.TRACE)
+
 	fbw := l4g.NewFileBufWriter(filename)
 	ww := io.MultiWriter(os.Stderr, fbw)
 	// Get a new logger instance
-	log := l4g.New(l4g.FINEST).SetOutput(ww)
+	log := l4g.NewLogger(l4g.FINEST).SetOutput(ww)
 
 	log.Finest("Everything is created now (notice that I will not be printing to the file)")
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))

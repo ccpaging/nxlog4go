@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+const testPattern = "[%D %T %z] [%L] (%s:%N) %M\n"
 const testLogFile = "_logtest.log"
 const benchLogFile = "_benchlog.log"
 
@@ -105,7 +106,7 @@ func TestConsoleWriter(t *testing.T) {
 
 	buf := make([]byte, 1024)
 
-	layout := NewPatternLayout("").Set("utc", true)
+	layout := NewPatternLayout(testPattern).Set("utc", true)
 	for _, test := range logRecordWriteTests {
 		name := test.Test
 
@@ -125,7 +126,7 @@ func TestFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	layout := NewPatternLayout("")
+	layout := NewPatternLayout(testPattern)
 	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
@@ -143,7 +144,7 @@ func TestRotateFileWriter(t *testing.T) {
 
 	defer os.Remove(testLogFile)
 
-	layout := NewPatternLayout("")
+	layout := NewPatternLayout(testPattern)
 	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
@@ -187,7 +188,7 @@ func TestLogLogger(t *testing.T) {
 }
 
 func TestLogger(t *testing.T) {
-	l := New(WARNING)
+	l := NewLogger(WARNING)
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}
@@ -220,6 +221,31 @@ func TestLogger(t *testing.T) {
 	//func (l *Logger) Info(format string, args ...interface{}) {}
 }
 
+func TestGlobal(t *testing.T) {
+	l := GetLogger().Set("level", WARNING)
+	if l == nil {
+		t.Fatalf("New should never return nil")
+	}
+	if l.level != WARNING {
+		t.Fatalf("New produced invalid logger (incorrect level)")
+	}
+
+	//func (l *Logger) Warn(format string, args ...interface{}) error {}
+	if err := Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
+		t.Errorf("Warn returned invalid error: %s", err)
+	}
+
+	//func (l *Logger) Error(format string, args ...interface{}) error {}
+	if err := Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
+		t.Errorf("Error returned invalid error: %s", err)
+	}
+
+	//func (l *Logger) Critical(format string, args ...interface{}) error {}
+	if err := Critical("%s %d %#v", "Critical:", 100, []int64{}); err.Error() != "Critical: 100 []int64{}" {
+		t.Errorf("Critical returned invalid error: %s", err)
+	}
+}
+
 func TestLogOutput(t *testing.T) {
 	const (
 		expected = "e7927ba6dc08038cf8ab631575169abf"
@@ -227,7 +253,12 @@ func TestLogOutput(t *testing.T) {
 
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
 	ww := io.MultiWriter(os.Stderr, fbw)
-	l := New(FINEST).SetOutput(ww).Set("pattern", "[%L] %M\n")
+	l := &Logger{
+		out:     ww,
+		level:   FINEST,
+		caller:  true,
+		layout:  NewPatternLayout("[%L] %M\n"),
+	}
 
 	defer os.Remove(testLogFile)
 
@@ -262,7 +293,12 @@ func TestCountMallocs(t *testing.T) {
 	}
 
 	// Console logger
-	sl := New(INFO).Set("caller", false)
+	sl := &Logger{
+		out:     os.Stderr,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
@@ -280,7 +316,12 @@ func TestCountMallocs(t *testing.T) {
 	fmt.Printf("mallocs per sl.Warn(WARNING, \"%%s is a log message with level %%d\", \"This\", WARNING): %d\n", mallocs/N)
 
 	// Console logger (not logged)
-	sl = New(INFO)
+	sl = &Logger{
+		out:     os.Stderr,
+		level:   INFO,
+		caller:  true,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	mallocs = 0 - getMallocs()
 	for i := 0; i < N; i++ {
 		sl.Debug("This is a DEBUG log message")
@@ -306,7 +347,7 @@ func BenchmarkPatternLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	lo := NewPatternLayout("")
+	lo := NewPatternLayout(PatternDefault)
 	for i := 0; i < b.N; i++ {
 		rec.Created = rec.Created.Add(1 * time.Second / updateEvery)
 		lo.Format(rec)
@@ -345,31 +386,36 @@ func BenchmarkJsonLayout(b *testing.B) {
 }
 
 func BenchmarkConsoleWriter(b *testing.B) {
-	/* This doesn't seem to work on OS X
-	sink, err := os.Open(os.DevNull)
-	if err != nil {
-		panic(err)
+	sl := &Logger{
+		out:     ioutil.Discard,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
 	}
-	if err := syscall.Dup2(int(sink.Fd()), syscall.Stdout); err != nil {
-		panic(err)
-	}
-	*/
-
-	sl := New(INFO).SetOutput(ioutil.Discard).Set("caller", false)
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
 	}
 }
 
 func BenchmarkConsoleUtilWriter(b *testing.B) {
-	sl := New(INFO).SetOutput(ioutil.Discard)
+	sl := &Logger{
+		out:     ioutil.Discard,
+		level:   INFO,
+		caller:  true,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
 	}
 }
 
 func BenchmarkConsoleUtilNotWriter(b *testing.B) {
-	sl := New(INFO).SetOutput(ioutil.Discard)
+	sl := &Logger{
+		out:     ioutil.Discard,
+		level:   INFO,
+		caller:  true,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
 	}
@@ -382,7 +428,13 @@ func BenchmarkFileWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).Set("caller", false)
+	sl := &Logger{
+		out:     w,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
+	}
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
@@ -398,7 +450,12 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 	}()
 	defer w.Close()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).Set("caller", false)
+	sl := &Logger{
+		out:     w,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -413,7 +470,12 @@ func BenchmarkFileBufWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).Set("caller", false)
+	sl := &Logger{
+		out:     w,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.intLog(WARNING, "This is a log message")
@@ -428,7 +490,12 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := New(INFO).SetOutput(w).Set("caller", false)
+	sl := &Logger{
+		out:     w,
+		level:   INFO,
+		caller:  false,
+		layout:  NewPatternLayout(PatternDefault),
+	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")

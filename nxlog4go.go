@@ -205,25 +205,17 @@ type Logger struct {
 	filters Filters // a collection of Filters
 }
 
-// NewLogger creates a new Logger. The out variable sets the
-// destination to which log data will be written.
-// The prefix appears at the beginning of each generated log line.
-// The flag argument defines the logging properties.
-func NewLogger(out io.Writer, lvl Level, prefix string, pattern string) *Logger {
+// NewLogger creates a new logger with a "stderr" writer to send
+// formatted log messages at or above lvl to standard output.
+func NewLogger(lvl Level) *Logger {
 	return &Logger{
-		out:     out,
+		out:     os.Stderr,
 		level:   lvl,
 		caller:  true,
-		prefix:  prefix,
-		layout:  NewPatternLayout(pattern),
+		prefix:  "",
+		layout:  NewPatternLayout(PatternDefault),
 		filters: nil,
 	}
-}
-
-// New Creates a new logger with a "stderr" writer to send
-// log messages at or above lvl to standard output.
-func New(lvl Level) *Logger {
-	return NewLogger(os.Stderr, lvl, "", "")
 }
 
 // Shutdown closes all log filters in preparation for exiting the program.
@@ -311,6 +303,13 @@ func (log *Logger) SetOutput(w io.Writer) *Logger {
 	return log
 }
 
+// Layout returns the output layout for the logger.
+func (log *Logger) GetLayout() Layout {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	return log.layout
+}
+
 // SetLayout sets the output layout for the logger.
 func (log *Logger) SetLayout(layout Layout) *Logger {
 	log.mu.Lock()
@@ -320,7 +319,7 @@ func (log *Logger) SetLayout(layout Layout) *Logger {
 }
 
 // Filters returns the output filters for the logger.
-func (log *Logger) Filters() Filters {
+func (log *Logger) GetFilters() Filters {
 	log.mu.Lock()
 	defer log.mu.Unlock()
 	return log.filters

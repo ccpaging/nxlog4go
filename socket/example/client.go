@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var log = l4g.New(l4g.DEBUG)
+var log = l4g.NewLogger(l4g.DEBUG)
 
 func main() {
 	// Enable internal log
@@ -15,7 +15,7 @@ func main() {
 
 	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewSocketAppender("udp", "127.0.0.1:12124"))
 	defer func() {
-		if fs := log.Filters(); fs != nil {
+		if fs := log.GetFilters(); fs != nil {
 			log.SetFilters(nil).SetOutput(os.Stderr)
 			fs.Close()
 		}

@@ -74,6 +74,7 @@ func (fbw *FileBufWriter) Write(b []byte) (n int, err error) {
 	if fbw.file == nil {
 		file, err := os.OpenFile(fbw.name, os.O_WRONLY|os.O_APPEND|os.O_CREATE, FilePermDefault)
 		if err != nil {
+			LogLogError(err)
 			return 0, err
 		}
 

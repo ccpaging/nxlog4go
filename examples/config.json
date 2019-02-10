@@ -2,7 +2,7 @@
     "filters": [
         {
             "enabled": "true",
-            "tag": "",
+            "tag": "stdout",
             "type": "stdout",
             "level": "DEBUG",
             "format": "",
@@ -15,7 +15,7 @@
         },
         {
             "enabled": "true",
-            "tag": "",
+            "tag": "color",
             "type": "loglog",
             "level": "DEBUG",
             "format": "",

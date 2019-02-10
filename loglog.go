@@ -4,6 +4,7 @@ package nxlog4go
 
 import (
 	"errors"
+	"os"
 )
 
 var loglog *Logger
@@ -13,7 +14,13 @@ var loglog *Logger
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = New(DEBUG).Set("prefix", "lg4g").Set("pattern", "%T %P %L %M\n").Set("caller", false)
+		loglog = &Logger{
+			out:     os.Stderr,
+			level:   DEBUG,
+			caller:  true,
+			prefix:  "logg",
+			layout:  NewPatternLayout("%T %P %L %M\n"),
+		}
 	}
 	return loglog
 }

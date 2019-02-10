@@ -16,6 +16,9 @@ var fname = "config.xml"
 var log = l4g.GetLogger()
 
 func main() {
+	// Enable internal logger
+	l4g.GetLogLog().Set("level", l4g.TRACE)
+
 	// Open config file
 	fd, err := os.Open(fname)
 	if err != nil {
@@ -34,14 +37,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Could not parse XML configuration. %s\n", err)
 		os.Exit(1)
 	}
-	log.Debug("Total configuration: %d", len(lc.Filters))
+	fmt.Printf("Total configuration: %d\n", len(lc.Filters))
 	// fmt.Println(lc)
 
 	log.LoadConfiguration(lc)
 
-	filters := log.Filters()
+	filters := log.GetFilters()
 
-	log.Debug("Total appenders installed: %d", len(filters))
+	fmt.Printf("Total appenders installed: %d\n", len(filters))
 
 	if _, ok := filters["color"]; ok {
 		// disable default console writer

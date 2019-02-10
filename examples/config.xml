@@ -1,5 +1,6 @@
 <logging>
   <filter enabled="true">
+    <tag>stdout</tag>
     <type>stdout</type>
     <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
     <level>DEBUG</level>
@@ -17,6 +18,7 @@
     <property name="pattern">[%D %T] [%L] (%s) %M</property>
   </filter>
   <filter enabled="true">
+    <tag>color</tag>
     <type>loglog</type>
     <level>DEBUG</level>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>

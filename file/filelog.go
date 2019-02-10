@@ -94,7 +94,7 @@ func NewXML() l4g.Appender {
 // has rotation enabled if maxbackup > 0.
 func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	return &FileAppender{
-		layout:      l4g.NewPatternLayout(""),
+		layout:      l4g.NewPatternLayout(l4g.PatternDefault),
 		messages:    make(chan []byte, l4g.LogBufferLength),
 		out:         l4g.NewRotateFileWriter(fname, rotate),
 		cycle:       86400,

@@ -48,9 +48,11 @@ type PatternLayout struct {
 // Using PatternDefault if pattern is empty string.
 func NewPatternLayout(pattern string) Layout {
 	if pattern == "" {
+		LogLogWarn("Layout pattern is empty and replaced with \"%s\".", PatternDefault)
 		pattern = PatternDefault
 	}
 	pl := &PatternLayout{}
+	// initial pattSlice, longZone, shortZone
 	return pl.Set("pattern", pattern).Set("utc", false)
 }
 

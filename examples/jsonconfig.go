@@ -21,6 +21,9 @@ var log = l4g.GetLogger().Set("caller", false).Set("pattern", "[%T] [%L] (%s) %M
 func main() {
 	flag.Parse()
 
+	// Enable internal logger
+	l4g.GetLogLog().Set("level", l4g.TRACE)
+
 	// Open config file
 	fd, err := os.Open(*fname)
 	if err != nil {
@@ -34,9 +37,11 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Can't parse json config file: %s %v", fname, err))
 	}
+	fmt.Printf("Total configuration: %d\n", len(lc.Filters))
 
 	// Configure logger
 	log.LoadConfiguration(lc)
+	fmt.Printf("Total appenders installed: %d\n", len(log.GetFilters()))
 
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")
