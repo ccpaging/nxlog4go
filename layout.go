@@ -66,8 +66,8 @@ func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 }
 
 // SetOption set option with:
-//	pattern	  - Layout format pattern
-//	utc		  - Log recorder time zone
+//	pattern	- Layout format pattern
+//	utc     - Log recorder time zone
 //
 // Known pattern codes are:
 //	%U - Time (15:04:05.000000)
