@@ -14,6 +14,7 @@ func GetLogger() *Logger {
 	return std
 }
 
+// SetOutput sets the output destination for the standard logger.
 func SetOutput(w io.Writer) *Logger {
 	return std.SetOutput(w)
 }

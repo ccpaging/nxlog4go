@@ -121,10 +121,12 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
+// Pattern returns the output pattern bytes for the logger.
 func (pl *PatternLayout) Pattern() []byte {
 	return bytes.Join(pl.pattSlice, []byte{'%'})
 }
 
+// UTC returns the output UTC time or not for the logger.
 func (pl *PatternLayout) UTC() bool {
 	return pl.utc
 }
