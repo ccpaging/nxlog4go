@@ -19,9 +19,9 @@ type Layout interface {
 
 	// This will be called to log a LogRecord message.
 	Format(rec *LogRecord) []byte
-	
+
 	Pattern() []byte
-	
+
 	UTC() bool
 }
 
@@ -41,7 +41,7 @@ var (
 // PatternLayout formats log record with pattern
 type PatternLayout struct {
 	//mu        sync.Mutex // ensures atomic writes; protects the following fields
-	pattSlice [][]byte   // Split the pattern into pieces by % signs
+	pattSlice [][]byte // Split the pattern into pieces by % signs
 	utc       bool
 	longZone  []byte
 	shortZone []byte

@@ -3,8 +3,8 @@
 package nxlog4go
 
 import (
-	"io"
 	"errors"
+	"io"
 )
 
 var std = NewLogger(INFO)
