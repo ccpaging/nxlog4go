@@ -4,62 +4,7 @@ package nxlog4go
 
 import (
 	"errors"
-	"fmt"
-	"runtime"
-	"strings"
 )
-
-// FormatMessage builds a format string by the arguments
-// Return a format string
-func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
-	switch first := arg0.(type) {
-	case string:
-		if len(args) == 0 {
-			s = first
-		} else {
-			// Use the string as a format string
-			s = fmt.Sprintf(first, args...)
-		}
-	case func() string:
-		// Log the closure (no other arguments used)
-		s = first()
-	default:
-		// Build a format string so that it will be similar to Sprint
-		s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
-	}
-	return
-}
-
-// Determine if any logging will be done.
-func (log Logger) skip(lvl Level) bool {
-	if log.out != nil && lvl >= log.level {
-		return false
-	}
-
-	if log.filters != nil {
-		if log.filters.Skip(lvl) == false {
-			return false
-		}
-	}
-
-	// log.out == nil and log.filters == nil
-	// or lvl < log.Level
-	return true
-}
-
-// Send a log message with level, and message.
-func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
-	if log.skip(lvl) {
-		return
-	}
-	if !log.caller {
-		log.Log(lvl, "", 0, FormatMessage(arg0, args...))
-	} else {
-		// Determine caller func - it's expensive.
-		_, source, line, _ := runtime.Caller(LogCallerDepth)
-		log.Log(lvl, source, line, FormatMessage(arg0, args...))
-	}
-}
 
 // Finest logs a message at the finest log level.
 // See Debug for an explanation of the arguments.

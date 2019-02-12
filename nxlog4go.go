@@ -80,8 +80,10 @@ package nxlog4go
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -156,9 +158,6 @@ func GetLevel(s string) (level Level) {
 /****** Variables ******/
 
 var (
-	// LogCallerDepth is the default skip passed to runtime.Caller to get file name/line
-	// May require tweaking if you want to wrap the logger
-	LogCallerDepth = 2
 	// LogBufferLength specifies how many log messages a particular log4go
 	// logger can buffer at a time before writing them.
 	LogBufferLength = 32
@@ -335,10 +334,52 @@ func (log *Logger) SetFilters(filters Filters) *Logger {
 
 /******* Logging *******/
 
-// Log sends a log message with manual level, source, and message.
-func (log Logger) Log(lvl Level, source string, line int, message string) {
-	log.mu.Lock()
-	defer log.mu.Unlock()
+// FormatMessage builds a format string by the arguments
+// Return a format string
+func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
+	switch first := arg0.(type) {
+	case string:
+		if len(args) == 0 {
+			s = first
+		} else {
+			// Use the string as a format string
+			s = fmt.Sprintf(first, args...)
+		}
+	case func() string:
+		// Log the closure (no other arguments used)
+		s = first()
+	default:
+		// Build a format string so that it will be similar to Sprint
+		s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
+	}
+	return
+}
+
+// Determine if any logging will be done.
+func (log Logger) skip(lvl Level) bool {
+	if log.out != nil && lvl >= log.level {
+		return false
+	}
+
+	if log.filters != nil {
+		if log.filters.Skip(lvl) == false {
+			return false
+		}
+	}
+
+	// log.out == nil and log.filters == nil
+	// or lvl < log.Level
+	return true
+}
+
+func (log Logger) withoutLock(calldepth int, lvl Level, message string) {
+	source, line := "", 0
+	if log.caller {
+		log.mu.Unlock()
+		// Determine caller func - it's expensive.
+		_, source, line, _ = runtime.Caller(calldepth)
+		log.mu.Lock()
+	}
 
 	// Make the log record
 	rec := &LogRecord{
@@ -357,4 +398,28 @@ func (log Logger) Log(lvl Level, source string, line int, message string) {
 	if log.filters != nil {
 		log.filters.Dispatch(rec)
 	}
+}
+
+// Send a log message with level, and message.
+func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+
+	if log.skip(lvl) {
+		return
+	}
+
+	log.withoutLock(2, lvl, FormatMessage(arg0, args...))
+}
+
+// Log sends a log message with calldepth, level, and message.
+func (log Logger) Log(calldepth int, lvl Level, message string) {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+
+	if log.skip(lvl) {
+		return
+	}
+
+	log.withoutLock(calldepth+1, lvl, message)
 }

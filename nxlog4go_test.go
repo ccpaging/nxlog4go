@@ -222,7 +222,7 @@ func TestLogger(t *testing.T) {
 }
 
 func TestGlobal(t *testing.T) {
-	l := GetLogger().Set("level", WARNING)
+	l := GetLogger().Set("level", WARNING).Set("pattern", PatternDefault)
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}

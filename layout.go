@@ -4,7 +4,6 @@ package nxlog4go
 
 import (
 	"bytes"
-	"sync"
 	"time"
 )
 
@@ -20,6 +19,10 @@ type Layout interface {
 
 	// This will be called to log a LogRecord message.
 	Format(rec *LogRecord) []byte
+	
+	Pattern() []byte
+	
+	UTC() bool
 }
 
 var (
@@ -37,7 +40,7 @@ var (
 
 // PatternLayout formats log record with pattern
 type PatternLayout struct {
-	mu        sync.Mutex // ensures atomic writes; protects the following fields
+	//mu        sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte   // Split the pattern into pieces by % signs
 	utc       bool
 	longZone  []byte
@@ -88,9 +91,6 @@ func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 //	%n - Return (\n)
 //	Ignores other unknown formats
 func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
-	pl.mu.Lock()
-	defer pl.mu.Unlock()
-
 	err = nil
 
 	switch k {
@@ -105,19 +105,28 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	case "utc":
 		utc := false
 		if utc, err = ToBool(v); err == nil {
-			t := time.Now()
-			if utc {
-				t = t.UTC()
-			}
-			pl.shortZone = []byte(t.Format("MST"))
-			pl.longZone = []byte(t.Format("Z07:00"))
 			pl.utc = utc
 		}
+		// make sure shortZone and longZone initialized
+		t := time.Now()
+		if utc {
+			t = t.UTC()
+		}
+		pl.shortZone = []byte(t.Format("MST"))
+		pl.longZone = []byte(t.Format("Z07:00"))
 	default:
 		err = ErrBadOption
 	}
 
 	return
+}
+
+func (pl *PatternLayout) Pattern() []byte {
+	return bytes.Join(pl.pattSlice, []byte{'%'})
+}
+
+func (pl *PatternLayout) UTC() bool {
+	return pl.utc
 }
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
@@ -253,9 +262,6 @@ func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRec
 // Format log record.
 // Return bytes.
 func (pl *PatternLayout) Format(rec *LogRecord) []byte {
-	pl.mu.Lock()
-	defer pl.mu.Unlock()
-
 	if rec == nil {
 		return []byte("<nil>")
 	}

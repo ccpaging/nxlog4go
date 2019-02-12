@@ -68,7 +68,7 @@ func TestFileLog(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 168 {
+	} else if len(contents) != 158 {
 		t.Errorf("malformed FileLog: %q (%d bytes)", string(contents), len(contents))
 	}
 

@@ -46,6 +46,7 @@ func main() {
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")
 	log.Debug("Oh no!  %d + %d = %d!", 2, 2, 2+2)
+	log.Trace("Oh no!  %d + %d = %d!", 2, 2, 2+2)
 	log.Info("About that time, eh chaps?")
 
 	// Close all appenders in logger

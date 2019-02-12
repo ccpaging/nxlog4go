@@ -3,6 +3,7 @@
 package nxlog4go
 
 import (
+	"io"
 	"errors"
 )
 
@@ -11,6 +12,10 @@ var std = NewLogger(INFO)
 // GetLogger returns the default logger.
 func GetLogger() *Logger {
 	return std
+}
+
+func SetOutput(w io.Writer) *Logger {
+	return std.SetOutput(w)
 }
 
 // Finest is a wrapper for (*Logger).Finest
