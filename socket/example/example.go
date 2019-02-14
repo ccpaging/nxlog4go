@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"net"
 	"os"
 	"time"
-	"net"
-	"fmt"
-	"encoding/json"
 
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/socket"
@@ -27,7 +27,7 @@ func server(ready chan struct{}) {
 	conn, err := net.ListenUDP("udp", laddr)
 	e(err)
 	defer conn.Close()
-	
+
 	var rec l4g.LogRecord
 	fmt.Printf("Listening on %v...\n", laddr)
 
@@ -55,7 +55,7 @@ func client() {
 	// Enable internal log
 	l4g.GetLogLog().Set("level", l4g.WARNING)
 
-	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("pattern", "%P " + l4g.PatternDefault)
+	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("pattern", "%P "+l4g.PatternDefault)
 
 	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewSocketAppender("udp", addr))
 	defer func() {
@@ -81,6 +81,6 @@ func main() {
 	ready := make(chan struct{})
 	go server(ready)
 	<-ready
-	
+
 	client()
 }

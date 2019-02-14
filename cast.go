@@ -6,6 +6,7 @@ import (
 )
 
 // ToString casts an interface to a string type.
+// Default: ""
 func ToString(i interface{}) (s string, err error) {
 	s = ""
 	err = nil
@@ -22,6 +23,7 @@ func ToString(i interface{}) (s string, err error) {
 }
 
 // ToBool casts an interface to a bool type.
+// Default: false
 func ToBool(i interface{}) (b bool, err error) {
 	b = false
 	err = nil
@@ -41,7 +43,6 @@ func ToBool(i interface{}) (b bool, err error) {
 	return
 }
 
-// Parse a number with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
 func strToNumSuffix(str string, mult int) (int, error) {
 	num := 1
 	if len(str) > 1 {
@@ -62,6 +63,8 @@ func strToNumSuffix(str string, mult int) (int, error) {
 }
 
 // ToInt casts an interface to an int type.
+// Parse a string with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
+// Default: 0
 func ToInt(i interface{}) (n int, err error) {
 	n = 0
 	err = nil
@@ -78,6 +81,9 @@ func ToInt(i interface{}) (n int, err error) {
 }
 
 // ToSeconds casts an interface to an seconds.
+// Parse a string with time.ParseDuration. Valid time units are:
+//  "ns", "us", "ms", "s", "m", "h"
+// Default: 0
 func ToSeconds(i interface{}) (n int, err error) {
 	n = 0
 	err = nil

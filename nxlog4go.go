@@ -184,6 +184,13 @@ type LogRecord struct {
 	Message string    // The log message
 }
 
+// BeforeLog function runs before writing log record.
+// Return false then skip writing log record
+type BeforeLog func(out io.Writer, rec *LogRecord) bool
+
+// LogAfter function runs after writing log record even BeforeLog returns false.
+type LogAfter func(out io.Writer, rec *LogRecord, n int, err error)
+
 /****** Logger ******/
 
 // A Logger represents an active logging object that generates lines of
@@ -197,9 +204,11 @@ type Logger struct {
 	prefix string // prefix to write at beginning of each line
 	caller bool   // runtime caller skip
 
-	out    io.Writer // destination for output
-	level  Level     // The log level
-	layout Layout    // format record for output
+	out       io.Writer // destination for output
+	level     Level     // The log level
+	layout    Layout    // format record for output
+	beforeLog BeforeLog
+	logAfter  LogAfter
 
 	filters Filters // a collection of Filters
 }
@@ -286,6 +295,16 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 			l.level = GetLevel(v.(string))
 		default:
 			err = ErrBadValue
+		}
+	case "color":
+		color := false
+		color, err = ToBool(v)
+		if color {
+			l.beforeLog = setColor
+			l.logAfter = resetColor
+		} else {
+			l.beforeLog = nil
+			l.logAfter = nil
 		}
 	default:
 		return l.layout.SetOption(k, v)
@@ -390,8 +409,19 @@ func (l Logger) withoutLock(calldepth int, lvl Level, message string) {
 		Message: message,
 	}
 
-	if l.out != nil && lvl >= l.level {
+	result := true
+	if l.beforeLog != nil {
+		result = l.beforeLog(l.out, rec)
+	}
+	var (
+		n   int
+		err error
+	)
+	if result && l.out != nil && lvl >= l.level {
 		l.out.Write(l.layout.Format(rec))
+	}
+	if l.logAfter != nil {
+		l.logAfter(l.out, rec, n, err)
 	}
 
 	if l.filters != nil {
