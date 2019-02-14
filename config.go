@@ -79,7 +79,7 @@ func loadAppender(level Level, typ string, props []NameValue) Appender {
 }
 
 // LoadConfiguration sets options of logger, and creates/loads/sets appenders.
-func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
+func (l *Logger) LoadConfiguration(lc *LoggerConfig) {
 	if lc == nil {
 		LogLogWarn("Logger configuration is NIL")
 		return
@@ -106,7 +106,7 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		case "loglog":
 			loadLogLog(level, fc.Pattern)
 		case "stdout":
-			loadStdout(log, level, fc.Pattern)
+			loadStdout(l, level, fc.Pattern)
 		default:
 			appender := loadAppender(level, fc.Type, fc.Properties)
 			if appender != nil {
@@ -116,5 +116,5 @@ func (log *Logger) LoadConfiguration(lc *LoggerConfig) {
 		}
 	}
 
-	log.SetFilters(filters)
+	l.SetFilters(filters)
 }

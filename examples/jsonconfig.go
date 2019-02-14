@@ -41,7 +41,7 @@ func main() {
 
 	// Configure logger
 	log.LoadConfiguration(lc)
-	fmt.Printf("Total appenders installed: %d\n", len(log.GetFilters()))
+	fmt.Printf("Total appenders installed: %d\n", len(log.Filters()))
 
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")

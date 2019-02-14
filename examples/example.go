@@ -22,8 +22,8 @@ func main() {
 	log3.Debug("Filter out. The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
 	// change time zone to 0
-	glog.GetLayout().Set("utc", true)
+	glog.Layout().Set("utc", true)
 	glog.Info("Using UTC time stamp. Now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
-	glog.GetLayout().Set("utc", false)
+	glog.Layout().Set("utc", false)
 	glog.Info("Using local time stamp. Now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 }

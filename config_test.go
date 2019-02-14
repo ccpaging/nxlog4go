@@ -107,7 +107,7 @@ func TestXMLConfig(t *testing.T) {
 
 	log := new(l4g.Logger)
 	log.LoadConfiguration(lc)
-	filters := log.GetFilters()
+	filters := log.Filters()
 
 	defer func() {
 		log.SetFilters(nil)

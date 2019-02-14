@@ -63,7 +63,7 @@
 // Here is some example code to get started:
 //
 // log := nxlog4go.New(nxlog4go.DEBUG)
-// log.Info("The time is now: %s", time.LocalTime().Format("15:04:05 MST 2006/01/02"))
+// l.Info("The time is now: %s", time.LocalTime().Format("15:04:05 MST 2006/01/02"))
 //
 // Usage notes:
 // - The utility functions (Info, Debug, Warn, etc) derive their source from the
@@ -121,11 +121,11 @@ var (
 )
 
 // String return the string of integer Level
-func (l Level) String() string {
-	if l < 0 || int(l) >= len(levelStrings) {
+func (level Level) String() string {
+	if level < 0 || int(level) >= len(levelStrings) {
 		return "UNKNOWN"
 	}
-	return levelStrings[int(l)]
+	return levelStrings[int(level)]
 }
 
 // GetLevel return the integer level of string
@@ -206,10 +206,10 @@ type Logger struct {
 
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above lvl to standard output.
-func NewLogger(lvl Level) *Logger {
+func NewLogger(level Level) *Logger {
 	return &Logger{
 		out:     os.Stderr,
-		level:   lvl,
+		level:   level,
 		caller:  true,
 		prefix:  "",
 		layout:  NewPatternLayout(PatternDefault),
@@ -221,35 +221,35 @@ func NewLogger(lvl Level) *Logger {
 // Calling this is not really imperative, unless you want to
 // guarantee that all log messages are written.  Close() removes
 // all filters (and thus all appenders) from the logger.
-func (log *Logger) Shutdown() {
-	log.mu.Lock()
-	defer log.mu.Unlock()
+func (l *Logger) Shutdown() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	if log.filters != nil {
-		log.filters.Close()
-		log.filters = nil
+	if l.filters != nil {
+		l.filters.Close()
+		l.filters = nil
 	}
 }
 
 // Prefix returns the output prefix for the logger.
-func (log *Logger) Prefix() string {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.prefix
+func (l *Logger) Prefix() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.prefix
 }
 
 // SetPrefix sets the output prefix for the logger.
-func (log *Logger) SetPrefix(prefix string) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.prefix = prefix
-	return log
+func (l *Logger) SetPrefix(prefix string) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.prefix = prefix
+	return l
 }
 
 // Set option. chainable
-func (log *Logger) Set(k string, v interface{}) *Logger {
-	log.SetOption(k, v)
-	return log
+func (l *Logger) Set(k string, v interface{}) *Logger {
+	l.SetOption(k, v)
+	return l
 }
 
 // SetOption sets options of logger.
@@ -259,77 +259,76 @@ func (log *Logger) Set(k string, v interface{}) *Logger {
 //	level   - The output level
 //	pattern	- The pattern of Layout format
 // Return errors.
-func (log *Logger) SetOption(k string, v interface{}) (err error) {
+func (l *Logger) SetOption(k string, v interface{}) (err error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	err = nil
 
 	switch k {
 	case "prefix":
 		prefix := ""
 		if prefix, err = ToString(v); err == nil {
-			log.SetPrefix(prefix)
+			l.prefix = prefix
 		}
 	case "caller":
 		caller := false
 		if caller, err = ToBool(v); err == nil {
-			log.mu.Lock()
-			log.caller = caller
-			log.mu.Unlock()
+			l.caller = caller
 		}
 	case "level":
-		log.mu.Lock()
-		defer log.mu.Unlock()
 		switch v.(type) {
 		case int:
-			log.level = Level(v.(int))
+			l.level = Level(v.(int))
 		case Level:
-			log.level = v.(Level)
+			l.level = v.(Level)
 		case string:
-			log.level = GetLevel(v.(string))
+			l.level = GetLevel(v.(string))
 		default:
 			err = ErrBadValue
 		}
 	default:
-		return log.layout.SetOption(k, v)
+		return l.layout.SetOption(k, v)
 	}
 	return
 }
 
 // SetOutput sets the output destination for the logger.
-func (log *Logger) SetOutput(w io.Writer) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.out = w
-	return log
+func (l *Logger) SetOutput(w io.Writer) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.out = w
+	return l
 }
 
-// GetLayout returns the output layout for the logger.
-func (log *Logger) GetLayout() Layout {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.layout
+// Layout returns the output layout for the logger.
+func (l *Logger) Layout() Layout {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.layout
 }
 
 // SetLayout sets the output layout for the logger.
-func (log *Logger) SetLayout(layout Layout) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.layout = layout
-	return log
+func (l *Logger) SetLayout(layout Layout) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.layout = layout
+	return l
 }
 
-// GetFilters returns the output filters for the logger.
-func (log *Logger) GetFilters() Filters {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	return log.filters
+// Filters returns the output filters for the logger.
+func (l *Logger) Filters() Filters {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.filters
 }
 
 // SetFilters sets the output filters for the logger.
-func (log *Logger) SetFilters(filters Filters) *Logger {
-	log.mu.Lock()
-	defer log.mu.Unlock()
-	log.filters = filters
-	return log
+func (l *Logger) SetFilters(filters Filters) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.filters = filters
+	return l
 }
 
 /******* Logging *******/
@@ -356,70 +355,70 @@ func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
 }
 
 // Determine if any logging will be done.
-func (log Logger) skip(lvl Level) bool {
-	if log.out != nil && lvl >= log.level {
+func (l Logger) skip(lvl Level) bool {
+	if l.out != nil && lvl >= l.level {
 		return false
 	}
 
-	if log.filters != nil {
-		if log.filters.Skip(lvl) == false {
+	if l.filters != nil {
+		if l.filters.Skip(lvl) == false {
 			return false
 		}
 	}
 
-	// log.out == nil and log.filters == nil
-	// or lvl < log.Level
+	// l.out == nil and l.filters == nil
+	// or lvl < l.Level
 	return true
 }
 
-func (log Logger) withoutLock(calldepth int, lvl Level, message string) {
+func (l Logger) withoutLock(calldepth int, lvl Level, message string) {
 	source, line := "", 0
-	if log.caller {
-		log.mu.Unlock()
+	if l.caller {
+		l.mu.Unlock()
 		// Determine caller func - it's expensive.
 		_, source, line, _ = runtime.Caller(calldepth)
-		log.mu.Lock()
+		l.mu.Lock()
 	}
 
 	// Make the log record
 	rec := &LogRecord{
 		Level:   lvl,
 		Created: time.Now(),
-		Prefix:  log.prefix,
+		Prefix:  l.prefix,
 		Source:  source,
 		Line:    line,
 		Message: message,
 	}
 
-	if log.out != nil && lvl >= log.level {
-		log.out.Write(log.layout.Format(rec))
+	if l.out != nil && lvl >= l.level {
+		l.out.Write(l.layout.Format(rec))
 	}
 
-	if log.filters != nil {
-		log.filters.Dispatch(rec)
+	if l.filters != nil {
+		l.filters.Dispatch(rec)
 	}
 }
 
 // Send a log message with level, and message.
-func (log Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
-	log.mu.Lock()
-	defer log.mu.Unlock()
+func (l Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	if log.skip(lvl) {
+	if l.skip(lvl) {
 		return
 	}
 
-	log.withoutLock(2, lvl, FormatMessage(arg0, args...))
+	l.withoutLock(2, lvl, FormatMessage(arg0, args...))
 }
 
 // Log sends a log message with calldepth, level, and message.
-func (log Logger) Log(calldepth int, lvl Level, message string) {
-	log.mu.Lock()
-	defer log.mu.Unlock()
+func (l Logger) Log(calldepth int, lvl Level, message string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	if log.skip(lvl) {
+	if l.skip(lvl) {
 		return
 	}
 
-	log.withoutLock(calldepth+1, lvl, message)
+	l.withoutLock(calldepth+1, lvl, message)
 }

@@ -40,7 +40,6 @@ var (
 
 // PatternLayout formats log record with pattern
 type PatternLayout struct {
-	//mu        sync.Mutex // ensures atomic writes; protects the following fields
 	pattSlice [][]byte // Split the pattern into pieces by % signs
 	utc       bool
 	longZone  []byte
@@ -277,6 +276,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 	}
 
 	out := bytes.NewBuffer(make([]byte, 0, 64))
+
 	// Iterate over the pieces, replacing known formats
 	// Split the string into pieces by % signs
 	// pieces := bytes.Split([]byte(format), []byte{'%'})

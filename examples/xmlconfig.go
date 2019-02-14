@@ -42,7 +42,7 @@ func main() {
 
 	log.LoadConfiguration(lc)
 
-	filters := log.GetFilters()
+	filters := log.Filters()
 
 	fmt.Printf("Total appenders installed: %d\n", len(filters))
 
