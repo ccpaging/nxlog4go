@@ -13,10 +13,11 @@ OR
 
 * **Structured**
 * **Fast** - see benchmark
-* **Extendable**
+* **Extendable 3rd appender**
 * **Configurable**
 * **Robust**
 * **No external dependencies** - plain ol' Go stdlib
+* **Compatibility for Go "log"** - support ansi color term
 
 Usage:
 
@@ -41,14 +42,15 @@ func main() {
 
 ## Acknowledgements:
 
-1. <https://github.com/alecthomas/log4go/>
-2. <https://github.com/ngmoco/timber>
-3. <https://github.com/siddontang/go/tree/master/log>
-4. <https://github.com/sirupsen/logrus>
-5. <https://github.com/YoungPioneers/blog4go>
-6. <https://github.com/cihub/seelog>
-7. <https://github.com/golang/glog>
-
+* <https://github.com/alecthomas/log4go/>
+* <https://github.com/ngmoco/timber>
+* <https://github.com/siddontang/go/tree/master/log>
+* <https://github.com/sirupsen/logrus>
+* <https://github.com/YoungPioneers/blog4go>
+* <https://github.com/cihub/seelog>
+* <https://github.com/golang/glog>
+* <https://github.com/Sirupsen/logrus>
+* <https://github.com/go-chi/chi/blob/master/middleware/terminal.go>
 
 ## Stability
 
