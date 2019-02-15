@@ -49,8 +49,7 @@ func NewColorAppender(w io.Writer) l4g.Appender {
 	return &ColorAppender{
 		out:    w,
 		layout: l4g.NewPatternLayout(l4g.PatternDefault),
-		color: (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") ||
-			os.Getenv("ConEmuANSI") == "ON",
+		color:  false,
 	}
 }
 
@@ -76,10 +75,16 @@ func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
 	defer ca.mu.Unlock()
 
 	if ca.color {
-		ca.out.Write(ColorBytes[rec.Level])
-		defer ca.out.Write(ColorReset)
+		level := rec.Level
+		if int(level) >= len(ColorBytes) {
+			level = l4g.INFO
+		}
+		ca.out.Write(ColorBytes[level])
+		ca.out.Write(ca.layout.Format(rec))
+		ca.out.Write(ColorReset)
+	} else {
+		ca.out.Write(ca.layout.Format(rec))
 	}
-	ca.out.Write(ca.layout.Format(rec))
 }
 
 // Set option.
