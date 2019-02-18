@@ -91,10 +91,10 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v0.4.4"
+	Version = "nxlog4go-v0.5.5"
 	Major   = 0
-	Minor   = 4
-	Build   = 4
+	Minor   = 5
+	Build   = 5
 )
 
 /****** Constants ******/
@@ -184,12 +184,12 @@ type LogRecord struct {
 	Message string    // The log message
 }
 
-// BeforeLog function runs before writing log record.
+// PreHookFunc function runs before writing log record.
 // Return false then skip writing log record
-type BeforeLog func(out io.Writer, rec *LogRecord) bool
+type PreHookFunc func(out io.Writer, rec *LogRecord) bool
 
-// LogAfter function runs after writing log record even BeforeLog returns false.
-type LogAfter func(out io.Writer, rec *LogRecord, n int, err error)
+// PostHookFunc function runs after writing log record even BeforeLog returns false.
+type PostHookFunc func(out io.Writer, rec *LogRecord, n int, err error)
 
 /****** Logger ******/
 
@@ -204,11 +204,12 @@ type Logger struct {
 	prefix string // prefix to write at beginning of each line
 	caller bool   // runtime caller skip
 
-	out       io.Writer // destination for output
-	level     Level     // The log level
-	layout    Layout    // format record for output
-	beforeLog BeforeLog
-	logAfter  LogAfter
+	out    io.Writer // destination for output
+	level  Level     // The log level
+	layout Layout    // format record for output
+
+	PreHook  PreHookFunc
+	PostHook PostHookFunc
 
 	filters Filters // a collection of Filters
 }
@@ -300,11 +301,11 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 		color := false
 		color, err = ToBool(v)
 		if color {
-			l.beforeLog = setColor
-			l.logAfter = resetColor
+			l.PreHook = setColor
+			l.PostHook = resetColor
 		} else {
-			l.beforeLog = nil
-			l.logAfter = nil
+			l.PreHook = nil
+			l.PostHook = nil
 		}
 	default:
 		return l.layout.SetOption(k, v)
@@ -410,8 +411,8 @@ func (l Logger) withoutLock(calldepth int, lvl Level, message string) {
 	}
 
 	result := true
-	if l.beforeLog != nil {
-		result = l.beforeLog(l.out, rec)
+	if l.PreHook != nil {
+		result = l.PreHook(l.out, rec)
 	}
 	var (
 		n   int
@@ -420,8 +421,8 @@ func (l Logger) withoutLock(calldepth int, lvl Level, message string) {
 	if result && l.out != nil && lvl >= l.level {
 		l.out.Write(l.layout.Format(rec))
 	}
-	if l.logAfter != nil {
-		l.logAfter(l.out, rec, n, err)
+	if l.PostHook != nil {
+		l.PostHook(l.out, rec, n, err)
 	}
 
 	if l.filters != nil {
