@@ -22,24 +22,21 @@ type FileAppender struct {
 	// Rotate cycle in seconds
 	cycle, clock int
 	// write loop
-	loopRunning bool
-	loopReset   chan time.Time
+	loopInitOnce sync.Once
+	loopRunning  bool
+	loopReset    chan time.Time
 }
 
 // Write log record to channel
 func (fa *FileAppender) Write(rec *l4g.LogRecord) {
-	fa.messages <- fa.layout.Format(rec)
-}
+	fa.loopInitOnce.Do(func() {
+		fa.loopRunning = true
+		ready := make(chan struct{})
+		go fa.writeLoop(ready)
+		<-ready
+	})
 
-// Init starts write loop
-func (fa *FileAppender) Init() {
-	if fa.loopRunning {
-		return
-	}
-	fa.loopRunning = true
-	ready := make(chan struct{})
-	go fa.writeLoop(ready)
-	<-ready
+	fa.messages <- fa.layout.Format(rec)
 }
 
 // Close drops write loop and closes opened file

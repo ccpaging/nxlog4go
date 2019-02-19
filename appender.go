@@ -14,11 +14,6 @@ type Appender interface {
 	// Return error if option name or value is bad.
 	SetOption(k string, v interface{}) error
 
-	// Init is called by the filters.Add() function to allow the appender
-	// protocol to perform any initialization steps it needs.
-	// It should save the handle for future use, as well.
-	Init()
-
 	// Write will be called to log a LogRecord message.
 	Write(rec *LogRecord)
 

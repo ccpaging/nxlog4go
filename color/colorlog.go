@@ -61,10 +61,6 @@ func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
 	return ca
 }
 
-// Init is nothing to do here.
-func (ca *ColorAppender) Init() {
-}
-
 // Close is nothing to do here.
 func (ca *ColorAppender) Close() {
 }

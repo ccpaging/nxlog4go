@@ -18,10 +18,6 @@ type SocketAppender struct {
 	host   string
 }
 
-// Init is nothing to do here.
-func (sa *SocketAppender) Init() {
-}
-
 // Close the socket if it opened.
 func (sa *SocketAppender) Close() {
 	if sa.sock != nil {

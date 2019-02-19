@@ -20,13 +20,12 @@ func NewFilters() Filters {
 // any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
 // Returns the Filters for chaining.
-func (fs Filters) Add(tag string, level Level, writer Appender) Filters {
+func (fs Filters) Add(tag string, level Level, appender Appender) Filters {
 	if filt, ok := fs[tag]; ok {
 		filt.Close()
 		delete(fs, tag)
 	}
-	writer.Init()
-	fs[tag] = NewFilter(level, writer)
+	fs[tag] = NewFilter(level, appender)
 	return fs
 }
 

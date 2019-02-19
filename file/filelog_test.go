@@ -37,7 +37,6 @@ func TestFileAppender(t *testing.T) {
 	}
 	defer os.Remove(testLogFile)
 
-	w.Init()
 	w.Write(newLogRecord(l4g.CRITICAL, "source", "message"))
 	runtime.Gosched()
 	w.Close()
@@ -97,11 +96,10 @@ func TestFileLogRotate(t *testing.T) {
 
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {
-		time.Sleep(1 * time.Second)
 		for i := 0; i < 200/(j+1); i++ {
 			writeSomethingToLogFile(log)
 		}
-		//time.Sleep(1 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 	// Close the log filters
 	log.SetFilters(nil)
