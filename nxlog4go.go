@@ -177,9 +177,9 @@ type LogRecord struct {
 	Level   Level     // The log level
 	Created time.Time // The time at which the log message was created (nanoseconds)
 	Prefix  string
-	Source  string    // The source file name which the log was called
-	Line    int       // The source line
-	Message string    // The log message
+	Source  string // The source file name which the log was called
+	Line    int    // The source line
+	Message string // The log message
 }
 
 /****** Logger ******/
