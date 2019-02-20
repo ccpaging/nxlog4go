@@ -186,10 +186,10 @@ type LogRecord struct {
 
 // PreHookFunc function runs before writing log record.
 // Return false then skip writing log record
-type PreHookFunc func(out io.Writer, rec *LogRecord) bool
+type PreHook func(out io.Writer, rec *LogRecord) bool
 
 // PostHookFunc function runs after writing log record even BeforeLog returns false.
-type PostHookFunc func(out io.Writer, rec *LogRecord, n int, err error)
+type PostHook func(out io.Writer, rec *LogRecord, n int, err error)
 
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer, and a collection of Filters through which
@@ -206,8 +206,8 @@ type Logger struct {
 	level  Level     // The log level
 	layout Layout    // format record for output
 
-	PreHook  PreHookFunc
-	PostHook PostHookFunc
+	preHook  PreHook
+	postHook PostHook
 
 	filters Filters // a collection of Filters
 }
@@ -299,11 +299,11 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 		color := false
 		color, err = ToBool(v)
 		if color {
-			l.PreHook = setColor
-			l.PostHook = resetColor
+			l.preHook = setColor
+			l.postHook = resetColor
 		} else {
-			l.PreHook = nil
-			l.PostHook = nil
+			l.preHook = nil
+			l.postHook = nil
 		}
 	default:
 		return l.layout.SetOption(k, v)
