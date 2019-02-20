@@ -15,7 +15,7 @@ func NewFilters() Filters {
 	return Filters{}
 }
 
-// Add a new filter to the filters map which will only log messages at lvl or
+// Add a new filter to the filters map which will only log messages at level or
 // higher. And call Appender.Init() to allow the appender protocol to perform
 // any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
@@ -41,10 +41,10 @@ func (fs Filters) Close() {
 	}
 }
 
-// Skip check log level and return whether skip or not
-func (fs Filters) Skip(lvl Level) bool {
+// Skip checks log level and return whether skip or not
+func (fs Filters) Skip(level Level) bool {
 	for _, filt := range fs {
-		if lvl >= filt.Level {
+		if level >= filt.Level {
 			return false
 		}
 	}

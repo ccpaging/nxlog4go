@@ -21,9 +21,9 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newLogRecord(lvl Level, prefix, src string, msg string) *LogRecord {
+func newLogRecord(level Level, prefix, src string, msg string) *LogRecord {
 	return &LogRecord{
-		Level:   lvl,
+		Level:   level,
 		Source:  src,
 		Prefix:  prefix,
 		Created: now,
@@ -166,25 +166,15 @@ func TestLogLogger(t *testing.T) {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 
-	//func (l *Logger) Warn(format string, args ...interface{}) error {}
+	//func (l *Logger) Warn(args ...interface{}) error {}
 	if err := l.Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
 
-	//func (l *Logger) Error(format string, args ...interface{}) error {}
+	//func (l *Logger) Error(args ...interface{}) error {}
 	if err := l.Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
 		t.Errorf("Error returned invalid error: %s", err)
 	}
-
-	// Already tested or basically untestable
-	//func (l *Logger) Log(level int, source, message string) {}
-	//func (l *Logger) Logf(level int, format string, args ...interface{}) {}
-	//func (l *Logger) intLogf(level int, format string, args ...interface{}) string {}
-	//func (l *Logger) Finest(format string, args ...interface{}) {}
-	//func (l *Logger) Fine(format string, args ...interface{}) {}
-	//func (l *Logger) Debug(format string, args ...interface{}) {}
-	//func (l *Logger) Trace(format string, args ...interface{}) {}
-	//func (l *Logger) Info(format string, args ...interface{}) {}
 }
 
 func TestLogger(t *testing.T) {
@@ -196,29 +186,30 @@ func TestLogger(t *testing.T) {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 
-	//func (l *Logger) Warn(format string, args ...interface{}) error {}
+	//func (l *Logger) Warn(args ...interface{}) error {}
 	if err := l.Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
 
-	//func (l *Logger) Error(format string, args ...interface{}) error {}
+	//func (l *Logger) Error(args ...interface{}) error {}
 	if err := l.Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
 		t.Errorf("Error returned invalid error: %s", err)
 	}
 
-	//func (l *Logger) Critical(format string, args ...interface{}) error {}
+	//func (l *Logger) Critical(args ...interface{}) error {}
 	if err := l.Critical("%s %d %#v", "Critical:", 100, []int64{}); err.Error() != "Critical: 100 []int64{}" {
 		t.Errorf("Critical returned invalid error: %s", err)
 	}
+
+	//func (l *Logger) Log(level int, args ...interface{}) {}
+	l.Log(ERROR, "%s %d %#v", "Log Error:", 10, []string{})
+
 	// Already tested or basically untestable
-	//func (l *Logger) Log(level int, source, message string) {}
-	//func (l *Logger) Logf(level int, format string, args ...interface{}) {}
-	//func (l *Logger) intLogf(level int, format string, args ...interface{}) string {}
-	//func (l *Logger) Finest(format string, args ...interface{}) {}
-	//func (l *Logger) Fine(format string, args ...interface{}) {}
-	//func (l *Logger) Debug(format string, args ...interface{}) {}
-	//func (l *Logger) Trace(format string, args ...interface{}) {}
-	//func (l *Logger) Info(format string, args ...interface{}) {}
+	//func (l *Logger) Finest(args ...interface{}) {}
+	//func (l *Logger) Fine(args ...interface{}) {}
+	//func (l *Logger) Debug(args ...interface{}) {}
+	//func (l *Logger) Trace(args ...interface{}) {}
+	//func (l *Logger) Info(args ...interface{}) {}
 }
 
 func TestGlobal(t *testing.T) {
@@ -230,17 +221,17 @@ func TestGlobal(t *testing.T) {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 
-	//func (l *Logger) Warn(format string, args ...interface{}) error {}
+	//func (l *Logger) Warn(args ...interface{}) error {}
 	if err := Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
 
-	//func (l *Logger) Error(format string, args ...interface{}) error {}
+	//func (l *Logger) Error(args ...interface{}) error {}
 	if err := Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
 		t.Errorf("Error returned invalid error: %s", err)
 	}
 
-	//func (l *Logger) Critical(format string, args ...interface{}) error {}
+	//func (l *Logger) Critical(args ...interface{}) error {}
 	if err := Critical("%s %d %#v", "Critical:", 100, []int64{}); err.Error() != "Critical: 100 []int64{}" {
 		t.Errorf("Critical returned invalid error: %s", err)
 	}

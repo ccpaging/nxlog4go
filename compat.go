@@ -116,14 +116,11 @@ func (l *Logger) SetFlags(flag int) {
 // provided for generality, although at the moment on all pre-defined
 // paths it will be 2.
 func (l *Logger) Output(calldepth int, s string) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
 	if len(s) == 0 || s[len(s)-1] != '\n' {
 		s += "\n"
 	}
 
-	l.withoutLock(calldepth+1, l.level, s)
+	l.write(calldepth+1, l.level, s)
 	return nil
 }
 

@@ -80,10 +80,8 @@ package nxlog4go
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -91,10 +89,10 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v0.5.5"
+	Version = "nxlog4go-v0.9.3"
 	Major   = 0
-	Minor   = 5
-	Build   = 5
+	Minor   = 9
+	Build   = 3
 )
 
 /****** Constants ******/
@@ -178,11 +176,13 @@ var (
 type LogRecord struct {
 	Level   Level     // The log level
 	Created time.Time // The time at which the log message was created (nanoseconds)
-	Prefix  string    // The message prefix
-	Source  string    // The message source
+	Prefix  string
+	Source  string    // The source file name which the log was called
 	Line    int       // The source line
 	Message string    // The log message
 }
+
+/****** Logger ******/
 
 // PreHookFunc function runs before writing log record.
 // Return false then skip writing log record
@@ -190,8 +190,6 @@ type PreHookFunc func(out io.Writer, rec *LogRecord) bool
 
 // PostHookFunc function runs after writing log record even BeforeLog returns false.
 type PostHookFunc func(out io.Writer, rec *LogRecord, n int, err error)
-
-/****** Logger ******/
 
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer, and a collection of Filters through which
@@ -215,7 +213,7 @@ type Logger struct {
 }
 
 // NewLogger creates a new logger with a "stderr" writer to send
-// formatted log messages at or above lvl to standard output.
+// formatted log messages at or above level to standard output.
 func NewLogger(level Level) *Logger {
 	return &Logger{
 		out:     os.Stderr,
@@ -349,107 +347,4 @@ func (l *Logger) SetFilters(filters Filters) *Logger {
 	defer l.mu.Unlock()
 	l.filters = filters
 	return l
-}
-
-/******* Logging *******/
-
-// FormatMessage builds a format string by the arguments
-// Return a format string
-func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
-	switch first := arg0.(type) {
-	case string:
-		if len(args) == 0 {
-			s = first
-		} else {
-			// Use the string as a format string
-			s = fmt.Sprintf(first, args...)
-		}
-	case func() string:
-		// Log the closure (no other arguments used)
-		s = first()
-	default:
-		// Build a format string so that it will be similar to Sprint
-		s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)), args...)
-	}
-	return
-}
-
-// Determine if any logging will be done.
-func (l Logger) skip(lvl Level) bool {
-	if l.out != nil && lvl >= l.level {
-		return false
-	}
-
-	if l.filters != nil {
-		if l.filters.Skip(lvl) == false {
-			return false
-		}
-	}
-
-	// l.out == nil and l.filters == nil
-	// or lvl < l.Level
-	return true
-}
-
-func (l Logger) withoutLock(calldepth int, lvl Level, message string) {
-	source, line := "", 0
-	if l.caller {
-		l.mu.Unlock()
-		// Determine caller func - it's expensive.
-		_, source, line, _ = runtime.Caller(calldepth)
-		l.mu.Lock()
-	}
-
-	// Make the log record
-	rec := &LogRecord{
-		Level:   lvl,
-		Created: time.Now(),
-		Prefix:  l.prefix,
-		Source:  source,
-		Line:    line,
-		Message: message,
-	}
-
-	result := true
-	if l.PreHook != nil {
-		result = l.PreHook(l.out, rec)
-	}
-	var (
-		n   int
-		err error
-	)
-	if result && l.out != nil && lvl >= l.level {
-		l.out.Write(l.layout.Format(rec))
-	}
-	if l.PostHook != nil {
-		l.PostHook(l.out, rec, n, err)
-	}
-
-	if l.filters != nil {
-		l.filters.Dispatch(rec)
-	}
-}
-
-// Send a log message with level, and message.
-func (l Logger) intLog(lvl Level, arg0 interface{}, args ...interface{}) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.skip(lvl) {
-		return
-	}
-
-	l.withoutLock(2, lvl, FormatMessage(arg0, args...))
-}
-
-// Log sends a log message with calldepth, level, and message.
-func (l Logger) Log(calldepth int, lvl Level, message string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.skip(lvl) {
-		return
-	}
-
-	l.withoutLock(calldepth+1, lvl, message)
 }
