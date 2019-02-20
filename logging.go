@@ -3,9 +3,9 @@
 package nxlog4go
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
-	"errors"
 	"strings"
 	"time"
 )

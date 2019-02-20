@@ -184,11 +184,11 @@ type LogRecord struct {
 
 /****** Logger ******/
 
-// PreHookFunc function runs before writing log record.
+// PreHook function runs before writing log record.
 // Return false then skip writing log record
 type PreHook func(out io.Writer, rec *LogRecord) bool
 
-// PostHookFunc function runs after writing log record even BeforeLog returns false.
+// PostHook function runs after writing log record even BeforeLog returns false.
 type PostHook func(out io.Writer, rec *LogRecord, n int, err error)
 
 // A Logger represents an active logging object that generates lines of
