@@ -17,7 +17,7 @@ OR
 * **Configurable**
 * **Robust**
 * **No external dependencies** - plain ol' Go stdlib
-* **Compatibility for Go "log"** - support ansi color term
+* **Completely API compatible with the stdlib log** - support ansi color term
 
 Usage:
 
@@ -45,11 +45,10 @@ func main() {
 * <https://github.com/alecthomas/log4go/>
 * <https://github.com/ngmoco/timber>
 * <https://github.com/siddontang/go/tree/master/log>
-* <https://github.com/sirupsen/logrus>
+* <https://github.com/Sirupsen/logrus>
 * <https://github.com/YoungPioneers/blog4go>
 * <https://github.com/cihub/seelog>
 * <https://github.com/golang/glog>
-* <https://github.com/Sirupsen/logrus>
 * <https://github.com/go-chi/chi/blob/master/middleware/terminal.go>
 
 ## Stability
@@ -58,4 +57,4 @@ This package is a work still in progress.
 
 In any event, I encourage you to send me feedback.
 
-But I really wouldn't recommend using nxlog4go just yet.
+But I really wouldn't recommend using nxlog4go in factory environment just yet.
