@@ -120,7 +120,10 @@ func (l *Logger) Output(calldepth int, s string) error {
 		s += "\n"
 	}
 
-	l.write(calldepth+1, l.level, s)
+	r := NewLogRecord(l)
+	r.Level = l.level
+	r.Message = s
+	r.write(calldepth+1)
 	return nil
 }
 

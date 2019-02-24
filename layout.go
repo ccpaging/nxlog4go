@@ -4,6 +4,8 @@ package nxlog4go
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -18,7 +20,7 @@ type Layout interface {
 	SetOption(name string, v interface{}) error
 
 	// This will be called to log a LogRecord message.
-	Format(rec *LogRecord) []byte
+	Format(r *LogRecord) []byte
 
 	Pattern() []byte
 
@@ -35,7 +37,7 @@ var (
 	// PatternAbbrev includes level and message
 	PatternAbbrev = "[%L] %M\n"
 	// PatternJSON is json format include everyone of log record
-	PatternJSON = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"}"
+	PatternJSON = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%J}"
 )
 
 // PatternLayout formats log record with pattern
@@ -66,7 +68,7 @@ func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 
 // SetOption set option with:
 //	pattern	- Layout format pattern
-//	utc     - Log recorder time zone
+//	utc     - Log record time zone
 //
 // Known pattern codes are:
 //	%U - Time (15:04:05.000000)
@@ -85,6 +87,8 @@ func (pl *PatternLayout) Set(k string, v interface{}) Layout {
 //	%s - Short Source
 //	%N - Line number
 //	%M - Message
+//  %F - Data in "key=value" format
+//	%J - Data in JSON format
 //	%t - Return (\t)
 //	%r - Return (\r)
 //	%n - Return (\n)
@@ -227,33 +231,62 @@ func (pl *PatternLayout) writeTime(out *bytes.Buffer, piece0 byte, t *time.Time)
 	return true
 }
 
-func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRecord) bool {
+func writeData(out *bytes.Buffer, data map[string]interface{}) {
+	for k, v := range data {
+		out.WriteString(" " + k + "=")
+		var b []byte
+		if _, ok := v.(string); ok {
+			b = []byte(v.(string))
+		} else {
+			b = []byte(fmt.Sprint(v))
+		}
+		if len(b) <= 16 && bytes.IndexAny(b, " =") < 0 {
+			// do nothing
+		} else {
+			b = append([]byte{'"'}, b...)
+			b = append(b, byte('"'))
+		}
+		out.Write(b)
+	}
+}
+
+func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, r *LogRecord) bool {
 	// assert len(pieces) > 0
 	var b []byte
 	switch piece0 {
 	case 'L':
-		out.WriteString(levelStrings[rec.Level])
+		out.WriteString(levelStrings[r.Level])
 	case 'l':
-		itoa(&b, int(rec.Level), -1)
+		itoa(&b, int(r.Level), -1)
 		out.Write(b)
 	case 'P':
-		out.WriteString(rec.Prefix)
+		out.WriteString(r.Prefix)
 	case 'S':
-		out.WriteString(rec.Source)
+		out.WriteString(r.Source)
 	case 's':
-		short := rec.Source
-		for i := len(rec.Source) - 1; i > 0; i-- {
-			if rec.Source[i] == '/' {
-				short = rec.Source[i+1:]
+		short := r.Source
+		for i := len(r.Source) - 1; i > 0; i-- {
+			if r.Source[i] == '/' {
+				short = r.Source[i+1:]
 				break
 			}
 		}
 		out.WriteString(short)
 	case 'N':
-		itoa(&b, rec.Line, -1)
+		itoa(&b, r.Line, -1)
 		out.Write(b)
 	case 'M':
-		out.WriteString(rec.Message)
+		out.WriteString(r.Message)
+	case 'F':
+		if len(r.Data) > 0 {
+			writeData(out, r.Data)
+		}
+	case 'J':
+		if len(r.Data) > 0 {
+			out.WriteString(",\"Data\":")
+			encoder := json.NewEncoder(out)
+			encoder.Encode(r.Data)
+		}
 	default:
 		return false
 	}
@@ -262,15 +295,15 @@ func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, rec *LogRec
 
 // Format log record.
 // Return bytes.
-func (pl *PatternLayout) Format(rec *LogRecord) []byte {
-	if rec == nil {
+func (pl *PatternLayout) Format(r *LogRecord) []byte {
+	if r == nil {
 		return []byte("<nil>")
 	}
 	if len(pl.pattSlice) == 0 {
 		return nil
 	}
 
-	t := rec.Created
+	t := r.Created
 	if pl.utc {
 		t = t.UTC()
 	}
@@ -289,7 +322,7 @@ func (pl *PatternLayout) Format(rec *LogRecord) []byte {
 			continue
 		}
 		if pl.writeTime(out, piece[0], &t) == false {
-			if pl.writeRecord(out, piece[0], rec) == false {
+			if pl.writeRecord(out, piece[0], r) == false {
 				switch piece[0] {
 				case 't':
 					out.WriteByte('\t')

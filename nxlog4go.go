@@ -84,7 +84,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 )
 
 // Version information
@@ -169,18 +168,6 @@ var (
 	// ErrBadValue is the errors of bad value
 	ErrBadValue = errors.New("Invalid option value")
 )
-
-/****** LogRecord ******/
-
-// A LogRecord contains all of the pertinent information for each message
-type LogRecord struct {
-	Level   Level     // The log level
-	Created time.Time // The time at which the log message was created (nanoseconds)
-	Prefix  string
-	Source  string // The source file name which the log was called
-	Line    int    // The source line
-	Message string // The log message
-}
 
 /****** Logger ******/
 

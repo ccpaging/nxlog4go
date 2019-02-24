@@ -19,7 +19,6 @@ type FilterConfig struct {
 	Tag        string      `xml:"tag" json:"tag"`
 	Type       string      `xml:"type" json:"type"`
 	Level      string      `xml:"level" json:"level"`
-	Pattern    string      `xml:"format" json:"format"`
 	Properties []NameValue `xml:"property" json:"properties"`
 }
 
@@ -29,25 +28,17 @@ type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
 }
 
-func loadLogLog(level Level, pattern string) {
-	if level >= SILENT {
-		LogLogTrace("Disable loglog for level \"%d\"", level)
-	} else {
-		loglog := GetLogLog().Set("level", level)
-		if pattern != "" {
-			loglog.Set("pattern", pattern)
-		}
-	}
-}
-
-func loadStdout(log *Logger, level Level, pattern string) {
+func setLogger(l *Logger, level Level, props []NameValue) {
 	if level >= SILENT {
 		LogLogTrace("Disable stdout for level \"%d\"", level)
-		log.SetOutput(nil)
-	} else {
-		log.Set("level", level)
-		if pattern != "" {
-			log.Set("pattern", pattern)
+		return
+	}
+ 	
+	l.Set("level", level)
+	for _, prop := range props {
+		v := strings.Trim(prop.Value, " \r\n")
+		if err := l.SetOption(prop.Name, v); err != nil {
+			LogLogWarn("%s. %s: %s", err.Error(), prop.Name, v)
 		}
 	}
 }
@@ -104,9 +95,9 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) {
 
 		switch fc.Type {
 		case "loglog":
-			loadLogLog(level, fc.Pattern)
+			setLogger(GetLogLog(), level, fc.Properties)
 		case "stdout":
-			loadStdout(l, level, fc.Pattern)
+			setLogger(l, level, fc.Properties)
 		default:
 			appender := loadAppender(level, fc.Type, fc.Properties)
 			if appender != nil {

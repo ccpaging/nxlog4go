@@ -5,9 +5,7 @@ package nxlog4go
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"strings"
-	"time"
 )
 
 /******* Logging *******/
@@ -43,7 +41,11 @@ func FormatMessage(args ...interface{}) (s string) {
 		s = first()
 	default:
 		// Build a format string so that it will be similar to Sprint
-		s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)-1), args[1:]...)
+		if len(args) == 1 {
+			s = fmt.Sprint(first)
+		} else {
+			s = fmt.Sprintf(fmt.Sprint(first)+strings.Repeat(" %v", len(args)-1), args[1:]...)
+		}
 	}
 	return
 }
@@ -65,64 +67,31 @@ func (l *Logger) Skip(level Level) bool {
 	return true
 }
 
-func (l *Logger) write(calldepth int, lvl Level, message string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+/****** Wrapper log write functions for logger ******/
 
-	source, line := "", 0
-	if l.caller {
-		l.mu.Unlock()
-		// Determine caller func - it's expensive.
-		_, source, line, _ = runtime.Caller(calldepth)
-		l.mu.Lock()
-	}
+func (l *Logger) newLogRecord() *LogRecord {
+	return NewLogRecord(l)
+}
 
-	// Make the log record
-	rec := &LogRecord{
-		Level:   lvl,
-		Created: time.Now(),
-		Prefix:  l.prefix,
-		Source:  source,
-		Line:    line,
-		Message: message,
-	}
-
-	result := true
-	if l.preHook != nil {
-		result = l.preHook(l.out, rec)
-	}
-	var (
-		n   int
-		err error
-	)
-	if result && l.out != nil && lvl >= l.level {
-		l.out.Write(l.layout.Format(rec))
-	}
-	if l.postHook != nil {
-		l.postHook(l.out, rec, n, err)
-	}
-
-	if l.filters != nil {
-		l.filters.Dispatch(rec)
-	}
+// With adds key-value pairs to the log record, note that it doesn't log until you call
+// Debug, Print, Info, Warn, Error, Fatal or Panic. It only creates a log record.
+func (l *Logger) With(args ...interface{}) *LogRecord {
+	return l.newLogRecord().With(args...)
 }
 
 // Send a log message with level, and message.
-func (l *Logger) intLog(lvl Level, args ...interface{}) {
-	if l.Skip(lvl) {
-		return
+func (l *Logger) intLog(level Level, args ...interface{}) {
+	if !l.Skip(level) {
+		r := NewLogRecord(l)
+		r.Level = level
+		r.Message = FormatMessage(args...)
+		r.write(2 + 1)
 	}
-
-	l.write(3, lvl, FormatMessage(args...))
 }
 
-// Log sends a log message with calldepth, level, and message.
+// Log sends a log message with level and message.
 func (l *Logger) Log(level Level, args ...interface{}) {
-	if l.Skip(level) {
-		return
-	}
-
-	l.write(2, level, FormatMessage(args...))
+	l.intLog(level, args...)
 }
 
 // Finest logs a message at the finest log level.

@@ -32,10 +32,11 @@ var xmlBuf = `<logging>
       It ignores unknown format strings (and removes them)
       Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="pattern">[%D %T] [%L] (%s) %M</property>
+    <property name="color">true</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
-    <tag>color</tag>
+    <tag>loglog</tag>
     <type>loglog</type>
     <level>DEBUG</level>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
@@ -44,6 +45,7 @@ var xmlBuf = `<logging>
     <tag>color</tag>
     <type>color</type>
     <level>DEBUG</level>
+    <property name="color">true</property>
   </filter>
   <filter enabled="true">
     <tag>file</tag>
@@ -105,7 +107,7 @@ func TestXMLConfig(t *testing.T) {
 		t.Fatalf("XMLConfig: Could not parse XML configuration in %q: %s\n", xmlFile, err)
 	}
 
-	log := new(l4g.Logger)
+	log := l4g.NewLogger(l4g.DEBUG)
 	log.LoadConfiguration(lc)
 	filters := log.Filters()
 

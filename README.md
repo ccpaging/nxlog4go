@@ -50,6 +50,7 @@ func main() {
 * <https://github.com/cihub/seelog>
 * <https://github.com/golang/glog>
 * <https://github.com/go-chi/chi/blob/master/middleware/terminal.go>
+* <https://github.com/uber-go/zap>
 
 ## Stability
 

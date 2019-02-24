@@ -15,10 +15,11 @@
       It ignores unknown format strings (and removes them)
       Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="pattern">[%D %T] [%L] (%s) %M</property>
+    <property name="color">true</property>
+    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
-    <tag>color</tag>
+    <tag>loglog</tag>
     <type>loglog</type>
     <level>DEBUG</level>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
@@ -27,6 +28,7 @@
     <tag>color</tag>
     <type>color</type>
     <level>DEBUG</level>
+    <property name="color">true</property>
   </filter>
   <filter enabled="true">
     <tag>file</tag>

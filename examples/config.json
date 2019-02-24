@@ -5,20 +5,22 @@
             "tag": "stdout",
             "type": "stdout",
             "level": "DEBUG",
-            "format": "",
             "properties": [
                 {
+                    "name": "color",
+                    "value": "true"
+                },
+                {
                     "name": "pattern",
-                    "value": "[%D %T] [%L] (%s) %M"
+                    "value": "[%D %T] [%L] (%s) %M%R"
                 }
             ]
         },
         {
             "enabled": "true",
-            "tag": "color",
+            "tag": "loglog",
             "type": "loglog",
             "level": "DEBUG",
-            "format": "",
             "properties": [
                 {
                     "name": "pattern",
@@ -31,15 +33,18 @@
             "tag": "color",
             "type": "color",
             "level": "DEBUG",
-            "format": "",
-            "properties": null
+            "properties": [
+                {
+                    "name": "color",
+                    "value": "true"
+                }
+            ]
         },
         {
             "enabled": "true",
             "tag": "file",
             "type": "file",
             "level": "FINEST",
-            "format": "",
             "properties": [
                 {
                     "name": "filename",
@@ -72,7 +77,6 @@
             "tag": "xmllog",
             "type": "xml",
             "level": "TRACE",
-            "format": "",
             "properties": [
                 {
                     "name": "filename",
@@ -105,7 +109,6 @@
             "tag": "socket",
             "type": "socket",
             "level": "FINEST",
-            "format": "",
             "properties": [
                 {
                     "name": "endpoint",
