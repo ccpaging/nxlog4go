@@ -33,7 +33,7 @@ func setLogger(l *Logger, level Level, props []NameValue) {
 		LogLogTrace("Disable stdout for level \"%d\"", level)
 		return
 	}
- 	
+
 	l.Set("level", level)
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
