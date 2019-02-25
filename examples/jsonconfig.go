@@ -40,7 +40,10 @@ func main() {
 	fmt.Printf("Total configuration: %d\n", len(lc.Filters))
 
 	// Configure logger
-	log.LoadConfiguration(lc)
+	errs := log.LoadConfiguration(lc)
+	for _, err := range errs {
+		fmt.Println(err)
+	}
 	fmt.Printf("Total appenders installed: %d\n", len(log.Filters()))
 
 	// And now we're ready!

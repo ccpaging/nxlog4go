@@ -40,7 +40,10 @@ func main() {
 	fmt.Printf("Total configuration: %d\n", len(lc.Filters))
 	// fmt.Println(lc)
 
-	log.LoadConfiguration(lc)
+	errs := log.LoadConfiguration(lc)
+	for _, err := range errs {
+		fmt.Println(err)
+	}
 
 	filters := log.Filters()
 

@@ -3,6 +3,7 @@
 package nxlog4go
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -28,66 +29,63 @@ type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
 }
 
-func setLogger(l *Logger, level Level, props []NameValue) {
+func setLogger(l *Logger, level Level, props []NameValue) (errs []error) {
 	if level >= SILENT {
-		LogLogTrace("Disable stdout for level \"%d\"", level)
-		return
+		return append(errs, fmt.Errorf("Trace: Disable stdout for level [%d]", level))
 	}
 
 	l.Set("level", level)
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
 		if err := l.SetOption(prop.Name, v); err != nil {
-			LogLogWarn("%s. %s: %s", err.Error(), prop.Name, v)
+			errs = append(errs, fmt.Errorf("Warn: %s. %s: %s", err.Error(), prop.Name, v))
 		}
 	}
+	return
 }
 
-func loadAppender(level Level, typ string, props []NameValue) Appender {
+func loadAppender(level Level, typ string, props []NameValue) (app Appender, errs []error) {
 	if level >= SILENT {
-		LogLogTrace("Disable \"%s\" for level \"%d\"", typ, level)
-		return nil
+		return nil, append(errs, fmt.Errorf("Trace: Disable appender type [%s] for level [%d]", typ, level))
 	}
 
 	newFunc := getAppenderNewFunc(typ)
 	if newFunc == nil {
-		LogLogWarn("Unknown appender type \"%s\"", typ)
-		return nil
+		return nil, append(errs, fmt.Errorf("Warn: Unknown appender type [%s]", typ))
 	}
 
-	appender := newFunc()
-	if appender == nil {
-		return nil
+	app = newFunc()
+	if app == nil {
+		return nil, append(errs, fmt.Errorf("Warn: Can not create appender type [%s]", typ))
 	}
 
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
-		if err := appender.SetOption(prop.Name, v); err != nil {
-			LogLogWarn("%s. %s: %s", err.Error(), prop.Name, v)
+		if err := app.SetOption(prop.Name, v); err != nil {
+			errs = append(errs, fmt.Errorf("Warn: %s. %s: %s", err.Error(), prop.Name, v))
 		}
 	}
-	return appender
+	return
 }
 
 // LoadConfiguration sets options of logger, and creates/loads/sets appenders.
-func (l *Logger) LoadConfiguration(lc *LoggerConfig) {
+func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 	if lc == nil {
-		LogLogWarn("Logger configuration is NIL")
-		return
+		return append(errs, fmt.Errorf("Warn: Logger configuration is NIL"))
 	}
 	filters := make(Filters)
-	for _, fc := range lc.Filters {
+	for i, fc := range lc.Filters {
 		if fc.Type == "" {
-			LogLogWarn("Missing type")
+			errs = append(errs, fmt.Errorf("Warn: The type of Filter [%d] is not defined", i))
 			continue
 		}
 		if fc.Tag == "" {
-			LogLogWarn("Missing tag")
+			errs = append(errs, fmt.Errorf("Warn: The tag of Filter [%d] is not defined", i))
 			continue
 		}
 
 		if enabled, err := ToBool(fc.Enabled); !enabled {
-			LogLogTrace("Disable \"%s\" for %v", fc.Tag, err)
+			errs = append(errs, fmt.Errorf("Trace: Disable filter [%s]. Error: %v", fc.Tag, err))
 			continue
 		}
 
@@ -95,17 +93,21 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) {
 
 		switch fc.Type {
 		case "loglog":
-			setLogger(GetLogLog(), level, fc.Properties)
+			retErrors := setLogger(GetLogLog(), level, fc.Properties)
+			errs = append(errs, retErrors...)
 		case "stdout":
-			setLogger(l, level, fc.Properties)
+			retErrors := setLogger(l, level, fc.Properties)
+			errs = append(errs, retErrors...)
 		default:
-			appender := loadAppender(level, fc.Type, fc.Properties)
-			if appender != nil {
-				LogLogTrace("Succeeded loading appender \"%s\"", fc.Tag)
-				filters.Add(fc.Tag, level, appender)
+			app, retErrors := loadAppender(level, fc.Type, fc.Properties)
+			errs = append(errs, retErrors...)
+			if app != nil {
+				errs = append(errs, fmt.Errorf("Trace: Succeeded loading appender [%s]", fc.Tag))
+				filters.Add(fc.Tag, level, app)
 			}
 		}
 	}
 
 	l.SetFilters(filters)
+	return
 }
