@@ -88,10 +88,10 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v0.9.3"
+	Version = "nxlog4go-v0.9.4"
 	Major   = 0
 	Minor   = 9
-	Build   = 3
+	Build   = 4
 )
 
 /****** Constants ******/
