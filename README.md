@@ -12,12 +12,13 @@ OR
 ## Features:
 
 * **Structured**
-* **Fast** - see benchmark
+* **Fast** - see [benchmark](https://github.com/ccpaging/nxlog4go/blob/master/nxlog4go_test.go)
 * **Extendable 3rd appender**
 * **Configurable**
 * **Robust**
-* **No external dependencies** - plain ol' Go stdlib
 * **Completely API compatible with the stdlib log** - support ansi color term
+* **Logging With data fields** - like uber zap
+* **No external dependencies** - plain ol' Go stdlib
 
 Usage:
 

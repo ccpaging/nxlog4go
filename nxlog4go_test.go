@@ -370,16 +370,16 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 // goos: windows
 // goarch: amd64
 // pkg: github.com/ccpaging/nxlog4go
-// BenchmarkItoa-4                         10000000               134 ns/op
-// BenchmarkPrintln-4                       2000000               993 ns/op
-// BenchmarkPrintlnNoFlags-4                2000000               772 ns/op
-// BenchmarkPatternLayout-4                 2000000               656 ns/op
-// BenchmarkJson-4                           500000              3000 ns/op
-// BenchmarkJsonLayout-4                    1000000              1067 ns/op
-// BenchmarkConsoleWriter-4                 1000000              1209 ns/op
-// BenchmarkConsoleUtilWriter-4              500000              3658 ns/op
-// BenchmarkConsoleUtilNotWriter-4          5000000               252 ns/op
-// BenchmarkFileWriter-4                     200000              6740 ns/op
-// BenchmarkFileUtilWriter-4                 200000              7465 ns/op
-// BenchmarkFileBufWriter-4                 1000000              1681 ns/op
-// BenchmarkFileBufUtilWriter-4             1000000              1934 ns/op
+// BenchmarkItoa-4                         10000000               133 ns/op
+// BenchmarkPrintln-4                       2000000               984 ns/op
+// BenchmarkPrintlnNoFlags-4                2000000               769 ns/op
+// BenchmarkPatternLayout-4                 2000000               708 ns/op
+// BenchmarkJson-4                           500000              3094 ns/op
+// BenchmarkJsonLayout-4                    1000000              1156 ns/op
+// BenchmarkConsoleWriter-4                 1000000              1064 ns/op
+// BenchmarkConsoleUtilWriter-4              500000              3668 ns/op
+// BenchmarkConsoleUtilNotWriter-4         100000000               16.5 ns/op
+// BenchmarkFileWriter-4                     200000              6135 ns/op
+// BenchmarkFileUtilWriter-4                 200000              6900 ns/op
+// BenchmarkFileBufWriter-4                 1000000              1419 ns/op
+// BenchmarkFileBufUtilWriter-4             1000000              1647 ns/op

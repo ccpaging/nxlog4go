@@ -33,6 +33,7 @@ type LogRecord struct {
 func NewLogRecord(l *Logger) *LogRecord {
 	return &LogRecord{
 		logger: l,
+		Prefix: l.prefix,
 		Data:   make(map[string]interface{}, 6),
 	}
 }
@@ -86,7 +87,6 @@ func (r *LogRecord) write(calldepth int) {
 
 	// Make the log record
 	r.Created = time.Now()
-	r.Prefix = l.prefix
 	r.Source = source
 	r.Line = line
 
