@@ -11,38 +11,32 @@ import (
 
 /****** LogRecord ******/
 
-// A LogRecord contains all of the pertinent information for each message
+// A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all
 // the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
-// Info, Warn, Error, Fatal or Panic is called on it. These objects can be
-// reused and passed around as much as you wish to avoid field duplication.
-type LogRecord struct {
+// Info, Warn, Error, Fatal or Panic is called on it.
+type Entry struct {
 	logger    *Logger
 	calldepth int
 
-	Level   Level     // The log level
-	Created time.Time // The time at which the log message was created (nanoseconds)
-	Prefix  string    // The prefix
-	Source  string    // The source
-	Line    int       // The source line
-	Message string    // The log message
-
-	Data map[string]interface{} // Contains all the fields set by the user.
+	*LogRecord
 }
 
-// NewLogRecord creates a new logger record with a logger
-func NewLogRecord(l *Logger) *LogRecord {
-	return &LogRecord{
+// NewEntry creates a new logging entry with a logger
+func NewEntry(l *Logger) *Entry {
+	return &Entry{
 		logger: l,
-		Prefix: l.prefix,
-		Data:   make(map[string]interface{}, 6),
+		LogRecord: &LogRecord{
+			Prefix: l.prefix,
+			Data:   make(map[string]interface{}, 6),
+		},
 	}
 }
 
 // With adds key-value pairs to the log record.
-func (r *LogRecord) With(args ...interface{}) *LogRecord {
+func (e *Entry) With(args ...interface{}) *Entry {
 	if len(args) == 0 {
-		return r
+		return e
 	}
 
 	for i := 0; i < len(args); i += 2 {
@@ -60,21 +54,21 @@ func (r *LogRecord) With(args ...interface{}) *LogRecord {
 		} else {
 			switch v := val.(type) {
 			case string:
-				r.Data[keyStr] = val.(string)
+				e.Data[keyStr] = val.(string)
 			case error:
-				r.Data[keyStr] = v.Error()
+				e.Data[keyStr] = v.Error()
 			case func() string:
-				r.Data[keyStr] = v()
+				e.Data[keyStr] = v()
 			default:
-				r.Data[keyStr] = val
+				e.Data[keyStr] = val
 			}
 		}
 	}
-	return r
+	return e
 }
 
-func (r *LogRecord) flush() {
-	l := r.logger
+func (e *Entry) flush() {
+	l := e.logger
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -82,57 +76,61 @@ func (r *LogRecord) flush() {
 	if l.caller {
 		l.mu.Unlock()
 		// Determine caller func - it's expensive.
-		_, source, line, _ = runtime.Caller(r.calldepth)
+		_, source, line, _ = runtime.Caller(e.calldepth)
 		l.mu.Lock()
 	}
 
 	// Make the log record
-	r.Created = time.Now()
-	r.Source = source
-	r.Line = line
+	e.Created = time.Now()
+	e.Source = source
+	e.Line = line
 
 	result := true
 	if l.preHook != nil {
-		result = l.preHook(l.out, r)
+		result = l.preHook(l.out, e.LogRecord)
 	}
 	var (
 		n   int
 		err error
 	)
-	if result && l.out != nil && r.Level >= l.level {
-		l.out.Write(l.layout.Format(r))
+	if result && l.out != nil && e.Level >= l.level {
+		l.out.Write(l.layout.Format(e.LogRecord))
 	}
 	if l.postHook != nil {
-		l.postHook(l.out, r, n, err)
+		l.postHook(l.out, e.LogRecord, n, err)
 	}
 
 	if l.filters != nil {
-		l.filters.Dispatch(r)
+		l.filters.Dispatch(e.LogRecord)
 	}
 }
 
 // Log sends a log message with level, and message.
-func (r *LogRecord) Log(calldepth int, level Level, args ...interface{}) {
-	if !r.logger.Skip(level) {
-		r.Level = level
+// Call depth:
+//  2 - Where calling the wrapper of entry.Log(...)
+//  1 - Where calling entry.Log(...)
+//  0 - Where internal calling entry.flush()
+func (e *Entry) Log(calldepth int, level Level, args ...interface{}) {
+	if !e.logger.Skip(level) {
+		e.Level = level
 		if len(args) > 0 {
-			r.Message = FormatMessage(args...)
+			e.Message = FormatMessage(args...)
 		}
-		r.calldepth = calldepth + 1
-		r.flush()
+		e.calldepth = calldepth + 1
+		e.flush()
 	}
 }
 
 // Finest logs a message at the finest log level.
 // See Debug for an explanation of the arguments.
-func (r *LogRecord) Finest(args ...interface{}) {
-	r.Log(2, FINEST, args...)
+func (e *Entry) Finest(args ...interface{}) {
+	e.Log(2, FINEST, args...)
 }
 
 // Fine logs a message at the fine log level.
 // See Debug for an explanation of the arguments.
-func (r *LogRecord) Fine(args ...interface{}) {
-	r.Log(2, FINE, args...)
+func (e *Entry) Fine(args ...interface{}) {
+	e.Log(2, FINE, args...)
 }
 
 // Debug is a utility method for debug log messages.
@@ -147,20 +145,20 @@ func (r *LogRecord) Fine(args ...interface{}) {
 // - arg0 is interface{}
 //   When given anything else, the log message will be each of the arguments
 //   formatted with %v and separated by spaces (ala Sprint).
-func (r *LogRecord) Debug(args ...interface{}) {
-	r.Log(2, DEBUG, args...)
+func (e *Entry) Debug(args ...interface{}) {
+	e.Log(2, DEBUG, args...)
 }
 
 // Trace logs a message at the trace log level.
 // See Debug for an explanation of the arguments.
-func (r *LogRecord) Trace(args ...interface{}) {
-	r.Log(2, TRACE, args...)
+func (e *Entry) Trace(args ...interface{}) {
+	e.Log(2, TRACE, args...)
 }
 
 // Info logs a message at the info log level.
 // See Debug for an explanation of the arguments.
-func (r *LogRecord) Info(args ...interface{}) {
-	r.Log(2, INFO, args...)
+func (e *Entry) Info(args ...interface{}) {
+	e.Log(2, INFO, args...)
 }
 
 // Warn logs a message at the warning log level and returns the formatted error.
@@ -168,26 +166,26 @@ func (r *LogRecord) Info(args ...interface{}) {
 // message is not actually logged, because all formats are processed and all
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
-func (r *LogRecord) Warn(args ...interface{}) error {
+func (e *Entry) Warn(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	r.Log(2, WARNING, msg)
+	e.Log(2, WARNING, msg)
 	return errors.New(msg)
 }
 
 // Error logs a message at the error log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
-func (r *LogRecord) Error(args ...interface{}) error {
+func (e *Entry) Error(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	r.Log(2, ERROR, msg)
+	e.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
 
 // Critical logs a message at the critical log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
-func (r *LogRecord) Critical(args ...interface{}) error {
+func (e *Entry) Critical(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	r.Log(2, CRITICAL, msg)
+	e.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }

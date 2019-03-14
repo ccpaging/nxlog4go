@@ -84,14 +84,15 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Version information
 const (
-	Version = "nxlog4go-v0.9.4"
+	Version = "nxlog4go-v0.9.5"
 	Major   = 0
 	Minor   = 9
-	Build   = 4
+	Build   = 5
 )
 
 /****** Constants ******/
@@ -168,6 +169,20 @@ var (
 	// ErrBadValue is the errors of bad value
 	ErrBadValue = errors.New("Invalid option value")
 )
+
+/****** LogRecord ******/
+
+// A LogRecord contains all of the pertinent information for each message
+type LogRecord struct {
+	Level   Level     // The log level
+	Created time.Time // The time at which the log message was created (nanoseconds)
+	Prefix  string    // The message prefix
+	Source  string    // The message source
+	Line    int       // The source line
+	Message string    // The log message
+
+	Data map[string]interface{} // Contains all the fields set by the user.
+}
 
 /****** Logger ******/
 

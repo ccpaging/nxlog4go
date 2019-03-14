@@ -28,21 +28,21 @@ func GetLogLog() *Logger {
 // LogLogDebug logs a message at the debug log level.
 func LogLogDebug(args ...interface{}) {
 	if loglog != nil {
-		loglog.intLog(DEBUG, args...)
+		loglog.Log(2, DEBUG, args...)
 	}
 }
 
 // LogLogTrace logs a message at the trace log level.
 func LogLogTrace(args ...interface{}) {
 	if loglog != nil {
-		loglog.intLog(TRACE, args...)
+		loglog.Log(2, TRACE, args...)
 	}
 }
 
 // LogLogInfo logs a message at the info log level.
 func LogLogInfo(args ...interface{}) {
 	if loglog != nil {
-		loglog.intLog(INFO, args...)
+		loglog.Log(2, INFO, args...)
 	}
 }
 
@@ -50,7 +50,7 @@ func LogLogInfo(args ...interface{}) {
 func LogLogWarn(args ...interface{}) error {
 	msg := FormatMessage(args...)
 	if loglog != nil {
-		loglog.intLog(WARNING, msg)
+		loglog.Log(2, WARNING, msg)
 	}
 	return errors.New(msg)
 }
@@ -59,7 +59,7 @@ func LogLogWarn(args ...interface{}) error {
 func LogLogError(args ...interface{}) error {
 	msg := FormatMessage(args...)
 	if loglog != nil {
-		loglog.intLog(ERROR, args...)
+		loglog.Log(2, ERROR, args...)
 	}
 	return errors.New(msg)
 }

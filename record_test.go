@@ -80,7 +80,7 @@ func TestRecordFormatText(t *testing.T) {
 	l := NewLogger(INFO).SetOutput(buf).Set("pattern", testRecordPatternText)
 	r := NewLogRecord(l)
 
-	r.With("err", errBoom).Log(ERROR, "kaboom")
+	r.With("err", errBoom).Log(1, ERROR, "kaboom")
 	want := "EROR record_test.go kaboom. err=\"boom time\""
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -95,7 +95,7 @@ func TestRecordFormatJson(t *testing.T) {
 	l := NewLogger(INFO).SetOutput(buf).Set("pattern", PatternJSON)
 	r := NewLogRecord(l)
 
-	r.With("error", errBoom).Log(ERROR, "kaboom")
+	r.With("error", errBoom).Log(1, ERROR, "kaboom")
 
 	b := buf.Bytes()
 	r1 := NewLogRecord(l)

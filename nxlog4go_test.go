@@ -21,6 +21,33 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
+func newLogRecord(level Level, prefix, src string, msg string) *LogRecord {
+	return &LogRecord{
+		Level:   level,
+		Source:  src,
+		Prefix:  prefix,
+		Created: now,
+		Message: msg,
+	}
+}
+
+func TestELog(t *testing.T) {
+	fmt.Printf("Testing %s\n", Version)
+	lr := newLogRecord(CRITICAL, "prefix", "source", "message")
+	if lr.Level != CRITICAL {
+		t.Errorf("Incorrect level: %d should be %d", lr.Level, CRITICAL)
+	}
+	if lr.Prefix != "prefix" {
+		t.Errorf("Incorrect prefix: %s should be %s", lr.Prefix, "prefix")
+	}
+	if lr.Source != "source" {
+		t.Errorf("Incorrect source: %s should be %s", lr.Source, "source")
+	}
+	if lr.Message != "message" {
+		t.Errorf("Incorrect message: %s should be %s", lr.Source, "message")
+	}
+}
+
 var logRecordWriteTests = []struct {
 	Test    string
 	Record  *LogRecord
@@ -104,7 +131,7 @@ func TestLogger(t *testing.T) {
 	buf.Reset()
 
 	//func (l *Logger) Log(level int, args ...interface{}) {}
-	l.Log(ERROR, "%s %d %#v", "Log Error:", 10, []string{})
+	l.Log(1, ERROR, "%s %d %#v", "Log Error:", 10, []string{})
 	want = "[EROR] (nxlog4go_test.go) Log Error: 10 []string{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -130,10 +157,10 @@ func TestLogOutput(t *testing.T) {
 	fbw := NewFileBufWriter(testLogFile).SetFlush(0)
 	ww := io.MultiWriter(buf, fbw)
 	l := &Logger{
-		out:     ww,
-		level:   FINEST,
-		caller:  true,
-		layout:  NewPatternLayout("[%L] %M\n"),
+		out:    ww,
+		level:  FINEST,
+		caller: true,
+		layout: NewPatternLayout("[%L] %M\n"),
 	}
 
 	defer os.Remove(testLogFile)
@@ -204,18 +231,18 @@ func TestCountMallocs(t *testing.T) {
 
 	// Console logger
 	sl := &Logger{
-		out:     new(bytes.Buffer),
-		level:   INFO,
-		caller:  true,
-		layout:  NewPatternLayout(testPattern),
+		out:    new(bytes.Buffer),
+		level:  INFO,
+		caller: true,
+		layout: NewPatternLayout(testPattern),
 	}
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
-		sl.intLog(WARNING, "This is a WARNING message")
+		sl.Log(1, WARNING, "This is a WARNING message")
 	}
 	mallocs += getMallocs()
-	fmt.Printf("mallocs per sl.intLog((WARNING, \"This is a log message\"): %d\n", mallocs/N)
+	fmt.Printf("mallocs per sl.Log(1, (WARNING, \"This is a log message\"): %d\n", mallocs/N)
 
 	// Console logger formatted
 	mallocs = 0 - getMallocs()
@@ -227,10 +254,10 @@ func TestCountMallocs(t *testing.T) {
 
 	// Console logger (not logged)
 	sl = &Logger{
-		out:     os.Stderr,
-		level:   INFO,
-		caller:  true,
-		layout:  NewPatternLayout(testPattern),
+		out:    os.Stderr,
+		level:  INFO,
+		caller: true,
+		layout: NewPatternLayout(testPattern),
 	}
 	mallocs = 0 - getMallocs()
 	for i := 0; i < N; i++ {
@@ -250,22 +277,22 @@ func TestCountMallocs(t *testing.T) {
 
 func BenchmarkConsoleWriter(b *testing.B) {
 	sl := &Logger{
-		out:     ioutil.Discard,
-		level:   INFO,
-		caller:  false,
-		layout:  NewPatternLayout(testPattern),
+		out:    ioutil.Discard,
+		level:  INFO,
+		caller: false,
+		layout: NewPatternLayout(testPattern),
 	}
 	for i := 0; i < b.N; i++ {
-		sl.intLog(WARNING, "This is a log message")
+		sl.Log(1, WARNING, "This is a log message")
 	}
 }
 
 func BenchmarkConsoleUtilWriter(b *testing.B) {
 	sl := &Logger{
-		out:     ioutil.Discard,
-		level:   INFO,
-		caller:  true,
-		layout:  NewPatternLayout(testPattern),
+		out:    ioutil.Discard,
+		level:  INFO,
+		caller: true,
+		layout: NewPatternLayout(testPattern),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -274,10 +301,10 @@ func BenchmarkConsoleUtilWriter(b *testing.B) {
 
 func BenchmarkConsoleUtilNotWriter(b *testing.B) {
 	sl := &Logger{
-		out:     ioutil.Discard,
-		level:   INFO,
-		caller:  true,
-		layout:  NewPatternLayout(testPattern),
+		out:    ioutil.Discard,
+		level:  INFO,
+		caller: true,
+		layout: NewPatternLayout(testPattern),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
@@ -292,15 +319,15 @@ func BenchmarkFileWriter(b *testing.B) {
 	}()
 	b.StopTimer()
 	sl := &Logger{
-		out:     w,
-		level:   INFO,
-		caller:  false,
-		layout:  NewPatternLayout(testPattern),
+		out:    w,
+		level:  INFO,
+		caller: false,
+		layout: NewPatternLayout(testPattern),
 	}
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.intLog(WARNING, "This is a log message")
+		sl.Log(1, WARNING, "This is a log message")
 	}
 	b.StopTimer()
 }
@@ -314,10 +341,10 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 	defer w.Close()
 	b.StopTimer()
 	sl := &Logger{
-		out:     w,
-		level:   INFO,
-		caller:  false,
-		layout:  NewPatternLayout(testPattern),
+		out:    w,
+		level:  INFO,
+		caller: false,
+		layout: NewPatternLayout(testPattern),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -334,14 +361,14 @@ func BenchmarkFileBufWriter(b *testing.B) {
 	}()
 	b.StopTimer()
 	sl := &Logger{
-		out:     w,
-		level:   INFO,
-		caller:  false,
-		layout:  NewPatternLayout(testPattern),
+		out:    w,
+		level:  INFO,
+		caller: false,
+		layout: NewPatternLayout(testPattern),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.intLog(WARNING, "This is a log message")
+		sl.Log(1, WARNING, "This is a log message")
 	}
 	b.StopTimer()
 }
@@ -354,10 +381,10 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 	}()
 	b.StopTimer()
 	sl := &Logger{
-		out:     w,
-		level:   INFO,
-		caller:  false,
-		layout:  NewPatternLayout(testPattern),
+		out:    w,
+		level:  INFO,
+		caller: false,
+		layout: NewPatternLayout(testPattern),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {

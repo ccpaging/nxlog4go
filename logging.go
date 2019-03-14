@@ -68,59 +68,55 @@ func (l *Logger) Skip(level Level) bool {
 
 /****** Wrapper log write functions for logger ******/
 
-func (l *Logger) newLogRecord() *LogRecord {
-	return NewLogRecord(l)
-}
-
 // With adds key-value pairs to the log record, note that it doesn't log until you call
 // Debug, Print, Info, Warn, Error, Fatal or Panic. It only creates a log record.
-func (l *Logger) With(args ...interface{}) *LogRecord {
-	return l.newLogRecord().With(args...)
-}
-
-// Send a log message with level, and message.
-func (l *Logger) intLog(level Level, args ...interface{}) {
-	if !l.Skip(level) {
-		r := NewLogRecord(l)
-		r.Level = level
-		r.Message = FormatMessage(args...)
-		r.write(2 + 1)
-	}
+func (l *Logger) With(args ...interface{}) *Entry {
+	return NewEntry(l).With(args...)
 }
 
 // Log sends a log message with level and message.
-func (l *Logger) Log(level Level, args ...interface{}) {
-	l.intLog(level, args...)
+// Call depth:
+//  2 - Where calling the wrapper of logger.Log(...)
+//  1 - Where calling logger.Log(...)
+//  0 - Where internal calling entry.flush()
+func (l *Logger) Log(calldepth int, level Level, args ...interface{}) {
+	if !l.Skip(level) {
+		e := NewEntry(l)
+		e.Level = level
+		e.Message = FormatMessage(args...)
+		e.calldepth = calldepth + 1
+		e.flush()
+	}
 }
 
 // Finest logs a message at the finest log level.
 // See Debug for an explanation of the arguments.
 func (l *Logger) Finest(args ...interface{}) {
-	l.intLog(FINEST, args...)
+	l.Log(2, FINEST, args...)
 }
 
 // Fine logs a message at the fine log level.
 // See Debug for an explanation of the arguments.
 func (l *Logger) Fine(args ...interface{}) {
-	l.intLog(FINE, args...)
+	l.Log(2, FINE, args...)
 }
 
 // Debug is a utility method for debug log messages.
 // See FormatMessage for an explanation of the arguments.
 func (l *Logger) Debug(args ...interface{}) {
-	l.intLog(DEBUG, args...)
+	l.Log(2, DEBUG, args...)
 }
 
 // Trace logs a message at the trace log level.
 // See FormatMessage for an explanation of the arguments.
 func (l *Logger) Trace(args ...interface{}) {
-	l.intLog(TRACE, args...)
+	l.Log(2, TRACE, args...)
 }
 
 // Info logs a message at the info log level.
 // See Debug for an explanation of the arguments.
 func (l *Logger) Info(args ...interface{}) {
-	l.intLog(INFO, args...)
+	l.Log(2, INFO, args...)
 }
 
 // Warn logs a message at the warning log level and returns the formatted error.
@@ -130,7 +126,7 @@ func (l *Logger) Info(args ...interface{}) {
 // See FormatMessage for further explanation of the arguments.
 func (l *Logger) Warn(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	l.intLog(WARNING, msg)
+	l.Log(2, WARNING, msg)
 	return errors.New(msg)
 }
 
@@ -139,7 +135,7 @@ func (l *Logger) Warn(args ...interface{}) error {
 // of the parameters.
 func (l *Logger) Error(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	l.intLog(ERROR, msg)
+	l.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
 
@@ -148,6 +144,6 @@ func (l *Logger) Error(args ...interface{}) error {
 // of the parameters.
 func (l *Logger) Critical(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	l.intLog(CRITICAL, msg)
+	l.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }
