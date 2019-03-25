@@ -3,7 +3,6 @@
 package nxlog4go
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -50,27 +49,7 @@ func New(out io.Writer, prefix string, flag int) *Logger {
 func (l *Logger) Flags() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	pattern := l.layout.Pattern()
-	flag := 0
-	if bytes.Contains(pattern, []byte("%D")) {
-		flag |= Ldate
-	}
-	if bytes.Contains(pattern, []byte("%U")) {
-		flag |= (Ltime | Lmicroseconds)
-	}
-	if bytes.Contains(pattern, []byte("%T")) {
-		flag |= Ltime
-	}
-	if bytes.Contains(pattern, []byte("%S")) {
-		flag |= Llongfile
-	}
-	if bytes.Contains(pattern, []byte("%s")) {
-		flag |= Lshortfile
-	}
-	if l.layout.UTC() {
-		flag |= LUTC
-	}
-	return flag
+	return l.layout.Flags()
 }
 
 // SetFlags sets the output flags for the logger.
@@ -78,35 +57,8 @@ func (l *Logger) SetFlags(flag int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if flag&LUTC != 0 {
-		l.layout.Set("utc", true)
-	} else {
-		l.layout.Set("utc", false)
-	}
-
-	pattern := "%P"
-	if flag&Ldate != 0 {
-		pattern += "%D "
-	}
-	if flag&(Ltime|Lmicroseconds) != 0 {
-		if flag&Lmicroseconds != 0 {
-			pattern += "%U "
-		} else {
-			pattern += "%T "
-		}
-	}
-	if flag&(Lshortfile|Llongfile) != 0 {
-		if flag&Lshortfile != 0 {
-			pattern += "%s:%N: "
-		} else {
-			pattern += "%S:%N: "
-		}
-		l.caller = true
-	} else {
-		l.caller = false
-	}
-	pattern += "%M"
-	l.layout.Set("pattern", pattern)
+	l.layout.SetFlags(flag)
+	l.caller = l.layout.Caller()
 }
 
 // Output writes the output for a logging event. The string s contains
