@@ -76,43 +76,6 @@ func TestPatternLayout(t *testing.T) {
 	}
 }
 
-func TestPatternLayoutAndCaller(t *testing.T) {
-	want := true
-	if got := NewPatternLayout(PatternDefault).Caller(); got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-	want = false
-	if got := NewPatternLayout(PatternShort).Caller(); got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-	want = false
-	if got := NewPatternLayout(PatternAbbrev).Caller(); got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-}
-
-func TestFlagAndCallerSetting(t *testing.T) {
-	var b bytes.Buffer
-	want := false
-	if got := New(&b, "Test:", LstdFlags).caller; got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-	want = true
-	if got := New(&b, "Test:", LstdFlags | Lshortfile).caller; got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-	want = true
-	if got := New(&b, "Test:", LstdFlags | Llongfile).caller; got != want {
-		t.Errorf("   got %v", got)
-		t.Errorf("  want %v", want)
-	}
-}
-
 func TestDataField(t *testing.T) {
 	buf := new(bytes.Buffer)
 

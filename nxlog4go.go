@@ -309,8 +309,7 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 			l.postHook = nil
 		}
 	default:
-		err = l.layout.SetOption(k, v)
-		l.caller = l.layout.Caller()
+		return l.layout.SetOption(k, v)
 	}
 	return
 }

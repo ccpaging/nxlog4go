@@ -22,14 +22,9 @@ type Layout interface {
 	// This will be called to log a LogRecord message.
 	Format(r *LogRecord) []byte
 
-	// Whether call runtime.Caller() to get source and line or not
-	Caller() bool
+	Pattern() []byte
 
-	// Compatible with go std lib
-	Flags() int
-
-	// Compatible with go std lib
-	SetFlags(flag int)
+	UTC() bool
 }
 
 var (
@@ -129,71 +124,14 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-// Caller returns Whether call runtime.Caller() to get source and line or not
-func (pl *PatternLayout) Caller() bool {
-	for i, piece := range pl.pattSlice {
-		if i != 0 && len(piece) > 0 {
-			if piece[0] == 'S' || piece[0] == 's' {
-				return true
-			}
-		}
-	}
-	return false
+// Pattern returns the output pattern bytes for the logger.
+func (pl *PatternLayout) Pattern() []byte {
+	return bytes.Join(pl.pattSlice, []byte{'%'})
 }
 
-// Flags returns the output flags of layout.
-func (pl *PatternLayout) Flags() int {
-	pattern := bytes.Join(pl.pattSlice, []byte{'%'})
-	flag := 0
-	if bytes.Contains(pattern, []byte("%D")) {
-		flag |= Ldate
-	}
-	if bytes.Contains(pattern, []byte("%U")) {
-		flag |= (Ltime | Lmicroseconds)
-	}
-	if bytes.Contains(pattern, []byte("%T")) {
-		flag |= Ltime
-	}
-	if bytes.Contains(pattern, []byte("%S")) {
-		flag |= Llongfile
-	}
-	if bytes.Contains(pattern, []byte("%s")) {
-		flag |= Lshortfile
-	}
-	if pl.utc {
-		flag |= LUTC
-	}
-	return flag
-}
-
-// SetFlags sets the output flags of layout.
-func (pl *PatternLayout) SetFlags(flag int) {
-	if flag&LUTC != 0 {
-		pl.utc = true
-	} else {
-		pl.utc = false
-	}
-
-	pattern := "%P"
-	if flag&Ldate != 0 {
-		pattern += "%D "
-	}
-	if flag&(Ltime|Lmicroseconds) != 0 {
-		if flag&Lmicroseconds != 0 {
-			pattern += "%U "
-		} else {
-			pattern += "%T "
-		}
-	}
-	if flag&(Lshortfile|Llongfile) != 0 {
-		if flag&Lshortfile != 0 {
-			pattern += "%s:%N: "
-		} else {
-			pattern += "%S:%N: "
-		}
-	}
-	pattern += "%M"
-	pl.Set("pattern", pattern)
+// UTC returns the output UTC time or not for the logger.
+func (pl *PatternLayout) UTC() bool {
+	return pl.utc
 }
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
