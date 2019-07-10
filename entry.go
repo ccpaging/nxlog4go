@@ -52,6 +52,7 @@ func (e *Entry) With(args ...interface{}) *Entry {
 			// Subsequent errors are likely, so allocate once up front.
 			LogLogWarn("Ignored key(not string). %d, key(%T) %v, value %v", i, key, key, val)
 		} else {
+			e.index = append(e.index, keyStr)
 			switch v := val.(type) {
 			case string:
 				e.Data[keyStr] = val.(string)

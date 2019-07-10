@@ -113,27 +113,25 @@ func TestFlagAndCallerSetting(t *testing.T) {
 	}
 }
 
-func TestDataText(t *testing.T) {
+func TestDataField(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	writeData(buf, map[string]interface{}{"int": 3})
-	want := " int=3"
-	if got := buf.String(); got != want {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", want)
+	data := map[string]interface{}{
+		"int":   3,
+		"short": "abcdefghijk",
+		"long":  "0123456789abcdefg",
 	}
-	buf.Reset()
-
-	writeData(buf, map[string]interface{}{"short": "abcdefghijk"})
-	want = " short=abcdefghijk"
-	if got := buf.String(); got != want {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", want)
+	index := []string{
+		"int",
+		"short",
+		"long",
 	}
-	buf.Reset()
 
-	writeData(buf, map[string]interface{}{"long": "0123456789abcdefg"})
-	want = " long=\"0123456789abcdefg\""
+	for _, k := range index {
+		writeKeyVal(buf, k, data[k])
+	}
+
+	want := " int=3 short=abcdefghijk long=\"0123456789abcdefg\""
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)

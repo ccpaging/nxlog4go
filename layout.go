@@ -34,13 +34,13 @@ type Layout interface {
 
 var (
 	// PatternDefault includes date, time, zone, level, source, lines, and message
-	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M\n"
+	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M%F\n"
 	// PatternConsole includes time, source, level and message
-	PatternConsole = "%T %L (%s:%N) %M\n"
+	PatternConsole = "%T %L (%s:%N) %M%F\n"
 	// PatternShort includes short time, short date, level and message
-	PatternShort = "[%h:%m %d] [%L] %M\n"
+	PatternShort = "[%h:%m %d] [%L] %M%F\n"
 	// PatternAbbrev includes level and message
-	PatternAbbrev = "[%L] %M\n"
+	PatternAbbrev = "[%L] %M%F\n"
 	// PatternJSON is json format include everyone of log record
 	PatternJSON = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%J}"
 )
@@ -293,23 +293,21 @@ func (pl *PatternLayout) writeTime(out *bytes.Buffer, piece0 byte, t *time.Time)
 	return true
 }
 
-func writeData(out *bytes.Buffer, data map[string]interface{}) {
-	for k, v := range data {
-		out.WriteString(" " + k + "=")
-		var b []byte
-		if _, ok := v.(string); ok {
-			b = []byte(v.(string))
-		} else {
-			b = []byte(fmt.Sprint(v))
-		}
-		if len(b) <= 16 && bytes.IndexAny(b, " =") < 0 {
-			// do nothing
-		} else {
-			b = append([]byte{'"'}, b...)
-			b = append(b, byte('"'))
-		}
-		out.Write(b)
+func writeKeyVal(out *bytes.Buffer, k string, v interface{}) {
+	out.WriteString(" " + k + "=")
+	var b []byte
+	if _, ok := v.(string); ok {
+		b = []byte(v.(string))
+	} else {
+		b = []byte(fmt.Sprint(v))
 	}
+	if len(b) <= 16 && bytes.IndexAny(b, " =") < 0 {
+		// do nothing
+	} else {
+		b = append([]byte{'"'}, b...)
+		b = append(b, byte('"'))
+	}
+	out.Write(b)
 }
 
 func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, r *LogRecord) bool {
@@ -341,7 +339,15 @@ func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, r *LogRecor
 		out.WriteString(r.Message)
 	case 'F':
 		if len(r.Data) > 0 {
-			writeData(out, r.Data)
+			if len(r.index) > 1 {
+				for _, k := range r.index {
+					writeKeyVal(out, k, r.Data[k])
+				}
+			} else {
+				for k, v := range r.Data {
+					writeKeyVal(out, k, v)
+				}
+			}
 		}
 	case 'J':
 		if len(r.Data) > 0 {

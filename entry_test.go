@@ -28,6 +28,9 @@ func TestEntryWithArgs(t *testing.T) {
 	if got := len(e.With("error", err, "k1", "v1", "k2", "v2").Data); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
+	} else if got = len(e.index); got != want {
+		t.Errorf("   got index %q", got)
+		t.Errorf("  want index %q", want)
 	}
 }
 
@@ -53,8 +56,8 @@ func TestEntryFormatText(t *testing.T) {
 	l := NewLogger(INFO).SetOutput(buf).Set("pattern", testEntryPatternText)
 	e := NewEntry(l)
 
-	e.With("err", errBoom).Log(1, ERROR, "kaboom")
-	want := "EROR entry_test.go kaboom. err=\"boom time\""
+	e.With("err", errBoom, "k2", "v2", "k1", "v1").Log(1, ERROR, "kaboom")
+	want := "EROR entry_test.go kaboom. err=\"boom time\" k2=v2 k1=v1"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)

@@ -181,7 +181,8 @@ type LogRecord struct {
 	Line    int       // The source line
 	Message string    // The log message
 
-	Data map[string]interface{} // Contains all the fields set by the user.
+	Data  map[string]interface{} // Contains all the fields set by the user.
+	index []string
 }
 
 /****** Logger ******/
