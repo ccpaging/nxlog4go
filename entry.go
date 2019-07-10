@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-/****** LogRecord ******/
+/****** Entry ******/
 
 // A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all

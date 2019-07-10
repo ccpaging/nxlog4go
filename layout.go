@@ -22,7 +22,7 @@ type Layout interface {
 	// This will be called to log a LogRecord message.
 	Format(r *LogRecord) []byte
 
-	// Whether call runtime.Caller() to get source and line or not 
+	// Whether call runtime.Caller() to get source and line or not
 	Caller() bool
 
 	// Compatible with go std lib
@@ -129,12 +129,12 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-// Caller returns Whether call runtime.Caller() to get source and line or not 
+// Caller returns Whether call runtime.Caller() to get source and line or not
 func (pl *PatternLayout) Caller() bool {
 	for i, piece := range pl.pattSlice {
 		if i != 0 && len(piece) > 0 {
 			if piece[0] == 'S' || piece[0] == 's' {
-				return true 
+				return true
 			}
 		}
 	}
@@ -302,7 +302,7 @@ func writeKeyVal(out *bytes.Buffer, k string, v interface{}) {
 		b = []byte(fmt.Sprint(v))
 	}
 	if len(b) <= 16 && bytes.IndexAny(b, " =") < 0 {
-		// do nothing
+		// no quote
 	} else {
 		b = append([]byte{'"'}, b...)
 		b = append(b, byte('"'))
