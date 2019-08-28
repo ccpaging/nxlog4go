@@ -105,7 +105,7 @@ func (l *Logger) SetFlags(flag int) {
 	} else {
 		l.caller = false
 	}
-	pattern += "%M"
+	pattern += "%M\n"
 	l.layout.Set("pattern", pattern)
 }
 
@@ -116,8 +116,8 @@ func (l *Logger) SetFlags(flag int) {
 // provided for generality, although at the moment on all pre-defined
 // paths it will be 2.
 func (l *Logger) Output(calldepth int, s string) error {
-	if len(s) == 0 || s[len(s)-1] != '\n' {
-		s += "\n"
+	if len(s) > 0 && s[len(s)-1] == '\n' {
+		s = s[0 : len(s)-1]
 	}
 
 	e := NewEntry(l)
