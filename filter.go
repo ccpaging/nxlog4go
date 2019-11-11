@@ -3,7 +3,7 @@
 package nxlog4go
 
 import (
-	"time"
+	"sync"
 )
 
 /****** Filter ******/
@@ -14,8 +14,9 @@ type Filter struct {
 	Level Level
 	Appender
 
+    runOnce sync.Once
+	running *chan struct{} // Notify exited looping
 	rec     chan *LogRecord // write queue
-	closing bool            // true if filter was closed at API level
 }
 
 // NewFilter creates a new filter.
@@ -25,31 +26,41 @@ func NewFilter(level Level, writer Appender) *Filter {
 		Appender: writer,
 
 		rec:     make(chan *LogRecord, LogBufferLength),
-		closing: false,
 	}
 
-	ready := make(chan struct{})
-	go f.run(ready)
-	<-ready
 	return f
 }
 
 // This is the filter's output method. This will block if the output
 // buffer is full.
 func (f *Filter) writeToChan(rec *LogRecord) {
-	if f.closing {
-		LogLogError("Channel closed. Can not write Message [%s]", rec.Message)
+    f.runOnce.Do(func() {
+		ready := make(chan struct{})
+		running := make(chan struct{})
+		f.running = &running
+		go f.run(ready, running)
+		<-ready
+	})
+	
+    if f.running == nil {
+		f.Write(rec)
 		return
 	}
+    
 	f.rec <- rec
 }
 
-func (f *Filter) run(ready chan struct{}) {
+func (f *Filter) run(ready chan struct{}, running chan struct{}) {
 	close(ready)
 	for {
 		select {
 		case rec, ok := <-f.rec:
 			if !ok {
+                // drain channel
+				for left := range f.rec {
+					f.Write(left)
+				}
+				close(running)
 				return
 			}
 			f.Write(rec)
@@ -59,32 +70,15 @@ func (f *Filter) run(ready chan struct{}) {
 
 // Close the filter
 func (f *Filter) Close() {
-	if f.closing {
+	if f.running == nil {
 		return
 	}
-	// sleep at most one second and let go routine running
-	// drain the log channel before closing
-	for i := 10; i > 0; i-- {
-		// Must call Sleep here, otherwise, may panic send on closing channel
-		time.Sleep(100 * time.Millisecond)
-		if len(f.rec) <= 0 {
-			break
-		}
-	}
-
-	// block write channel
-	f.closing = true
 
 	defer f.Appender.Close()
 
 	// Notify log appender closing
 	close(f.rec)
-
-	if len(f.rec) <= 0 {
-		return
-	}
-	// drain the log channel and write direct
-	for rec := range f.rec {
-		f.Write(rec)
-	}
+    // Waiting for running channel closed
+	<-(*f.running)
+	f.running = nil
 }

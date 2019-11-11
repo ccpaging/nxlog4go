@@ -19,43 +19,48 @@ type FileAppender struct {
 	messages chan []byte
 	// 3nd cache, destination for output with buffered and rotated
 	out *l4g.RotateFileWriter
-	// Rotate cycle in seconds
-	cycle, clock int64
 	// write loop
-	loopInitOnce sync.Once
-	loopRunning  bool
-	loopReset    chan time.Time
+	runOnce sync.Once
+	running *chan struct{} // Notify exited looping
+	// Rotate cycle in seconds
+	cycle int64
+	clock int64
+	reset chan time.Time
 }
 
 // Write log record to channel
 func (fa *FileAppender) Write(rec *l4g.LogRecord) {
-	fa.loopInitOnce.Do(func() {
-		fa.loopRunning = true
+	fa.runOnce.Do(func() {
 		ready := make(chan struct{})
-		go fa.writeLoop(ready)
+		running := make(chan struct{})
+		fa.running = &running
+		go fa.writeLoop(ready, running)
 		<-ready
 	})
+
+	if fa.running == nil {
+		fa.out.Write(fa.layout.Format(rec))
+	}
 
 	fa.messages <- fa.layout.Format(rec)
 }
 
 // Close drops write loop and closes opened file
 func (fa *FileAppender) Close() {
-	close(fa.messages)
-
-	// drain the log channel before closing
-	for i := 10; i > 0; i-- {
-		// Must call Sleep here, otherwise, may panic send on closed channel
-		time.Sleep(100 * time.Millisecond)
-		if len(fa.messages) <= 0 {
-			break
-		}
+	if fa.running == nil {
+		return
 	}
+
+	close(fa.messages)
+	// Waiting for running channel closed
+	<-(*fa.running)
+	fa.running = nil
+
+	close(fa.reset)
+
 	if fa.out != nil {
 		fa.out.Close()
 	}
-
-	close(fa.loopReset)
 }
 
 func init() {
@@ -91,13 +96,12 @@ func NewXML() l4g.Appender {
 // has rotation enabled if maxbackup > 0.
 func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	return &FileAppender{
-		layout:      l4g.NewPatternLayout(l4g.PatternDefault),
-		messages:    make(chan []byte, l4g.LogBufferLength),
-		out:         l4g.NewRotateFileWriter(fname, rotate),
-		cycle:       86400,
-		clock:       -1,
-		loopRunning: false,
-		loopReset:   make(chan time.Time, l4g.LogBufferLength),
+		layout:   l4g.NewPatternLayout(l4g.PatternDefault),
+		messages: make(chan []byte, l4g.LogBufferLength),
+		out:      l4g.NewRotateFileWriter(fname, rotate),
+		cycle:    86400,
+		clock:    -1,
+		reset:    make(chan time.Time, l4g.LogBufferLength),
 	}
 }
 
@@ -140,15 +144,9 @@ func (fa *FileAppender) rotate() {
 	fa.out.Rotate()
 }
 
-func (fa *FileAppender) writeLoop(ready chan struct{}) {
-	defer func() {
-		fa.loopRunning = false
-	}()
-
+func (fa *FileAppender) writeLoop(ready chan struct{}, running chan struct{}) {
 	fa.rotate()
-
 	t := newRotateTimer(fa.cycle, fa.clock)
-
 	close(ready)
 	for {
 		select {
@@ -160,6 +158,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 					fa.out.Write(bb)
 				}
 				fa.mu.Unlock()
+				close(running)
 				return
 			}
 
@@ -174,7 +173,7 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 			t = newRotateTimer(fa.cycle, fa.clock)
 			fa.rotate()
 
-		case <-fa.loopReset:
+		case <-fa.reset:
 			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", fa.cycle, fa.clock)
 			t = newRotateTimer(fa.cycle, fa.clock)
 		}
@@ -213,8 +212,8 @@ func (fa *FileAppender) setLoop(k string, v interface{}) error {
 		return l4g.ErrBadOption
 	}
 
-	if isReset && fa.loopRunning {
-		fa.loopReset <- time.Now()
+	if isReset && fa.running != nil {
+		fa.reset <- time.Now()
 	}
 	return nil
 }
