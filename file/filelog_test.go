@@ -167,37 +167,6 @@ func TestRotateFile(t *testing.T) {
 	}
 }
 
-func TestNextTime(t *testing.T) {
-	d0, d1 := nextTime(now, 600, -1).Sub(now), time.Duration(10*time.Minute)
-	if d0 != d1 {
-		t.Errorf("Incorrect nextTime duration (10 minutes): %v should be %v", d0, d1)
-	}
-	// Correct invalid value cycle = 300，clock = 0 to clock = -1
-	// for cycle < 86400
-	d0, d1 = nextTime(now, 300, 0).Sub(now), time.Duration(5*time.Minute)
-	if d0 != d1 {
-		t.Errorf("Incorrect nextTime duration (5 minutes): %v should be %v", d0, d1)
-	}
-
-	t1 := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-	d0, d1 = nextTime(now, 86400, 0).Sub(now), t1.Sub(now)
-	if d0 != d1 {
-		t.Errorf("Incorrect nextTime duration (next midnight): %v should be %v", d0, d1)
-	}
-
-	t1 = time.Date(now.Year(), now.Month(), now.Day()+1, 3, 0, 0, 0, now.Location())
-	d0, d1 = nextTime(now, 86400, 10800).Sub(now), t1.Sub(now)
-	if d0 != d1 {
-		t.Errorf("Incorrect nextTime duration (next 3:00am): %v should be %v", d0, d1)
-	}
-
-	t1 = time.Date(now.Year(), now.Month(), now.Day()+7, 0, 0, 0, 0, now.Location())
-	d0, d1 = nextTime(now, 86400*7, 0).Sub(now), t1.Sub(now)
-	if d0 != d1 {
-		t.Errorf("Incorrect nextTime duration (next weekly midnight): %v should be %v", d0, d1)
-	}
-}
-
 func BenchmarkFileLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()

@@ -20,7 +20,7 @@ type FileAppender struct {
 	// 3nd cache, destination for output with buffered and rotated
 	out *l4g.RotateFileWriter
 	// Rotate cycle in seconds
-	cycle, clock int
+	cycle, clock int64
 	// write loop
 	loopInitOnce sync.Once
 	loopRunning  bool
@@ -101,23 +101,43 @@ func NewFileAppender(fname string, rotate bool) l4g.Appender {
 	}
 }
 
-func nextTime(now time.Time, cycle, clock int) time.Time {
+func newRotateTimer(cycle, clock int64) *time.Timer {
 	if cycle <= 0 {
 		cycle = 86400
 	}
 	if cycle < 86400 { // Correct invalid clock
 		clock = -1
 	}
-	nrt := now
+
 	if clock < 0 {
 		// Now + cycle
-		return nrt.Add(time.Duration(cycle) * time.Second)
+		d := time.Duration(cycle) * time.Second
+		l4g.LogLogTrace("cycle = %d, clock = %d. Rotate after %v", cycle, clock, d)
+		return time.NewTimer(d)
 	}
-	// clock >= 0, next cycle midnight + clock
-	nextCycle := nrt.Add(time.Duration(cycle) * time.Second)
-	nrt = time.Date(nextCycle.Year(), nextCycle.Month(), nextCycle.Day(),
-		0, 0, 0, 0, nextCycle.Location())
-	return nrt.Add(time.Duration(clock) * time.Second)
+
+	// now + cycle
+	t := time.Now().Add(time.Duration(cycle) * time.Second)
+	// back to midnight
+	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	// midnight + clock
+	t = t.Add(time.Duration(clock) * time.Second)
+	d := t.Sub(time.Now())
+	l4g.LogLogTrace("cycle = %d, clock = %d. Rotate after %v", cycle, clock, d)
+	return time.NewTimer(d)
+}
+
+func (fa *FileAppender) rotate() {
+	if fa.cycle <= 0 {
+		return
+	}
+	if fa.out == nil {
+		return
+	}
+	if !fa.out.IsOverSize() {
+		return
+	}
+	fa.out.Rotate()
 }
 
 func (fa *FileAppender) writeLoop(ready chan struct{}) {
@@ -125,26 +145,14 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 		fa.loopRunning = false
 	}()
 
-	l4g.LogLogTrace("cycle = %d, clock = %d", fa.cycle, fa.clock)
-	if fa.cycle > 0 && fa.out.IsOverSize() {
-		fa.out.Rotate()
-	}
+	fa.rotate()
 
-	nrt := nextTime(time.Now(), fa.cycle, fa.clock)
-	rotTimer := time.NewTimer(nrt.Sub(time.Now()))
-	l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
+	t := newRotateTimer(fa.cycle, fa.clock)
 
 	close(ready)
 	for {
 		select {
 		case bb, ok := <-fa.messages:
-			fa.mu.Lock()
-			fa.out.Write(bb)
-			if len(fa.messages) <= 0 {
-				fa.out.Flush()
-			}
-			fa.mu.Unlock()
-
 			if !ok {
 				// drain the log channel and write directly
 				fa.mu.Lock()
@@ -154,56 +162,61 @@ func (fa *FileAppender) writeLoop(ready chan struct{}) {
 				fa.mu.Unlock()
 				return
 			}
-		case <-rotTimer.C:
-			nrt = nextTime(time.Now(), fa.cycle, fa.clock)
-			rotTimer.Reset(nrt.Sub(time.Now()))
-			l4g.LogLogDebug("Next time is %v", nrt.Sub(time.Now()))
-			if fa.cycle > 0 && fa.out.IsOverSize() {
-				fa.out.Rotate()
+
+			fa.mu.Lock()
+			fa.out.Write(bb)
+			if len(fa.messages) <= 0 {
+				fa.out.Flush()
 			}
+			fa.mu.Unlock()
+
+		case <-t.C:
+			t = newRotateTimer(fa.cycle, fa.clock)
+			fa.rotate()
+
 		case <-fa.loopReset:
 			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", fa.cycle, fa.clock)
-			nrt = nextTime(time.Now(), fa.cycle, fa.clock)
-			rotTimer.Reset(nrt.Sub(time.Now()))
-			l4g.LogLogTrace("Next time is %v", nrt.Sub(time.Now()))
+			t = newRotateTimer(fa.cycle, fa.clock)
 		}
 	}
 }
 
-func (fa *FileAppender) setLoop(k string, v interface{}) (err error) {
-	err = nil
+func (fa *FileAppender) setLoop(k string, v interface{}) error {
 	isReset := false
 
 	switch k {
 	case "cycle":
-		cycle := 0
-		if cycle, err = l4g.ToSeconds(v); err == nil {
+		if cycle, err := l4g.ToSeconds(v); err == nil {
 			fa.cycle = cycle
 			fa.out.Set("rotate", (fa.cycle <= 0))
 			isReset = true
+		} else {
+			return l4g.ErrBadOption
 		}
 	case "clock", "delay0":
-		clock := 0
-		if clock, err = l4g.ToSeconds(v); err == nil {
+		if clock, err := l4g.ToSeconds(v); err == nil {
 			fa.clock = clock
 			isReset = true
+		} else {
+			return l4g.ErrBadOption
 		}
 	case "daily":
-		daily := false
-		if daily, err = l4g.ToBool(v); err == nil && daily {
+		if daily, err := l4g.ToBool(v); err == nil && daily {
 			fa.cycle = 86400
 			fa.clock = 0
 			fa.out.Set("rotate", false)
 			isReset = true
+		} else {
+			return l4g.ErrBadOption
 		}
 	default:
-		err = l4g.ErrBadOption
+		return l4g.ErrBadOption
 	}
 
 	if isReset && fa.loopRunning {
 		fa.loopReset <- time.Now()
 	}
-	return
+	return nil
 }
 
 // Name returns file name.

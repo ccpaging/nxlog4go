@@ -84,17 +84,19 @@ func ToInt(i interface{}) (n int, err error) {
 // Parse a string with time.ParseDuration. Valid time units are:
 //  "ns", "us", "ms", "s", "m", "h"
 // Default: 0
-func ToSeconds(i interface{}) (n int, err error) {
+func ToSeconds(i interface{}) (n int64, err error) {
 	n = 0
 	err = nil
 
 	switch i.(type) {
 	case int:
-		n = i.(int)
+		n = int64(i.(int))
+	case int64:
+		n = i.(int64)
 	case string:
 		var dur time.Duration
 		dur, err = time.ParseDuration(i.(string))
-		n = int(dur / time.Second)
+		n = int64(dur) / int64(time.Second)
 	default:
 		err = ErrBadValue
 	}
