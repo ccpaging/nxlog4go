@@ -86,7 +86,7 @@ func ToInt(i interface{}) (n int, err error) {
 	return
 }
 
-// ToInt casts an interface to an int64 type.
+// ToInt64 casts an interface to an int64 type.
 // Parse a string with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
 // Default: 0
 func ToInt64(i interface{}) (n int64, err error) {
