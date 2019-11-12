@@ -98,10 +98,10 @@ func TestLogger(t *testing.T) {
 	}
 
 	//func (l *Logger) Warn(args ...interface{}) error {}
-	if err := l.Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
+	if err := l.Warn("%s %d %#v", "Warn:", 1, []int{}); err.Error() != "Warn: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
-	want := "[WARN] (nxlog4go_test.go) Warning: 1 []int{}"
+	want := "[WARN] (nxlog4go_test.go) Warn: 1 []int{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
@@ -239,10 +239,10 @@ func TestCountMallocs(t *testing.T) {
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
-		sl.Log(1, WARN, "This is a WARNING message")
+		sl.Log(1, WARN, "This is a WARN message")
 	}
 	mallocs += getMallocs()
-	fmt.Printf("mallocs per sl.Log(1, (WARNING, \"This is a log message\"): %d\n", mallocs/N)
+	fmt.Printf("mallocs per sl.Log(1, (WARN, \"This is a log message\"): %d\n", mallocs/N)
 
 	// Console logger formatted
 	mallocs = 0 - getMallocs()
@@ -250,7 +250,7 @@ func TestCountMallocs(t *testing.T) {
 		sl.Warn("%s is a log message with level %d", "This", WARN)
 	}
 	mallocs += getMallocs()
-	fmt.Printf("mallocs per sl.Warn(WARNING, \"%%s is a log message with level %%d\", \"This\", WARNING): %d\n", mallocs/N)
+	fmt.Printf("mallocs per sl.Warn(WARN, \"%%s is a log message with level %%d\", \"This\", WARN): %d\n", mallocs/N)
 
 	// Console logger (not logged)
 	sl = &Logger{
@@ -264,7 +264,7 @@ func TestCountMallocs(t *testing.T) {
 		sl.Debug("This is a DEBUG log message")
 	}
 	mallocs += getMallocs()
-	fmt.Printf("mallocs per unlogged sl.Debug(WARNING, \"This is a log message\"): %d\n", mallocs/N)
+	fmt.Printf("mallocs per unlogged sl.Debug(WARN, \"This is a log message\"): %d\n", mallocs/N)
 
 	// Console logger formatted (not logged)
 	mallocs = 0 - getMallocs()
@@ -272,7 +272,7 @@ func TestCountMallocs(t *testing.T) {
 		sl.Debug("%s is a log message with level %d", "This", DEBUG)
 	}
 	mallocs += getMallocs()
-	fmt.Printf("mallocs per unlogged sl.Debug(WARNING, \"%%s is a log message with level %%d\", \"This\", WARNING): %d\n", mallocs/N)
+	fmt.Printf("mallocs per unlogged sl.Debug(WARN, \"%%s is a log message with level %%d\", \"This\", WARN): %d\n", mallocs/N)
 }
 
 func BenchmarkConsoleWriter(b *testing.B) {

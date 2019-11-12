@@ -53,7 +53,7 @@ func server(ready chan struct{}) {
 
 func client() {
 	// Enable internal log
-	l4g.GetLogLog().Set("level", l4g.WARNING)
+	l4g.GetLogLog().Set("level", l4g.WARN)
 
 	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("pattern", "%P "+l4g.PatternDefault)
 

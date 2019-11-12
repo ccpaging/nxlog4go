@@ -20,47 +20,47 @@ func SetOutput(w io.Writer) *Logger {
 }
 
 // Finest is a wrapper for (*Logger).Finest
-func Finest(args ...interface{}) {
-	std.Log(2, FINEST, args...)
+func Finest(arg0 interface{}, args ...interface{}) {
+	std.Log(2, FINEST, arg0, args...)
 }
 
 // Fine is a wrapper for (*Logger).Fine
-func Fine(args ...interface{}) {
-	std.Log(2, FINE, args...)
+func Fine(arg0 interface{}, args ...interface{}) {
+	std.Log(2, FINE, arg0, args...)
 }
 
 // Debug is a wrapper for (*Logger).Debug
-func Debug(args ...interface{}) {
-	std.Log(2, DEBUG, args...)
+func Debug(arg0 interface{}, args ...interface{}) {
+	std.Log(2, DEBUG, arg0, args...)
 }
 
 // Trace is a wrapper for (*Logger).Trace
-func Trace(args ...interface{}) {
-	std.Log(2, TRACE, args...)
+func Trace(arg0 interface{}, args ...interface{}) {
+	std.Log(2, TRACE, arg0, args...)
 }
 
 // Info is a wrapper for (*Logger).Info
-func Info(args ...interface{}) {
-	std.Log(2, INFO, args...)
+func Info(arg0 interface{}, args ...interface{}) {
+	std.Log(2, INFO, arg0, args...)
 }
 
 // Warn is a wrapper for (*Logger).Warn
-func Warn(args ...interface{}) error {
-	msg := FormatMessage(args...)
+func Warn(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
 	std.Log(2, WARN, msg)
 	return errors.New(msg)
 }
 
 // Error is a wrapper for (*Logger).Error
-func Error(args ...interface{}) error {
-	msg := FormatMessage(args...)
+func Error(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
 	std.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
 
 // Critical is a wrapper for (*Logger).Critical
-func Critical(args ...interface{}) error {
-	msg := FormatMessage(args...)
+func Critical(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
 	std.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }

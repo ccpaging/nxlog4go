@@ -21,10 +21,10 @@ func TestLogLogger(t *testing.T) {
 	}
 
 	//func (l *Logger) Warn(args ...interface{}) error {}
-	if err := l.Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
+	if err := l.Warn("%s %d %#v", "Warn:", 1, []int{}); err.Error() != "Warn: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
-	want := "logg WARN Warning: 1 []int{}"
+	want := "logg WARN Warn: 1 []int{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)

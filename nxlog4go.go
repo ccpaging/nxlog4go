@@ -26,7 +26,7 @@
 //	 DEBUG
 //	 TRACE
 //	 INFO
-//	 WARNING
+//	 WARN
 //	 ERROR
 //	 CRITICAL
 // - appender
@@ -88,9 +88,9 @@ import (
 // Version information
 const (
 	Version = "nxlog4go-v1.0.1"
-	Major   = 0
-	Minor   = 9
-	Build   = 5
+	Major   = 1
+	Minor   = 0
+	Build   = 1
 )
 
 /****** Variables ******/
@@ -133,7 +133,7 @@ type Logger struct {
 
 	out    io.Writer // destination for output
 	level  int       // The log level
-	layout Layout    // format record for output
+	layout Layout    // format record to []byte for output
 
 	preHook  PreHook
 	postHook PostHook

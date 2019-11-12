@@ -26,7 +26,8 @@ func ArgsToMap(args []interface{}) (map[string]interface{}, []string, error) {
 		// Consume this value and the next, treating them as a key-value pair. If the
 		// key isn't a string, add this pair to the slice of invalid pairs.
 		key, val := args[i], args[i+1]
-		if s, ok := key.(string); !ok {
+		s, ok := key.(string)
+		if !ok {
 			// Subsequent errors are likely, so allocate once up front.
 			return d, o, fmt.Errorf("No.%d key should be string. %v", i, args)
 		}
@@ -189,8 +190,8 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 	e.Log(2, INFO, arg0, args...)
 }
 
-// Warn logs a message at the warning log level and returns the formatted error.
-// At the warning level and higher, there is no performance benefit if the
+// Warn logs a message at the warn log level and returns the formatted error.
+// At the warn level and higher, there is no performance benefit if the
 // message is not actually logged, because all formats are processed and all
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.

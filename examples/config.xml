@@ -2,7 +2,7 @@
   <filter enabled="true">
     <tag>stdout</tag>
     <type>stdout</type>
-    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARNING|ERROR) -->
+    <!-- level is (:?FINEST|FINE|DEBUG|TRACE|INFO|WARN|ERROR) -->
     <level>DEBUG</level>
     <!--
       %T - Time (15:04:05 MST)

@@ -26,29 +26,29 @@ func GetLogLog() *Logger {
 }
 
 // LogLogDebug logs a message at the debug log level.
-func LogLogDebug(args ...interface{}) {
+func LogLogDebug(arg0 interface{}, args ...interface{}) {
 	if loglog != nil {
-		loglog.Log(2, DEBUG, args...)
+		loglog.Log(2, DEBUG, arg0, args...)
 	}
 }
 
 // LogLogTrace logs a message at the trace log level.
-func LogLogTrace(args ...interface{}) {
+func LogLogTrace(arg0 interface{}, args ...interface{}) {
 	if loglog != nil {
-		loglog.Log(2, TRACE, args...)
+		loglog.Log(2, TRACE, arg0, args...)
 	}
 }
 
 // LogLogInfo logs a message at the info log level.
-func LogLogInfo(args ...interface{}) {
+func LogLogInfo(arg0 interface{}, args ...interface{}) {
 	if loglog != nil {
-		loglog.Log(2, INFO, args...)
+		loglog.Log(2, INFO, arg0, args...)
 	}
 }
 
 // LogLogWarn logs a message at the warn log level.
-func LogLogWarn(args ...interface{}) error {
-	msg := FormatMessage(args...)
+func LogLogWarn(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
 	if loglog != nil {
 		loglog.Log(2, WARN, msg)
 	}
@@ -56,10 +56,10 @@ func LogLogWarn(args ...interface{}) error {
 }
 
 // LogLogError logs a message at the error log level.
-func LogLogError(args ...interface{}) error {
-	msg := FormatMessage(args...)
+func LogLogError(arg0 interface{}, args ...interface{}) error {
+	msg := FormatMessage(arg0, args...)
 	if loglog != nil {
-		loglog.Log(2, ERROR, args...)
+		loglog.Log(2, ERROR, msg)
 	}
 	return errors.New(msg)
 }

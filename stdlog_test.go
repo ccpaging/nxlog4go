@@ -24,7 +24,7 @@ func TestGlobal(t *testing.T) {
 	if err := Warn("%s %d %#v", "Warning:", 1, []int{}); err.Error() != "Warning: 1 []int{}" {
 		t.Errorf("Warn returned invalid error: %s", err)
 	}
-	want := "[WARN] (global_test.go) Warning: 1 []int{}"
+	want := "[WARN] (stdlog_test.go) Warning: 1 []int{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
@@ -35,7 +35,7 @@ func TestGlobal(t *testing.T) {
 	if err := Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
 		t.Errorf("Error returned invalid error: %s", err)
 	}
-	want = "[EROR] (global_test.go) Error: 10 []string{}"
+	want = "[EROR] (stdlog_test.go) Error: 10 []string{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
@@ -46,7 +46,7 @@ func TestGlobal(t *testing.T) {
 	if err := Critical("%s %d %#v", "Critical:", 100, []int64{}); err.Error() != "Critical: 100 []int64{}" {
 		t.Errorf("Critical returned invalid error: %s", err)
 	}
-	want = "[CRIT] (global_test.go) Critical: 100 []int64{}"
+	want = "[CRIT] (stdlog_test.go) Critical: 100 []int64{}"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
