@@ -21,8 +21,8 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newLogRecord(level Level, prefix, src string, msg string) *LogRecord {
-	return &LogRecord{
+func newEntry(level Level, prefix, src string, msg string) *Entry {
+	return &Entry{
 		Level:   level,
 		Source:  src,
 		Prefix:  prefix,
@@ -33,7 +33,7 @@ func newLogRecord(level Level, prefix, src string, msg string) *LogRecord {
 
 func TestELog(t *testing.T) {
 	fmt.Printf("Testing %s\n", Version)
-	lr := newLogRecord(CRITICAL, "prefix", "source", "message")
+	lr := newEntry(CRITICAL, "prefix", "source", "message")
 	if lr.Level != CRITICAL {
 		t.Errorf("Incorrect level: %d should be %d", lr.Level, CRITICAL)
 	}
@@ -48,14 +48,14 @@ func TestELog(t *testing.T) {
 	}
 }
 
-var logRecordWriteTests = []struct {
+var entryWriteTests = []struct {
 	Test    string
-	Record  *LogRecord
+	Record  *Entry
 	Console string
 }{
 	{
 		Test: "Normal message",
-		Record: &LogRecord{
+		Record: &Entry{
 			Level:   CRITICAL,
 			Source:  "source",
 			Message: "message",
@@ -71,7 +71,7 @@ func TestConsoleWriter(t *testing.T) {
 	buf := make([]byte, 1024)
 
 	layout := NewPatternLayout(testPattern).Set("utc", true)
-	for _, test := range logRecordWriteTests {
+	for _, test := range entryWriteTests {
 		name := test.Test
 
 		// Pipe write and read must be in diff routines otherwise cause dead lock

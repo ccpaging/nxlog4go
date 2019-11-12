@@ -47,7 +47,7 @@ func NewSocketAppender(prot, host string) l4g.Appender {
 
 // Write a log recorder to a socket.
 // Connecting to the server on demand.
-func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
+func (sa *SocketAppender) Write(e *l4g.Entry) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
@@ -60,7 +60,7 @@ func (sa *SocketAppender) Write(rec *l4g.LogRecord) {
 		}
 	}
 
-	_, err = sa.sock.Write(sa.layout.Format(rec))
+	_, err = sa.sock.Write(sa.layout.Format(e))
 	if err != nil {
 		l4g.LogLogError(err)
 		sa.sock.Close()

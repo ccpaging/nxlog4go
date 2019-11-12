@@ -141,13 +141,13 @@ func TestXMLConfig(t *testing.T) {
 	}
 
 	// Make sure they're the right type
-	if fmt.Sprintf("%T", filters["color"].Write) != "func(*nxlog4go.LogRecord)" {
+	if fmt.Sprintf("%T", filters["color"].Write) != "func(*nxlog4go.Entry)" {
 		t.Fatalf("XMLConfig: Expected color log write, found %T", filters["color"].Write)
 	}
-	if fmt.Sprintf("%T", filters["file"].Write) != "func(*nxlog4go.LogRecord)" {
+	if fmt.Sprintf("%T", filters["file"].Write) != "func(*nxlog4go.Entry)" {
 		t.Fatalf("XMLConfig: Expected file log write, found %T", filters["file"].Write)
 	}
-	if fmt.Sprintf("%T", filters["xmllog"].Write) != "func(*nxlog4go.LogRecord)" {
+	if fmt.Sprintf("%T", filters["xmllog"].Write) != "func(*nxlog4go.Entry)" {
 		t.Fatalf("XMLConfig: Expected xmllog log write, found %T", filters["xmllog"].Write)
 	}
 	// Make sure levels are set

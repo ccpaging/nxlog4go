@@ -15,7 +15,7 @@ func TestFileWriter(t *testing.T) {
 	defer os.Remove(testLogFile)
 
 	layout := NewPatternLayout(testPattern)
-	w.Write(layout.Format(newLogRecord(CRITICAL, "prefix", "source", "message")))
+	w.Write(layout.Format(newEntry(CRITICAL, "prefix", "source", "message")))
 	w.Close()
 
 	runtime.Gosched()

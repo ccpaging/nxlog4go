@@ -19,8 +19,8 @@ type Layout interface {
 	// Checkable
 	SetOption(name string, v interface{}) error
 
-	// This will be called to log a LogRecord message.
-	Format(r *LogRecord) []byte
+	// This will be called to log a Entry message.
+	Format(e *Entry) []byte
 
 	Pattern() []byte
 
@@ -42,7 +42,7 @@ var (
 
 // PatternLayout formats log record with pattern
 type PatternLayout struct {
-	pattSlice [][]byte // Split the pattern into pieces by % signs
+	verbs     [][]byte // Split the pattern into pieces by % signs
 	utc       bool
 	longZone  []byte
 	shortZone []byte
@@ -56,7 +56,7 @@ func NewPatternLayout(pattern string) Layout {
 		pattern = PatternDefault
 	}
 	pl := &PatternLayout{}
-	// initial pattSlice, longZone, shortZone
+	// initial verbs, longZone, shortZone
 	return pl.Set("pattern", pattern).Set("utc", false)
 }
 
@@ -99,9 +99,9 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "pattern", "format":
 		if value, ok := v.(string); ok {
-			pl.pattSlice = bytes.Split([]byte(value), []byte{'%'})
+			pl.verbs = bytes.Split([]byte(value), []byte{'%'})
 		} else if value, ok := v.([]byte); ok {
-			pl.pattSlice = bytes.Split(value, []byte{'%'})
+			pl.verbs = bytes.Split(value, []byte{'%'})
 		} else {
 			err = ErrBadValue
 		}
@@ -126,7 +126,7 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 
 // Pattern returns the output pattern bytes for the logger.
 func (pl *PatternLayout) Pattern() []byte {
-	return bytes.Join(pl.pattSlice, []byte{'%'})
+	return bytes.Join(pl.verbs, []byte{'%'})
 }
 
 // UTC returns the output UTC time or not for the logger.
@@ -248,50 +248,50 @@ func writeKeyVal(out *bytes.Buffer, k string, v interface{}) {
 	out.Write(b)
 }
 
-func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, r *LogRecord) bool {
+func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, e *Entry) bool {
 	// assert len(pieces) > 0
 	var b []byte
 	switch piece0 {
 	case 'L':
-		out.WriteString(levelStrings[r.Level])
+		out.WriteString(levelStrings[e.Level])
 	case 'l':
-		itoa(&b, int(r.Level), -1)
+		itoa(&b, int(e.Level), -1)
 		out.Write(b)
 	case 'P':
-		out.WriteString(r.Prefix)
+		out.WriteString(e.Prefix)
 	case 'S':
-		out.WriteString(r.Source)
+		out.WriteString(e.Source)
 	case 's':
-		short := r.Source
-		for i := len(r.Source) - 1; i > 0; i-- {
-			if r.Source[i] == '/' {
-				short = r.Source[i+1:]
+		short := e.Source
+		for i := len(e.Source) - 1; i > 0; i-- {
+			if e.Source[i] == '/' {
+				short = e.Source[i+1:]
 				break
 			}
 		}
 		out.WriteString(short)
 	case 'N':
-		itoa(&b, r.Line, -1)
+		itoa(&b, e.Line, -1)
 		out.Write(b)
 	case 'M':
-		out.WriteString(r.Message)
+		out.WriteString(e.Message)
 	case 'F':
-		if len(r.Data) > 0 {
-			if len(r.index) > 1 {
-				for _, k := range r.index {
-					writeKeyVal(out, k, r.Data[k])
+		if len(e.Data) > 0 {
+			if len(e.index) > 1 {
+				for _, k := range e.index {
+					writeKeyVal(out, k, e.Data[k])
 				}
 			} else {
-				for k, v := range r.Data {
+				for k, v := range e.Data {
 					writeKeyVal(out, k, v)
 				}
 			}
 		}
 	case 'J':
-		if len(r.Data) > 0 {
+		if len(e.Data) > 0 {
 			out.WriteString(",\"Data\":")
 			encoder := json.NewEncoder(out)
-			encoder.Encode(r.Data)
+			encoder.Encode(e.Data)
 		}
 	default:
 		return false
@@ -301,15 +301,15 @@ func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, r *LogRecor
 
 // Format log record.
 // Return bytes.
-func (pl *PatternLayout) Format(r *LogRecord) []byte {
-	if r == nil {
+func (pl *PatternLayout) Format(e *Entry) []byte {
+	if e == nil {
 		return []byte("<nil>")
 	}
-	if len(pl.pattSlice) == 0 {
+	if len(pl.verbs) == 0 {
 		return nil
 	}
 
-	t := r.Created
+	t := e.Created
 	if pl.utc {
 		t = t.UTC()
 	}
@@ -319,7 +319,7 @@ func (pl *PatternLayout) Format(r *LogRecord) []byte {
 	// Iterate over the pieces, replacing known formats
 	// Split the string into pieces by % signs
 	// pieces := bytes.Split([]byte(format), []byte{'%'})
-	for i, piece := range pl.pattSlice {
+	for i, piece := range pl.verbs {
 		if i == 0 && len(piece) > 0 {
 			out.Write(piece)
 			continue
@@ -328,7 +328,7 @@ func (pl *PatternLayout) Format(r *LogRecord) []byte {
 			continue
 		}
 		if pl.writeTime(out, piece[0], &t) == false {
-			if pl.writeRecord(out, piece[0], r) == false {
+			if pl.writeRecord(out, piece[0], e) == false {
 				switch piece[0] {
 				case 't':
 					out.WriteByte('\t')

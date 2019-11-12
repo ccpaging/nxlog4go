@@ -15,7 +15,7 @@ type Appender interface {
 	SetOption(k string, v interface{}) error
 
 	// Write will be called to log a LogRecord message.
-	Write(rec *LogRecord)
+	Write(e *Entry)
 
 	// Close should clean up anything lingering about the Appender, as it is called before
 	// the Appender is removed.  Write should not be called after Close.

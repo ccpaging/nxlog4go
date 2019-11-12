@@ -21,8 +21,8 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newLogRecord(level l4g.Level, src string, msg string) *l4g.LogRecord {
-	return &l4g.LogRecord{
+func newEntry(level l4g.Level, src string, msg string) *l4g.Entry {
+	return &l4g.Entry{
 		Level:   level,
 		Source:  src,
 		Created: now,
@@ -37,7 +37,7 @@ func TestFileAppender(t *testing.T) {
 	}
 	defer os.Remove(testLogFile)
 
-	w.Write(newLogRecord(l4g.CRITICAL, "source", "message"))
+	w.Write(newEntry(l4g.CRITICAL, "source", "message"))
 	runtime.Gosched()
 	w.Close()
 

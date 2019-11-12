@@ -52,11 +52,11 @@ func (fs Filters) Skip(level Level) bool {
 }
 
 // Dispatch the logs
-func (fs Filters) Dispatch(rec *LogRecord) {
+func (fs Filters) Dispatch(e *Entry) {
 	for _, filt := range fs {
-		if rec.Level < filt.Level {
+		if e.Level < filt.Level {
 			continue
 		}
-		filt.writeToChan(rec)
+		filt.writeToChan(e)
 	}
 }

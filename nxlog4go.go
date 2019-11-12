@@ -68,7 +68,7 @@
 // Usage notes:
 // - The utility functions (Info, Debug, Warn, etc) derive their source from the
 //   calling function, and this incurs extra overhead. It can be disabled.
-// - New field prefix is adding to LogRecorder to identify different module/package
+// - Adding new Entry field "prefix" to identify different module/package
 //   in large project
 //
 // Changes from log4go
@@ -84,12 +84,11 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 )
 
 // Version information
 const (
-	Version = "nxlog4go-v0.9.5"
+	Version = "nxlog4go-v1.0.1"
 	Major   = 0
 	Minor   = 9
 	Build   = 5
@@ -170,29 +169,14 @@ var (
 	ErrBadValue = errors.New("Invalid option value")
 )
 
-/****** LogRecord ******/
-
-// A LogRecord contains all of the pertinent information for each message
-type LogRecord struct {
-	Level   Level     // The log level
-	Created time.Time // The time at which the log message was created (nanoseconds)
-	Prefix  string    // The message prefix
-	Source  string    // The message source
-	Line    int       // The source line
-	Message string    // The log message
-
-	Data  map[string]interface{} // Contains all the fields set by the user.
-	index []string
-}
-
 /****** Logger ******/
 
 // PreHook function runs before writing log record.
 // Return false then skip writing log record
-type PreHook func(out io.Writer, rec *LogRecord) bool
+type PreHook func(e *Entry) bool
 
 // PostHook function runs after writing log record even BeforeLog returns false.
-type PostHook func(out io.Writer, rec *LogRecord, n int, err error)
+type PostHook func(e *Entry, n int, err error)
 
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer, and a collection of Filters through which
@@ -203,6 +187,7 @@ type Logger struct {
 	mu sync.Mutex // ensures atomic writes; protects the following fields
 
 	prefix string // prefix to write at beginning of each line
+	flag   int    // properties compatible with go std log
 	caller bool   // runtime caller skip
 
 	out    io.Writer // destination for output

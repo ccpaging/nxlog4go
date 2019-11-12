@@ -13,7 +13,7 @@ import (
 
 var addr = "127.0.0.1:12124"
 
-func e(err error) {
+func checkError(err error) {
 	if err != nil {
 		fmt.Printf("Erroring out: %s\n", err)
 		os.Exit(1)
@@ -22,13 +22,13 @@ func e(err error) {
 
 func server(ready chan struct{}) {
 	laddr, err := net.ResolveUDPAddr("udp", addr)
-	e(err)
+	checkError(err)
 
 	conn, err := net.ListenUDP("udp", laddr)
-	e(err)
+	checkError(err)
 	defer conn.Close()
 
-	var rec l4g.LogRecord
+	var e l4g.Entry
 	fmt.Printf("Listening on %v...\n", laddr)
 
 	close(ready)
@@ -36,16 +36,16 @@ func server(ready chan struct{}) {
 		// read into a new buffer
 		buffer := make([]byte, 1024)
 		size, a, err := conn.ReadFrom(buffer)
-		e(err)
+		checkError(err)
 
 		// log to standard output
 		fmt.Println(a, string(buffer[:size]))
 		// fmt.Println(buffer[:size])
-		err = json.Unmarshal(buffer[:size], &rec)
+		err = json.Unmarshal(buffer[:size], &e)
 		if err != nil {
 			fmt.Println("Error:", err)
 		} else {
-			fmt.Println("Unmarshal:", rec)
+			fmt.Println("Unmarshal:", e)
 		}
 		fmt.Println("---")
 	}

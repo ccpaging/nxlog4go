@@ -2,10 +2,6 @@
 
 package nxlog4go
 
-import (
-	"io"
-)
-
 var (
 	// Normal colors
 	nBlack   = []byte{'\033', '[', '3', '0', 'm'}
@@ -29,9 +25,9 @@ var (
 	reset = []byte{'\033', '[', '0', 'm'}
 )
 
-func setColor(out io.Writer, rec *LogRecord) bool {
-	if out != nil {
-		switch rec.Level {
+func setColor(e *Entry) bool {
+	if out := e.logger.out; out != nil {
+		switch e.Level {
 		case CRITICAL:
 			out.Write(bRed)
 		case ERROR:
@@ -53,8 +49,8 @@ func setColor(out io.Writer, rec *LogRecord) bool {
 	return true
 }
 
-func resetColor(out io.Writer, rec *LogRecord, n int, err error) {
-	if out != nil {
+func resetColor(e *Entry, n int, err error) {
+	if out := e.logger.out; out != nil {
 		out.Write(reset)
 	}
 }

@@ -42,12 +42,12 @@ func TestFormatCYMD(t *testing.T) {
 
 var patternTests = []struct {
 	Test     string
-	Record   *LogRecord
+	Record   *Entry
 	Patterns map[string]string
 }{
 	{
 		Test: "Standard formats",
-		Record: &LogRecord{
+		Record: &Entry{
 			Level:   ERROR,
 			Source:  "source",
 			Message: "message",
@@ -103,7 +103,7 @@ func TestDataField(t *testing.T) {
 
 func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
-	r := &LogRecord{
+	e := &Entry{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -112,14 +112,14 @@ func BenchmarkPatternLayout(b *testing.B) {
 	}
 	layout := NewPatternLayout(testPattern)
 	for i := 0; i < b.N; i++ {
-		r.Created = r.Created.Add(1 * time.Second / updateEvery)
-		layout.Format(r)
+		e.Created = e.Created.Add(1 * time.Second / updateEvery)
+		layout.Format(e)
 	}
 }
 
 func BenchmarkJson(b *testing.B) {
 	const updateEvery = 1
-	r := &LogRecord{
+	e := &Entry{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -127,14 +127,14 @@ func BenchmarkJson(b *testing.B) {
 		Message: "message",
 	}
 	for i := 0; i < b.N; i++ {
-		r.Created = r.Created.Add(1 * time.Second / updateEvery)
-		json.Marshal(r)
+		e.Created = e.Created.Add(1 * time.Second / updateEvery)
+		json.Marshal(e)
 	}
 }
 
 func BenchmarkJsonLayout(b *testing.B) {
 	const updateEvery = 1
-	r := &LogRecord{
+	e := &Entry{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -143,7 +143,7 @@ func BenchmarkJsonLayout(b *testing.B) {
 	}
 	layout := NewPatternLayout(PatternJSON)
 	for i := 0; i < b.N; i++ {
-		r.Created = r.Created.Add(1 * time.Second / updateEvery)
-		layout.Format(r)
+		e.Created = e.Created.Add(1 * time.Second / updateEvery)
+		layout.Format(e)
 	}
 }

@@ -29,7 +29,7 @@ type FileAppender struct {
 }
 
 // Write log record to channel
-func (fa *FileAppender) Write(rec *l4g.LogRecord) {
+func (fa *FileAppender) Write(e *l4g.Entry) {
 	fa.runOnce.Do(func() {
 		ready := make(chan struct{})
 		running := make(chan struct{})
@@ -39,10 +39,10 @@ func (fa *FileAppender) Write(rec *l4g.LogRecord) {
 	})
 
 	if fa.running == nil {
-		fa.out.Write(fa.layout.Format(rec))
+		fa.out.Write(fa.layout.Format(e))
 	}
 
-	fa.messages <- fa.layout.Format(rec)
+	fa.messages <- fa.layout.Format(e)
 }
 
 // Close drops write loop and closes opened file

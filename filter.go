@@ -8,7 +8,7 @@ import (
 
 /****** Filter ******/
 
-// Filter represents the log level below which no log records are written to
+// Filter represents the log level below which no log entry are written to
 // the associated Appender.
 type Filter struct {
 	Level Level
@@ -16,7 +16,7 @@ type Filter struct {
 
     runOnce sync.Once
 	running *chan struct{} // Notify exited looping
-	rec     chan *LogRecord // write queue
+	entry   chan *Entry // write queue
 }
 
 // NewFilter creates a new filter.
@@ -25,7 +25,7 @@ func NewFilter(level Level, writer Appender) *Filter {
 		Level:    level,
 		Appender: writer,
 
-		rec:     make(chan *LogRecord, LogBufferLength),
+		entry:     make(chan *Entry, LogBufferLength),
 	}
 
 	return f
@@ -33,7 +33,7 @@ func NewFilter(level Level, writer Appender) *Filter {
 
 // This is the filter's output method. This will block if the output
 // buffer is full.
-func (f *Filter) writeToChan(rec *LogRecord) {
+func (f *Filter) writeToChan(e *Entry) {
     f.runOnce.Do(func() {
 		ready := make(chan struct{})
 		running := make(chan struct{})
@@ -43,27 +43,27 @@ func (f *Filter) writeToChan(rec *LogRecord) {
 	})
 	
     if f.running == nil {
-		f.Write(rec)
+		f.Write(e)
 		return
 	}
     
-	f.rec <- rec
+	f.entry <- e
 }
 
 func (f *Filter) run(ready chan struct{}, running chan struct{}) {
 	close(ready)
 	for {
 		select {
-		case rec, ok := <-f.rec:
+		case e, ok := <-f.entry:
 			if !ok {
                 // drain channel
-				for left := range f.rec {
+				for left := range f.entry {
 					f.Write(left)
 				}
 				close(running)
 				return
 			}
-			f.Write(rec)
+			f.Write(e)
 		}
 	}
 }
@@ -77,7 +77,7 @@ func (f *Filter) Close() {
 	defer f.Appender.Close()
 
 	// Notify log appender closing
-	close(f.rec)
+	close(f.entry)
     // Waiting for running channel closed
 	<-(*f.running)
 	f.running = nil

@@ -66,20 +66,20 @@ func (ca *ColorAppender) Close() {
 }
 
 // Write a log recorder to stderr.
-func (ca *ColorAppender) Write(rec *l4g.LogRecord) {
+func (ca *ColorAppender) Write(e *l4g.Entry) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
 	if ca.color {
-		level := rec.Level
+		level := e.Level
 		if int(level) >= len(ColorBytes) {
 			level = l4g.INFO
 		}
 		ca.out.Write(ColorBytes[level])
-		ca.out.Write(ca.layout.Format(rec))
+		ca.out.Write(ca.layout.Format(e))
 		ca.out.Write(ColorReset)
 	} else {
-		ca.out.Write(ca.layout.Format(rec))
+		ca.out.Write(ca.layout.Format(e))
 	}
 }
 

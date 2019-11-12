@@ -68,7 +68,7 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 
 	if len(rfw.header) > 0 && rfw.Size() == 0 {
 		layout := NewPatternLayout(rfw.header)
-		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
+		rfw.FileBufWriter.Write(layout.Format(&Entry{Created: time.Now()}))
 	}
 
 	return rfw.FileBufWriter.Write(bb)
@@ -125,7 +125,7 @@ func (rfw *RotateFileWriter) Rotate() {
 	// Write footer
 	if len(rfw.footer) > 0 && rfw.Size() > 0 {
 		layout := NewPatternLayout(rfw.footer)
-		rfw.FileBufWriter.Write(layout.Format(&LogRecord{Created: time.Now()}))
+		rfw.FileBufWriter.Write(layout.Format(&Entry{Created: time.Now()}))
 	}
 
 	LogLogTrace("Close %s", rfw.FileBufWriter.Name())

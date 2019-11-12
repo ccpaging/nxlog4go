@@ -3,7 +3,6 @@
 package nxlog4go
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -36,10 +35,12 @@ const (
 func New(out io.Writer, prefix string, flag int) *Logger {
 	l := &Logger{
 		out:     out,
-		level:   INFO,
-		caller:  true,
 		prefix:  prefix,
+		flag:    flag,
+
+		level:   INFO,
 		layout:  NewPatternLayout("%D %T %M\n"),
+		caller:  true,
 		filters: nil,
 	}
 	l.SetFlags(flag)
@@ -50,33 +51,15 @@ func New(out io.Writer, prefix string, flag int) *Logger {
 func (l *Logger) Flags() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	pattern := l.layout.Pattern()
-	flag := 0
-	if bytes.Contains(pattern, []byte("%D")) {
-		flag |= Ldate
-	}
-	if bytes.Contains(pattern, []byte("%U")) {
-		flag |= (Ltime | Lmicroseconds)
-	}
-	if bytes.Contains(pattern, []byte("%T")) {
-		flag |= Ltime
-	}
-	if bytes.Contains(pattern, []byte("%S")) {
-		flag |= Llongfile
-	}
-	if bytes.Contains(pattern, []byte("%s")) {
-		flag |= Lshortfile
-	}
-	if l.layout.UTC() {
-		flag |= LUTC
-	}
-	return flag
+	return l.flag
 }
 
 // SetFlags sets the output flags for the logger.
 func (l *Logger) SetFlags(flag int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	l.flag = flag
 
 	if flag&LUTC != 0 {
 		l.layout.Set("utc", true)
@@ -119,11 +102,13 @@ func (l *Logger) Output(calldepth int, s string) error {
 	if len(s) > 0 && s[len(s)-1] == '\n' {
 		s = s[0 : len(s)-1]
 	}
-
-	e := NewEntry(l)
-	e.Level = l.level
-	e.Message = s
-	e.calldepth = calldepth + 1
+	e := &Entry{
+		Prefix:    l.prefix,
+		Level:     l.level,
+		Message:   s,
+		logger:    l,
+		calldepth: calldepth + 1,
+	}
 	e.flush()
 	return nil
 }
