@@ -3,6 +3,7 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-	"bytes"
 )
 
 const testPattern = "[%D %T %z] [%L] (%s:%N) %M\n"

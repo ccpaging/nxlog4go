@@ -1,3 +1,5 @@
+// Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
+
 package nxlog4go
 
 import (
@@ -84,6 +86,9 @@ func ToInt(i interface{}) (n int, err error) {
 	return
 }
 
+// ToInt casts an interface to an int64 type.
+// Parse a string with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
+// Default: 0
 func ToInt64(i interface{}) (n int64, err error) {
 	n = 0
 	err = nil

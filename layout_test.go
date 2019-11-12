@@ -4,9 +4,9 @@ package nxlog4go
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 	"time"
-	"encoding/json"
 )
 
 func TestFormatHMS(t *testing.T) {

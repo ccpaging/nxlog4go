@@ -74,7 +74,7 @@ func (l Level) Unknown() string {
 
 // Color return the ANSI color bytes of level
 func (l Level) Color() []byte {
-    c, ok := levelColors[int(l)]
+	c, ok := levelColors[int(l)]
 	if ok {
 		return c.Bytes()
 	}

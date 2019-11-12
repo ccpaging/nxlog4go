@@ -34,9 +34,9 @@ const (
 // The flag argument defines the logging properties.
 func New(out io.Writer, prefix string, flag int) *Logger {
 	l := &Logger{
-		out:     out,
-		prefix:  prefix,
-		flag:    flag,
+		out:    out,
+		prefix: prefix,
+		flag:   flag,
 
 		level:   INFO,
 		layout:  NewPatternLayout("%D %T %M\n"),

@@ -48,7 +48,7 @@ var colorBytes = map[Color][]byte{
 	ResetColor:   []byte("\033[0m"),
 }
 
-// Add the coloring to the given bytes and return.
+// Wrap the coloring to the given bytes and return.
 func (c Color) Wrap(s []byte) []byte {
 	if b, ok := colorBytes[c]; ok {
 		b = append(b, s...)
@@ -58,6 +58,7 @@ func (c Color) Wrap(s []byte) []byte {
 	return s
 }
 
+// Bytes return ANSI color bytes
 func (c Color) Bytes() []byte {
 	if color, ok := colorBytes[c]; ok {
 		return color

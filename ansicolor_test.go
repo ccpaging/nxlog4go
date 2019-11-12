@@ -7,7 +7,7 @@ import (
 )
 
 func TestColorFormatting(t *testing.T) {
-	var colorBytes = [][]byte {
+	var colorBytes = [][]byte{
 		Red.Wrap([]byte("Red Color")), LightRed.Wrap([]byte("Light Red")),
 		Green.Wrap([]byte("Green Color")), LightGreen.Wrap([]byte("Light Green")),
 		Yellow.Wrap([]byte("Yellow Color")), LightYellow.Wrap([]byte("Light Yellow")),

@@ -5,11 +5,16 @@ package nxlog4go
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"time"
-	"fmt"
 )
 
+// ArgsToMap convert arguments (key1, value1, key2, value2 ...) to map
+// Return:
+//  dictionary:  map[string]interface{}
+//	index:  	 []string
+//	error:  	 interrupt converting when first error occurred and return
 func ArgsToMap(args []interface{}) (map[string]interface{}, []string, error) {
 	d := make(map[string]interface{}, 0)
 	o := make([]string, 0)
@@ -24,18 +29,18 @@ func ArgsToMap(args []interface{}) (map[string]interface{}, []string, error) {
 		if s, ok := key.(string); !ok {
 			// Subsequent errors are likely, so allocate once up front.
 			return d, o, fmt.Errorf("No.%d key should be string. %v", i, args)
-		} else {
-			o = append(o, s)
-			switch v := val.(type) {
-			case string:
-				d[s] = val.(string)
-			case error:
-				d[s] = v.Error()
-			case func() string:
-				d[s] = v()
-			default:
-				d[s] = val
-			}
+		}
+
+		o = append(o, s)
+		switch v := val.(type) {
+		case string:
+			d[s] = val.(string)
+		case error:
+			d[s] = v.Error()
+		case func() string:
+			d[s] = v()
+		default:
+			d[s] = val
 		}
 	}
 	return d, o, nil
@@ -86,7 +91,7 @@ func (e *Entry) With(args ...interface{}) *Entry {
 	for k, v := range data {
 		e.Data[k] = v
 	}
-	e.index = append(e.index, index ...)
+	e.index = append(e.index, index...)
 	return e
 }
 
@@ -191,7 +196,7 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 // See Debug for further explanation of the arguments.
 func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0)
-	e.Log(2, WARN, msg, args ...)
+	e.Log(2, WARN, msg, args...)
 	return errors.New(msg)
 }
 
