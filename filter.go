@@ -6,6 +6,14 @@ import (
 	"sync"
 )
 
+/****** Variables ******/
+
+var (
+	// LogBufferLength specifies how many log messages a particular log4go
+	// logger can buffer at a time before writing them.
+	LogBufferLength = 32
+)
+
 /****** Filter ******/
 
 // Filter represents the log level below which no log entry are written to

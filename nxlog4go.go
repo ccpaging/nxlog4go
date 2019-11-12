@@ -93,23 +93,6 @@ const (
 	Build   = 1
 )
 
-/****** Variables ******/
-
-var (
-	// LogBufferLength specifies how many log messages a particular log4go
-	// logger can buffer at a time before writing them.
-	LogBufferLength = 32
-)
-
-/****** Errors ******/
-
-var (
-	// ErrBadOption is the errors of bad option
-	ErrBadOption = errors.New("Invalid or unsupported option")
-	// ErrBadValue is the errors of bad value
-	ErrBadValue = errors.New("Invalid option value")
-)
-
 /****** Logger ******/
 
 // PreHook function runs before writing log record.

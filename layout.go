@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+/****** Errors ******/
+
+var (
+	// ErrBadOption is the errors of bad option
+	ErrBadOption = errors.New("Invalid or unsupported option")
+	// ErrBadValue is the errors of bad value
+	ErrBadValue = errors.New("Invalid option value")
+)
+
 // Layout is is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
@@ -21,10 +30,6 @@ type Layout interface {
 
 	// This will be called to log a Entry message.
 	Format(e *Entry) []byte
-
-	Pattern() []byte
-
-	UTC() bool
 }
 
 var (
@@ -122,16 +127,6 @@ func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	}
 
 	return
-}
-
-// Pattern returns the output pattern bytes for the logger.
-func (pl *PatternLayout) Pattern() []byte {
-	return bytes.Join(pl.verbs, []byte{'%'})
-}
-
-// UTC returns the output UTC time or not for the logger.
-func (pl *PatternLayout) UTC() bool {
-	return pl.utc
 }
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
