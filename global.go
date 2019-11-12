@@ -47,7 +47,7 @@ func Info(args ...interface{}) {
 // Warn is a wrapper for (*Logger).Warn
 func Warn(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	std.Log(2, WARNING, msg)
+	std.Log(2, WARN, msg)
 	return errors.New(msg)
 }
 

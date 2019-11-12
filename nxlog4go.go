@@ -82,7 +82,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"strings"
 	"sync"
 )
 
@@ -93,64 +92,6 @@ const (
 	Minor   = 9
 	Build   = 5
 )
-
-/****** Constants ******/
-
-// Level is the integer logging levels
-type Level int
-
-// logging levels used by the logger
-const (
-	FINEST Level = iota
-	FINE
-	DEBUG
-	TRACE
-	INFO
-	WARNING
-	ERROR
-	CRITICAL
-	SILENT = 100 // SILENT is used during configuration to turn in quiet mode
-)
-
-// Logging level strings
-var (
-	levelStrings = [...]string{"FNST", "FINE", "DEBG", "TRAC", "INFO", "WARN", "EROR", "CRIT"}
-)
-
-// String return the string of integer Level
-func (level Level) String() string {
-	if level < 0 || int(level) >= len(levelStrings) {
-		return "UNKNOWN"
-	}
-	return levelStrings[int(level)]
-}
-
-// GetLevel return the integer level of string
-func GetLevel(s string) (level Level) {
-	switch strings.ToUpper(s) {
-	case "FINEST", FINEST.String():
-		level = FINEST
-	case FINE.String():
-		level = FINE
-	case "DEBUG", DEBUG.String():
-		level = DEBUG
-	case "TRACE", TRACE.String():
-		level = TRACE
-	case "INFO", INFO.String():
-		level = INFO
-	case "WARNING", WARNING.String():
-		level = WARNING
-	case "ERROR", ERROR.String():
-		level = ERROR
-	case "CRITICAL", CRITICAL.String():
-		level = CRITICAL
-	case "DISABLE", "DISA", "SILENT", "QUIET":
-		level = SILENT
-	default:
-		level = INFO
-	}
-	return level
-}
 
 /****** Variables ******/
 
@@ -191,7 +132,7 @@ type Logger struct {
 	caller bool   // runtime caller skip
 
 	out    io.Writer // destination for output
-	level  Level     // The log level
+	level  int       // The log level
 	layout Layout    // format record for output
 
 	preHook  PreHook
@@ -202,7 +143,7 @@ type Logger struct {
 
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above level to standard output.
-func NewLogger(level Level) *Logger {
+func NewLogger(level int) *Logger {
 	return &Logger{
 		out:     os.Stderr,
 		level:   level,
@@ -275,11 +216,11 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 	case "level":
 		switch v.(type) {
 		case int:
-			l.level = Level(v.(int))
+			l.level = v.(int)
 		case Level:
-			l.level = v.(Level)
+			l.level = int(v.(Level))
 		case string:
-			l.level = GetLevel(v.(string))
+			l.level = Level(INFO).Int(v.(string))
 		default:
 			err = ErrBadValue
 		}

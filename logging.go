@@ -50,7 +50,7 @@ func FormatMessage(args ...interface{}) (s string) {
 }
 
 // Skip determines whether any logging will be skipped or not.
-func (l *Logger) Skip(level Level) bool {
+func (l *Logger) Skip(level int) bool {
 	if l.out != nil && level >= l.level {
 		return false
 	}
@@ -79,7 +79,7 @@ func (l *Logger) With(args ...interface{}) *Entry {
 //  2 - Where calling the wrapper of logger.Log(...)
 //  1 - Where calling logger.Log(...)
 //  0 - Where internal calling entry.flush()
-func (l *Logger) Log(calldepth int, level Level, args ...interface{}) {
+func (l *Logger) Log(calldepth int, level int, args ...interface{}) {
 	if !l.Skip(level) {
 		e := NewEntry(l)
 		e.Level = level
@@ -126,7 +126,7 @@ func (l *Logger) Info(args ...interface{}) {
 // See FormatMessage for further explanation of the arguments.
 func (l *Logger) Warn(args ...interface{}) error {
 	msg := FormatMessage(args...)
-	l.Log(2, WARNING, msg)
+	l.Log(2, WARN, msg)
 	return errors.New(msg)
 }
 

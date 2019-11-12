@@ -2,8 +2,6 @@
 
 package nxlog4go
 
-import ()
-
 /****** Filters map ******/
 
 // Filters represents a collection of Appenders through which log messages are
@@ -20,7 +18,7 @@ func NewFilters() Filters {
 // any initialization steps it needs.
 // This function should be called before install filters to logger by Logger.SetFilters(fs)
 // Returns the Filters for chaining.
-func (fs Filters) Add(tag string, level Level, appender Appender) Filters {
+func (fs Filters) Add(tag string, level int, appender Appender) Filters {
 	if filt, ok := fs[tag]; ok {
 		filt.Close()
 		delete(fs, tag)
@@ -42,7 +40,7 @@ func (fs Filters) Close() {
 }
 
 // Skip checks log level and return whether skip or not
-func (fs Filters) Skip(level Level) bool {
+func (fs Filters) Skip(level int) bool {
 	for _, filt := range fs {
 		if level >= filt.Level {
 			return false

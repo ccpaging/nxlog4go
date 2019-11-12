@@ -21,7 +21,7 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newEntry(level Level, prefix, src string, msg string) *Entry {
+func newEntry(level int, prefix, src string, msg string) *Entry {
 	return &Entry{
 		Level:   level,
 		Source:  src,
@@ -88,12 +88,12 @@ func TestConsoleWriter(t *testing.T) {
 func TestLogger(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := NewLogger(WARNING).SetOutput(buf).Set("pattern", "[%L] (%s) %M")
+	l := NewLogger(WARN).SetOutput(buf).Set("pattern", "[%L] (%s) %M")
 
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}
-	if l.level != WARNING {
+	if l.level != WARN {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 
@@ -174,7 +174,7 @@ func TestLogOutput(t *testing.T) {
 	}
 	buf.Reset()
 
-	l.Debug("This message is level %s", DEBUG)
+	l.Debug("This message is level %s", Level(DEBUG))
 	want = "[DEBG] This message is level DEBG\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -182,7 +182,7 @@ func TestLogOutput(t *testing.T) {
 	}
 	buf.Reset()
 
-	l.Fine(func() string { return fmt.Sprintf("This message is level %v", FINE) })
+	l.Fine(func() string { return fmt.Sprintf("This message is level %v", Level(FINE)) })
 	want = "[FINE] This message is level FINE\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -190,7 +190,7 @@ func TestLogOutput(t *testing.T) {
 	}
 	buf.Reset()
 
-	l.Finest("This message is level %v", FINEST)
+	l.Finest("This message is level %v", Level(FINEST))
 	want = "[FNST] This message is level FNST\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -198,7 +198,7 @@ func TestLogOutput(t *testing.T) {
 	}
 	buf.Reset()
 
-	l.Finest(FINEST, "is also this message's level")
+	l.Finest(Level(FINEST), "is also this message's level")
 	want = "[FNST] FNST is also this message's level\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
@@ -239,7 +239,7 @@ func TestCountMallocs(t *testing.T) {
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
-		sl.Log(1, WARNING, "This is a WARNING message")
+		sl.Log(1, WARN, "This is a WARNING message")
 	}
 	mallocs += getMallocs()
 	fmt.Printf("mallocs per sl.Log(1, (WARNING, \"This is a log message\"): %d\n", mallocs/N)
@@ -247,7 +247,7 @@ func TestCountMallocs(t *testing.T) {
 	// Console logger formatted
 	mallocs = 0 - getMallocs()
 	for i := 0; i < N; i++ {
-		sl.Warn("%s is a log message with level %d", "This", WARNING)
+		sl.Warn("%s is a log message with level %d", "This", WARN)
 	}
 	mallocs += getMallocs()
 	fmt.Printf("mallocs per sl.Warn(WARNING, \"%%s is a log message with level %%d\", \"This\", WARNING): %d\n", mallocs/N)
@@ -283,7 +283,7 @@ func BenchmarkConsoleWriter(b *testing.B) {
 		layout: NewPatternLayout(testPattern),
 	}
 	for i := 0; i < b.N; i++ {
-		sl.Log(1, WARNING, "This is a log message")
+		sl.Log(1, WARN, "This is a log message")
 	}
 }
 
@@ -327,7 +327,7 @@ func BenchmarkFileWriter(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.Log(1, WARNING, "This is a log message")
+		sl.Log(1, WARN, "This is a log message")
 	}
 	b.StopTimer()
 }
@@ -368,7 +368,7 @@ func BenchmarkFileBufWriter(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		sl.Log(1, WARNING, "This is a log message")
+		sl.Log(1, WARN, "This is a log message")
 	}
 	b.StopTimer()
 }
@@ -397,16 +397,16 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 // goos: windows
 // goarch: amd64
 // pkg: github.com/ccpaging/nxlog4go
-// BenchmarkItoa-4                         10000000               133 ns/op
-// BenchmarkPrintln-4                       2000000               984 ns/op
-// BenchmarkPrintlnNoFlags-4                2000000               769 ns/op
-// BenchmarkPatternLayout-4                 2000000               708 ns/op
-// BenchmarkJson-4                           500000              3094 ns/op
-// BenchmarkJsonLayout-4                    1000000              1156 ns/op
-// BenchmarkConsoleWriter-4                 1000000              1064 ns/op
-// BenchmarkConsoleUtilWriter-4              500000              3668 ns/op
-// BenchmarkConsoleUtilNotWriter-4         100000000               16.5 ns/op
-// BenchmarkFileWriter-4                     200000              6135 ns/op
-// BenchmarkFileUtilWriter-4                 200000              6900 ns/op
-// BenchmarkFileBufWriter-4                 1000000              1419 ns/op
-// BenchmarkFileBufUtilWriter-4             1000000              1647 ns/op
+// BenchmarkItoa-4                          7946262               151 ns/op
+// BenchmarkPrintln-4                       1454461               818 ns/op
+// BenchmarkPrintlnNoFlags-4                1895631               629 ns/op
+// BenchmarkPatternLayout-4                 1782949               692 ns/op
+// BenchmarkJson-4                           428550              2775 ns/op
+// BenchmarkJsonLayout-4                    1000000              1086 ns/op
+// BenchmarkConsoleWriter-4                 1284712               926 ns/op
+// BenchmarkConsoleUtilWriter-4              363562              3257 ns/op
+// BenchmarkConsoleUtilNotWriter-4         100000000               11.9 ns/op
+// BenchmarkFileWriter-4                     190443              6454 ns/op
+// BenchmarkFileUtilWriter-4                 159993              7001 ns/op
+// BenchmarkFileBufWriter-4                  999974              1254 ns/op
+// BenchmarkFileBufUtilWriter-4              799887              1469 ns/op

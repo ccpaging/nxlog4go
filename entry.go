@@ -48,7 +48,7 @@ func ArgsToMap(args []interface{}) (map[string]interface{}, []string, error) {
 // the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
 // Info, Warn, Error, Fatal or Panic is called on it.
 type Entry struct {
-	Level   Level       // The log level
+	Level   int       // The log level
 	Created time.Time // The time at which the log message was created (nanoseconds)
 	Prefix  string    // The message prefix
 	Source  string    // The message source
@@ -133,7 +133,7 @@ func (e *Entry) flush() {
 //  2 - Where calling the wrapper of entry.Log(...)
 //  1 - Where calling entry.Log(...)
 //  0 - Where internal calling entry.flush()
-func (e *Entry) Log(calldepth int, level Level, arg0 interface{}, args ...interface{}) {
+func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interface{}) {
 	if e.logger.Skip(level) {
 		return
 	}
@@ -191,7 +191,7 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 // See Debug for further explanation of the arguments.
 func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
 	msg := FormatMessage(arg0)
-	e.Log(2, WARNING, msg, args ...)
+	e.Log(2, WARN, msg, args ...)
 	return errors.New(msg)
 }
 

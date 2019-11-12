@@ -21,7 +21,7 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newEntry(level l4g.Level, src string, msg string) *l4g.Entry {
+func newEntry(level int, src string, msg string) *l4g.Entry {
 	return &l4g.Entry{
 		Level:   level,
 		Source:  src,
@@ -81,7 +81,7 @@ func TestFileLog(t *testing.T) {
 func TestFileLogRotate(t *testing.T) {
 	// Enable internal logger
 	l4g.GetLogLog().Set("level", l4g.TRACE)
-	defer l4g.GetLogLog().Set("level", l4g.SILENT)
+	defer l4g.GetLogLog().Set("level", l4g.Level(0).Max()+1)
 
 	// Get a new logger instance
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
@@ -125,7 +125,7 @@ func TestFileLogRotate(t *testing.T) {
 func TestRotateFile(t *testing.T) {
 	// Enable internal logger
 	l4g.GetLogLog().Set("level", l4g.TRACE)
-	defer l4g.GetLogLog().Set("level", l4g.SILENT)
+	defer l4g.GetLogLog().Set("level", l4g.Level(0).Max()+1)
 
 	// Get a new logger instance
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)

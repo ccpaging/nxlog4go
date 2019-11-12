@@ -29,8 +29,8 @@ type LoggerConfig struct {
 	Filters []FilterConfig `xml:"filter" json:"filters"`
 }
 
-func setLogger(l *Logger, level Level, props []NameValue) (errs []error) {
-	if level >= SILENT {
+func setLogger(l *Logger, level int, props []NameValue) (errs []error) {
+	if level > Level(0).Max() {
 		return append(errs, fmt.Errorf("Trace: Disable stdout for level [%d]", level))
 	}
 
@@ -44,8 +44,8 @@ func setLogger(l *Logger, level Level, props []NameValue) (errs []error) {
 	return
 }
 
-func loadAppender(level Level, typ string, props []NameValue) (app Appender, errs []error) {
-	if level >= SILENT {
+func loadAppender(level int, typ string, props []NameValue) (app Appender, errs []error) {
+	if level > Level(0).Max() {
 		return nil, append(errs, fmt.Errorf("Trace: Disable appender type [%s] for level [%d]", typ, level))
 	}
 
@@ -89,7 +89,7 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 			continue
 		}
 
-		level := GetLevel(fc.Level)
+		level := Level(INFO).Int(fc.Level)
 
 		switch fc.Type {
 		case "loglog":

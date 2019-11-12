@@ -1,48 +1,88 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
+// Copyright (c) 2016 Uber Technologies, Inc.
 
 package nxlog4go
 
-var (
-	// Normal colors
-	nBlack   = []byte{'\033', '[', '3', '0', 'm'}
-	nRed     = []byte{'\033', '[', '3', '1', 'm'}
-	nGreen   = []byte{'\033', '[', '3', '2', 'm'}
-	nYellow  = []byte{'\033', '[', '3', '3', 'm'}
-	nBlue    = []byte{'\033', '[', '3', '4', 'm'}
-	nMagenta = []byte{'\033', '[', '3', '5', 'm'}
-	nCyan    = []byte{'\033', '[', '3', '6', 'm'}
-	nWhite   = []byte{'\033', '[', '3', '7', 'm'}
-	// Bright colors
-	bBlack   = []byte{'\033', '[', '3', '0', ';', '1', 'm'}
-	bRed     = []byte{'\033', '[', '3', '1', ';', '1', 'm'}
-	bGreen   = []byte{'\033', '[', '3', '2', ';', '1', 'm'}
-	bYellow  = []byte{'\033', '[', '3', '3', ';', '1', 'm'}
-	bBlue    = []byte{'\033', '[', '3', '4', ';', '1', 'm'}
-	bMagenta = []byte{'\033', '[', '3', '5', ';', '1', 'm'}
-	bCyan    = []byte{'\033', '[', '3', '6', ';', '1', 'm'}
-	bWhite   = []byte{'\033', '[', '3', '7', ';', '1', 'm'}
+// Color represents a text color.
+type Color uint8
 
-	reset = []byte{'\033', '[', '0', 'm'}
+// Foreground colors.
+const (
+	Black Color = iota
+	Red
+	Green
+	Yellow
+	Blue
+	Magenta
+	Cyan
+	White
+	Gray
+	LightRed
+	LightGreen
+	LightYellow
+	LightBlue
+	LightMagenta
+	LightCyan
+	LightWhite
+	ResetColor
 )
+
+var colorBytes = map[Color][]byte{
+	Black:   []byte("\033[30m"),
+	Red:     []byte("\033[31m"),
+	Green:   []byte("\033[32m"),
+	Yellow:  []byte("\033[33m"),
+	Blue:    []byte("\033[34m"),
+	Magenta: []byte("\033[35m"),
+	Cyan:    []byte("\033[36m"),
+	White:   []byte("\033[37m"),
+
+	Gray:         []byte("\033[30;1m"),
+	LightRed:     []byte("\033[31;1m"),
+	LightGreen:   []byte("\033[32;1m"),
+	LightYellow:  []byte("\033[33;1m"),
+	LightBlue:    []byte("\033[34;1m"),
+	LightMagenta: []byte("\033[35;1m"),
+	LightCyan:    []byte("\033[36;1m"),
+	LightWhite:   []byte("\033[37;1m"),
+	ResetColor:   []byte("\033[0m"),
+}
+
+// Add the coloring to the given bytes and return.
+func (c Color) Wrap(s []byte) []byte {
+	if b, ok := colorBytes[c]; ok {
+		b = append(b, s...)
+		b = append(b, colorBytes[ResetColor]...)
+		return b
+	}
+	return s
+}
+
+func (c Color) Bytes() []byte {
+	if color, ok := colorBytes[c]; ok {
+		return color
+	}
+	return []byte{}
+}
 
 func setColor(e *Entry) bool {
 	if out := e.logger.out; out != nil {
 		switch e.Level {
 		case CRITICAL:
-			out.Write(bRed)
+			out.Write(LightRed.Bytes())
 		case ERROR:
-			out.Write(nRed)
-		case WARNING:
-			out.Write(bYellow)
+			out.Write(Red.Bytes())
+		case WARN:
+			out.Write(LightYellow.Bytes())
 		case INFO:
 		case TRACE:
-			out.Write(nMagenta)
+			out.Write(Magenta.Bytes())
 		case DEBUG:
-			out.Write(nGreen)
+			out.Write(Green.Bytes())
 		case FINE:
-			out.Write(nCyan)
+			out.Write(Cyan.Bytes())
 		case FINEST:
-			out.Write(nBlue)
+			out.Write(Blue.Bytes())
 		default:
 		}
 	}
@@ -51,6 +91,6 @@ func setColor(e *Entry) bool {
 
 func resetColor(e *Entry, n int, err error) {
 	if out := e.logger.out; out != nil {
-		out.Write(reset)
+		out.Write(ResetColor.Bytes())
 	}
 }

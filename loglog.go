@@ -50,7 +50,7 @@ func LogLogInfo(args ...interface{}) {
 func LogLogWarn(args ...interface{}) error {
 	msg := FormatMessage(args...)
 	if loglog != nil {
-		loglog.Log(2, WARNING, msg)
+		loglog.Log(2, WARN, msg)
 	}
 	return errors.New(msg)
 }

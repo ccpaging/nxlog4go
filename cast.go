@@ -43,23 +43,23 @@ func ToBool(i interface{}) (b bool, err error) {
 	return
 }
 
-func strToNumSuffix(str string, mult int) (int, error) {
-	num := 1
-	if len(str) > 1 {
-		switch str[len(str)-1] {
+func strToNumSuffix(s string, base int64) (int64, error) {
+	var multi int64 = 1
+	if len(s) > 1 {
+		switch s[len(s)-1] {
 		case 'G', 'g':
-			num *= mult
+			multi *= base
 			fallthrough
 		case 'M', 'm':
-			num *= mult
+			multi *= base
 			fallthrough
 		case 'K', 'k':
-			num *= mult
-			str = str[0 : len(str)-1]
+			multi *= base
+			s = s[0 : len(s)-1]
 		}
 	}
-	parsed, err := strconv.Atoi(str)
-	return parsed * num, err
+	n, err := strconv.ParseInt(s, 0, 0)
+	return n * multi, err
 }
 
 // ToInt casts an interface to an int type.
@@ -72,6 +72,28 @@ func ToInt(i interface{}) (n int, err error) {
 	switch i.(type) {
 	case int:
 		n = i.(int)
+	case int64:
+		n = int(i.(int64))
+	case string:
+		var i64 int64
+		i64, err = strToNumSuffix(i.(string), 1024)
+		n = int(i64)
+	default:
+		err = ErrBadValue
+	}
+	return
+}
+
+func ToInt64(i interface{}) (n int64, err error) {
+	n = 0
+	err = nil
+
+	switch i.(type) {
+	case int:
+		v := i.(int)
+		n = int64(v)
+	case int64:
+		n = i.(int64)
 	case string:
 		n, err = strToNumSuffix(i.(string), 1024)
 	default:

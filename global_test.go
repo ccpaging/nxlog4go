@@ -12,11 +12,11 @@ const testGlobalPattern = "[%L] (%s) %M"
 func TestGlobal(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := GetLogger().SetOutput(buf).Set("level", WARNING).Set("pattern", testGlobalPattern)
+	l := GetLogger().SetOutput(buf).Set("level", WARN).Set("pattern", testGlobalPattern)
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}
-	if l.level != WARNING {
+	if l.level != WARN {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 
