@@ -5,6 +5,7 @@ package nxlog4go
 import (
 	"bytes"
 	"encoding/json"
+    "errors"
 	"fmt"
 	"time"
 )

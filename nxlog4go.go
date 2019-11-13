@@ -79,7 +79,6 @@
 package nxlog4go
 
 import (
-	"errors"
 	"io"
 	"os"
 	"sync"
