@@ -30,6 +30,6 @@ before_script:
 # in a modern Go project.
 script:
   - go test ./
-  - go test ./color
+  - go test ./console
   - go test ./file
   - go test ./socket

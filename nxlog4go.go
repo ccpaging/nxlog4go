@@ -96,12 +96,12 @@ const (
 
 // PreHook function runs before writing log record.
 // Return false then skip writing log record
-// 
+//
 // DEPRECATED: Use appender instead.
 type PreHook func(e *Entry) bool
 
 // PostHook function runs after writing log record even BeforeLog returns false.
-// 
+//
 // DEPRECATED: Use appender instead.
 type PostHook func(e *Entry, n int, err error)
 

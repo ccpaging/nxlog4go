@@ -15,10 +15,11 @@ var (
 		<source>%S</source>
 		<message>%M</message>
 	</record>%R`
-	// XMLHead is layout pattern of log file trailer
+	// XMLFoot is layout pattern of log file trailer
 	XMLFoot = "</log>%R"
 )
 
+// XMLAppender represents the log appender that sends XML format records to a file
 type XMLAppender struct {
 	*Appender
 }

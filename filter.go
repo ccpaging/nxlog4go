@@ -18,7 +18,7 @@ var (
 
 // Filter represents the log level below which no log entry are written to
 // the associated Appender.
-// 
+//
 // DEPRECATED: Use appender owned level instead.
 type Filter struct {
 	entry    chan *Entry // write queue
