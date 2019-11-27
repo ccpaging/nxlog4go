@@ -7,7 +7,7 @@ import (
 	"time"
 
 	log "github.com/ccpaging/nxlog4go"
-	"github.com/ccpaging/nxlog4go/color"
+	_ "github.com/ccpaging/nxlog4go/console"
 )
 
 var isColor = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") || os.Getenv("ConEmuANSI") == "ON"
@@ -18,7 +18,10 @@ func main() {
 	// Get global logger of logs
 	// disable default term output of logger
 	logger := log.GetLogger().SetOutput(ioutil.Discard)
-	fs := log.NewFilters().Add("color", log.FINEST, colorlog.NewColorAppender(os.Stderr).Set("color", isColor))
+	a, _ := log.Open("console", "",
+		"color", true)
+
+	fs := log.NewFilters().Add("console", log.FINEST, a)
 	logger.SetFilters(fs)
 	log.Finest("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Fine("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))

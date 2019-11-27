@@ -5,61 +5,21 @@ package nxlog4go
 
 import (
 	"errors"
-	"fmt"
 	"runtime"
 	"time"
 )
-
-// ArgsToMap convert arguments (key1, value1, key2, value2 ...) to map
-// Return:
-//  dictionary:  map[string]interface{}
-//	index:  	 []string
-//	error:  	 interrupt converting when first error occurred and return
-func ArgsToMap(args []interface{}) (map[string]interface{}, []string, error) {
-	d := make(map[string]interface{}, 0)
-	o := make([]string, 0)
-	for i := 0; i < len(args); i += 2 {
-		// Make sure this element isn't a dangling key.
-		if i == len(args)-1 {
-			return d, o, fmt.Errorf("The arguments' count (%d) should be odd. %v", len(args), args)
-		}
-		// Consume this value and the next, treating them as a key-value pair. If the
-		// key isn't a string, add this pair to the slice of invalid pairs.
-		key, val := args[i], args[i+1]
-		s, ok := key.(string)
-		if !ok {
-			// Subsequent errors are likely, so allocate once up front.
-			return d, o, fmt.Errorf("No.%d key should be string. %v", i, args)
-		}
-
-		o = append(o, s)
-		switch v := val.(type) {
-		case string:
-			d[s] = val.(string)
-		case error:
-			d[s] = v.Error()
-		case func() string:
-			d[s] = v()
-		default:
-			d[s] = val
-		}
-	}
-	return d, o, nil
-}
-
-/****** Entry ******/
 
 // A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all
 // the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
 // Info, Warn, Error, Fatal or Panic is called on it.
 type Entry struct {
-	Level   int       // The log level
-	Created time.Time // The time at which the log message was created (nanoseconds)
 	Prefix  string    // The message prefix
 	Source  string    // The message source
 	Line    int       // The source line
+	Level   int       // The log level
 	Message string    // The log message
+	Created time.Time // The time at which the log message was created (nanoseconds)
 
 	Data  map[string]interface{} // Contains all the fields set by the user.
 	index []string
@@ -83,7 +43,7 @@ func (e *Entry) With(args ...interface{}) *Entry {
 	}
 
 	if e.Data == nil {
-		e.Data = make(map[string]interface{}, 0)
+		e.Data = make(map[string]interface{}, len(args)/2)
 	}
 	data, index, err := ArgsToMap(args)
 	if err != nil {
@@ -140,7 +100,7 @@ func (e *Entry) flush() {
 //  1 - Where calling entry.Log(...)
 //  0 - Where internal calling entry.flush()
 func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interface{}) {
-	if e.logger.Skip(level) {
+	if e.logger.skip(level) {
 		return
 	}
 

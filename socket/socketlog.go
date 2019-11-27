@@ -4,13 +4,14 @@ package socketlog
 
 import (
 	"net"
+	"net/url"
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-// SocketAppender is an Appender that sends output to an UDP/TCP server
-type SocketAppender struct {
+// Appender is an Appender that sends output to an UDP/TCP server
+type Appender struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
 	layout l4g.Layout // format record for output
 	sock   net.Conn
@@ -19,60 +20,74 @@ type SocketAppender struct {
 }
 
 // Close the socket if it opened.
-func (sa *SocketAppender) Close() {
-	if sa.sock != nil {
-		sa.sock.Close()
+func (a *Appender) Close() {
+	if a.sock != nil {
+		a.sock.Close()
 	}
 }
 
 func init() {
-	l4g.AddAppenderNewFunc("socket", New)
+	l4g.Register("socket", &Appender{})
 }
 
-// New creates a socket Appender with default udp protocol and endpoint.
-func New() l4g.Appender {
-	return NewSocketAppender("udp", "127.0.0.1:12124")
-}
-
-// NewSocketAppender creates a new appender with given
+// NewAppender creates a new appender with given
 // socket protocol and endpoint.
-func NewSocketAppender(prot, host string) l4g.Appender {
-	return &SocketAppender{
+func NewAppender(protocol, host string) *Appender {
+	return &Appender{
 		layout: l4g.NewPatternLayout(l4g.PatternJSON),
 		sock:   nil,
-		prot:   prot,
+		prot:   protocol,
 		host:   host,
 	}
 }
 
+// Open creates a socket Appender with DSN.
+func (*Appender) Open(s string, args ...interface{}) (l4g.Appender, error) {
+	protocol, address := "udp", "127.0.0.1:12124"
+	if s != "" {
+		if u, err := url.Parse(s); err == nil {
+			if u.Scheme != "" {
+				protocol = u.Scheme
+			}
+			if u.Host != "" {
+				address = u.Host
+			}
+		}
+	}
+	return NewAppender(protocol, address).Set(args...), nil
+}
+
 // Write a log recorder to a socket.
 // Connecting to the server on demand.
-func (sa *SocketAppender) Write(e *l4g.Entry) {
-	sa.mu.Lock()
-	defer sa.mu.Unlock()
+func (a *Appender) Write(e *l4g.Entry) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	var err error
-	if sa.sock == nil {
-		sa.sock, err = net.Dial(sa.prot, sa.host)
+	if a.sock == nil {
+		a.sock, err = net.Dial(a.prot, a.host)
 		if err != nil {
 			l4g.LogLogError(err)
 			return
 		}
 	}
 
-	_, err = sa.sock.Write(sa.layout.Format(e))
+	_, err = a.sock.Write(a.layout.Format(e))
 	if err != nil {
 		l4g.LogLogError(err)
-		sa.sock.Close()
-		sa.sock = nil
+		a.sock.Close()
+		a.sock = nil
 	}
 }
 
-// Set option.
+// Set options.
 // Return Appender interface.
-func (sa *SocketAppender) Set(k string, v interface{}) l4g.Appender {
-	sa.SetOption(k, v)
-	return sa
+func (a *Appender) Set(args ...interface{}) l4g.Appender {
+	ops, index, _ := l4g.ArgsToMap(args)
+	for _, k := range index {
+		a.SetOption(k, ops[k])
+	}
+	return a
 }
 
 // SetOption sets option with:
@@ -81,9 +96,9 @@ func (sa *SocketAppender) Set(k string, v interface{}) l4g.Appender {
 //	pattern	 - Layout format pattern
 //	utc 	 - Log recorder time zone
 // Return errors
-func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
-	sa.mu.Lock()
-	defer sa.mu.Unlock()
+func (a *Appender) SetOption(k string, v interface{}) (err error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	err = nil
 
@@ -91,21 +106,21 @@ func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
 	case "protocol":
 		protocol := ""
 		if protocol, err = l4g.ToString(v); err == nil && len(protocol) > 0 {
-			sa.Close()
-			sa.prot = protocol
+			a.Close()
+			a.prot = protocol
 		} else {
 			err = l4g.ErrBadValue
 		}
 	case "endpoint":
 		endpoint := ""
 		if endpoint, err = l4g.ToString(v); err == nil && len(endpoint) > 0 {
-			sa.Close()
-			sa.host = endpoint
+			a.Close()
+			a.host = endpoint
 		} else {
 			err = l4g.ErrBadValue
 		}
 	default:
-		return sa.layout.SetOption(k, v)
+		return a.layout.SetOption(k, v)
 	}
 	return
 }

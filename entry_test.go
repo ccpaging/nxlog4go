@@ -112,6 +112,7 @@ func TestEntryFormatJson(t *testing.T) {
 	}
 
 	if len(um.Data) < 1 {
+		t.Errorf("   got %s", b)
 		t.Errorf("Missing Data %v", um.Data)
 	} else if want, ok := e.Data["error"]; !ok {
 		t.Errorf("Missing want field %q", "error")

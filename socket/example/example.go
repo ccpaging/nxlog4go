@@ -8,7 +8,7 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
-	"github.com/ccpaging/nxlog4go/socket"
+	_ "github.com/ccpaging/nxlog4go/socket"
 )
 
 var addr = "127.0.0.1:12124"
@@ -36,18 +36,19 @@ func server(ready chan struct{}) {
 		// read into a new buffer
 		buffer := make([]byte, 1024)
 		size, a, err := conn.ReadFrom(buffer)
-		checkError(err)
-
-		// log to standard output
-		fmt.Println(a, string(buffer[:size]))
-		// fmt.Println(buffer[:size])
-		err = json.Unmarshal(buffer[:size], &e)
-		if err != nil {
-			fmt.Println("Error:", err)
-		} else {
-			fmt.Println("Unmarshal:", e)
+		if size > 0 {
+			// log to standard output
+			fmt.Println(a, string(buffer[:size]))
+			// fmt.Println(buffer[:size])
+			err = json.Unmarshal(buffer[:size], &e)
+			if err != nil {
+				fmt.Println("Error:", err)
+			} else {
+				fmt.Println("Unmarshal:", e)
+			}
+			fmt.Println("---")
 		}
-		fmt.Println("---")
+		checkError(err)
 	}
 }
 
@@ -57,7 +58,10 @@ func client() {
 
 	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("pattern", "%P "+l4g.PatternDefault)
 
-	fs := l4g.NewFilters().Add("network", l4g.FINEST, socketlog.NewSocketAppender("udp", addr))
+	sa, err := l4g.Open("socket", "udp://"+addr, "level", l4g.FINEST)
+	checkError(err)
+
+	fs := l4g.NewFilters().Add("network", l4g.FINEST, sa)
 	defer func() {
 		if fs := log.Filters(); fs != nil {
 			log.SetFilters(nil).SetOutput(os.Stderr)
@@ -71,10 +75,9 @@ func client() {
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
 	for i := 0; i < 5; i++ {
-		time.Sleep(3 * time.Second)
 		log.Debug("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
+		time.Sleep(1 * time.Second)
 	}
-	log.Shutdown()
 }
 
 func main() {

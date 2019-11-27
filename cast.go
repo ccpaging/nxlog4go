@@ -25,7 +25,11 @@ func ToString(i interface{}) (s string, err error) {
 }
 
 // ToBool casts an interface to a bool type.
+// It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
+// Any other value returns an error.
 // Default: false
+//
+// See also: http://golang.org/pkg/strconv/#ParseBool
 func ToBool(i interface{}) (b bool, err error) {
 	b = false
 	err = nil
@@ -67,6 +71,8 @@ func strToNumSuffix(s string, base int64) (int64, error) {
 // ToInt casts an interface to an int type.
 // Parse a string with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
 // Default: 0
+//
+// See also: http://golang.org/pkg/strconv/#ParseInt
 func ToInt(i interface{}) (n int, err error) {
 	n = 0
 	err = nil
@@ -89,6 +95,8 @@ func ToInt(i interface{}) (n int, err error) {
 // ToInt64 casts an interface to an int64 type.
 // Parse a string with K/M/G suffixes based on thousands (1000) or 2^10 (1024)
 // Default: 0
+//
+// See also: http://golang.org/pkg/strconv/#ParseInt
 func ToInt64(i interface{}) (n int64, err error) {
 	n = 0
 	err = nil

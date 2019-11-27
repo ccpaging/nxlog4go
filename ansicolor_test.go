@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestColorFormatting(t *testing.T) {
+func TestAnsiColor(t *testing.T) {
 	var colorBytes = [][]byte{
 		Red.Wrap([]byte("Red Color")), LightRed.Wrap([]byte("Light Red")),
 		Green.Wrap([]byte("Green Color")), LightGreen.Wrap([]byte("Light Green")),

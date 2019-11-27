@@ -15,7 +15,7 @@
       It ignores unknown format strings (and removes them)
       Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="color">true</property>
+    <property name="console">true</property>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
@@ -25,8 +25,8 @@
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
-    <tag>color</tag>
-    <type>color</type>
+    <tag>console</tag>
+    <type>console</type>
     <level>DEBUG</level>
     <property name="color">true</property>
   </filter>
@@ -42,7 +42,7 @@
     <property name="cycle">5m</property> <!-- The cycle time with with fraction and a unit suffix -->
   </filter>
   <filter enabled="true">
-    <tag>xmllog</tag>
+    <tag>xmlog</tag>
     <type>xml</type>
     <level>TRACE</level>
     <property name="filename">_trace.xml</property>

@@ -52,7 +52,7 @@
 // want to the Logger, and it will filter and formatter that based on your settings and
 // send it to the outputs. This way, you can put as much debug code in your program as
 // you want, and when you're done you can filter out the mundane messages so only
-// the important ones show up as the pattern you want.
+// the important ones show up as the format you want.
 //
 // Utility functions are provided to make life easier.
 //
@@ -86,19 +86,23 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v1.0.1"
+	Version = "nxlog4go-v1.0.2"
 	Major   = 1
 	Minor   = 0
-	Build   = 1
+	Build   = 2
 )
 
 /****** Logger ******/
 
 // PreHook function runs before writing log record.
 // Return false then skip writing log record
+// 
+// DEPRECATED: Use appender instead.
 type PreHook func(e *Entry) bool
 
 // PostHook function runs after writing log record even BeforeLog returns false.
+// 
+// DEPRECATED: Use appender instead.
 type PostHook func(e *Entry, n int, err error)
 
 // A Logger represents an active logging object that generates lines of
@@ -136,20 +140,6 @@ func NewLogger(level int) *Logger {
 	}
 }
 
-// Shutdown closes all log filters in preparation for exiting the program.
-// Calling this is not really imperative, unless you want to
-// guarantee that all log messages are written.  Close() removes
-// all filters (and thus all appenders) from the logger.
-func (l *Logger) Shutdown() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.filters != nil {
-		l.filters.Close()
-		l.filters = nil
-	}
-}
-
 // Prefix returns the output prefix for the logger.
 func (l *Logger) Prefix() string {
 	l.mu.Lock()
@@ -166,34 +156,39 @@ func (l *Logger) SetPrefix(prefix string) *Logger {
 }
 
 // Set option. chainable
-func (l *Logger) Set(k string, v interface{}) *Logger {
-	l.SetOption(k, v)
+func (l *Logger) Set(args ...interface{}) *Logger {
+	ops, idx, _ := ArgsToMap(args)
+	for _, k := range idx {
+		l.SetOption(k, ops[k])
+	}
 	return l
 }
 
 // SetOption sets options of logger.
 // Option names include:
-//	prefix  - The output prefix
-//	caller	- Enable or disable the runtime caller function
-//	level   - The output level
-//	pattern	- The pattern of Layout format
+//	prefix - The output prefix
+//	caller - Enable or disable the runtime caller function
+//	level  - The output level
+//
+// layout options...
+//
 // Return errors.
-func (l *Logger) SetOption(k string, v interface{}) (err error) {
+func (l *Logger) SetOption(k string, v interface{}) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	err = nil
-
 	switch k {
 	case "prefix":
-		prefix := ""
-		if prefix, err = ToString(v); err == nil {
+		if prefix, err := ToString(v); err == nil {
 			l.prefix = prefix
+		} else {
+			return err
 		}
 	case "caller":
-		caller := false
-		if caller, err = ToBool(v); err == nil {
+		if caller, err := ToBool(v); err == nil {
 			l.caller = caller
+		} else {
+			return err
 		}
 	case "level":
 		switch v.(type) {
@@ -204,22 +199,24 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 		case string:
 			l.level = Level(INFO).Int(v.(string))
 		default:
-			err = ErrBadValue
+			return ErrBadValue
 		}
 	case "color":
-		color := false
-		color, err = ToBool(v)
-		if color {
-			l.preHook = setColor
-			l.postHook = resetColor
+		if color, err := ToBool(v); err == nil {
+			if color {
+				l.preHook = setColor
+				l.postHook = resetColor
+			} else {
+				l.preHook = nil
+				l.postHook = nil
+			}
 		} else {
-			l.preHook = nil
-			l.postHook = nil
+			return err
 		}
 	default:
 		return l.layout.SetOption(k, v)
 	}
-	return
+	return nil
 }
 
 // SetOutput sets the output destination for the logger.

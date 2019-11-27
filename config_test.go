@@ -7,7 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	l4g "github.com/ccpaging/nxlog4go"
-	_ "github.com/ccpaging/nxlog4go/color"
+	_ "github.com/ccpaging/nxlog4go/console"
 	"github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
 	"io/ioutil"
@@ -32,7 +32,7 @@ var xmlBuf = `<logging>
       It ignores unknown format strings (and removes them)
       Recommended: \"[%D %T] [%L] (%S) %M%R\"
     -->
-    <property name="color">true</property>
+    <property name="console">true</property>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
@@ -42,8 +42,8 @@ var xmlBuf = `<logging>
     <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
   </filter>
   <filter enabled="true">
-    <tag>color</tag>
-    <type>color</type>
+    <tag>console</tag>
+    <type>console</type>
     <level>DEBUG</level>
     <property name="color">true</property>
   </filter>
@@ -59,7 +59,7 @@ var xmlBuf = `<logging>
     <property name="cycle">5m</property> <!-- The cycle time with with fraction and a unit suffix -->
   </filter>
   <filter enabled="true">
-    <tag>xmllog</tag>
+    <tag>xmlog</tag>
     <type>xml</type>
     <level>TRACE</level>
     <property name="filename">_trace.xml</property>
@@ -130,45 +130,45 @@ func TestXMLConfig(t *testing.T) {
 	}
 
 	// Make sure they're the right keys
-	if _, ok := filters["color"]; !ok {
-		t.Errorf("XMLConfig: Expected color appender")
+	if _, ok := filters["console"]; !ok {
+		t.Errorf("XMLConfig: Expected console appender")
 	}
 	if _, ok := filters["file"]; !ok {
 		t.Fatalf("XMLConfig: Expected file appender")
 	}
-	if _, ok := filters["xmllog"]; !ok {
+	if _, ok := filters["xmlog"]; !ok {
 		t.Fatalf("XMLConfig: Expected xmllog appender")
 	}
 
 	// Make sure they're the right type
-	if fmt.Sprintf("%T", filters["color"].Write) != "func(*nxlog4go.Entry)" {
-		t.Fatalf("XMLConfig: Expected color log write, found %T", filters["color"].Write)
+	if fmt.Sprintf("%T", filters["console"].Write) != "func(*nxlog4go.Entry)" {
+		t.Fatalf("XMLConfig: Expected console log write, found %T", filters["console"].Write)
 	}
 	if fmt.Sprintf("%T", filters["file"].Write) != "func(*nxlog4go.Entry)" {
 		t.Fatalf("XMLConfig: Expected file log write, found %T", filters["file"].Write)
 	}
-	if fmt.Sprintf("%T", filters["xmllog"].Write) != "func(*nxlog4go.Entry)" {
-		t.Fatalf("XMLConfig: Expected xmllog log write, found %T", filters["xmllog"].Write)
+	if fmt.Sprintf("%T", filters["xmlog"].Write) != "func(*nxlog4go.Entry)" {
+		t.Fatalf("XMLConfig: Expected xmlog log write, found %T", filters["xmllog"].Write)
 	}
 	// Make sure levels are set
-	if level := filters["color"].Level; level != l4g.DEBUG {
+	if level := filters["console"].Level; level != l4g.DEBUG {
 		t.Errorf("XMLConfig: Expected stdout to be set to level %d, found %d", l4g.DEBUG, level)
 	}
 	if level := filters["file"].Level; level != l4g.FINEST {
 		t.Errorf("XMLConfig: Expected file to be set to level %d, found %d", l4g.FINEST, level)
 	}
-	if level := filters["xmllog"].Level; level != l4g.TRACE {
-		t.Errorf("XMLConfig: Expected xmllog to be set to level %d, found %d", l4g.TRACE, level)
+	if level := filters["xmlog"].Level; level != l4g.TRACE {
+		t.Errorf("XMLConfig: Expected xmlog to be set to level %d, found %d", l4g.TRACE, level)
 	}
 
 	// Make sure the w is open and points to the right file
-	if fname := filters["file"].Appender.(*filelog.FileAppender).Name(); fname != "_test.log" {
+	if fname := filters["file"].Appender.(*filelog.Appender).Name(); fname != "_test.log" {
 		t.Errorf("XMLConfig: Expected file to have opened %s, found %s", "_test.log", fname)
 	}
 
 	// Make sure the XLW is open and points to the right file
-	if fname := filters["xmllog"].Appender.(*filelog.FileAppender).Name(); fname != "_trace.xml" {
-		t.Errorf("XMLConfig: Expected xmllog to have opened %s, found %s", "_trace.xml", fname)
+	if fname := filters["xmlog"].Appender.(*filelog.XMLAppender).Name(); fname != "_trace.xml" {
+		t.Errorf("XMLConfig: Expected xmlog to have opened %s, found %s", "_trace.xml", fname)
 	}
 
 	// Keep xmlFile so that an example with the documentation is available

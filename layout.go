@@ -5,25 +5,15 @@ package nxlog4go
 import (
 	"bytes"
 	"encoding/json"
-    "errors"
 	"fmt"
 	"time"
-)
-
-/****** Errors ******/
-
-var (
-	// ErrBadOption is the errors of bad option
-	ErrBadOption = errors.New("Invalid or unsupported option")
-	// ErrBadValue is the errors of bad value
-	ErrBadValue = errors.New("Invalid option value")
 )
 
 // Layout is is an interface for formatting log record
 type Layout interface {
 	// Set option about the Layout. The options should be set as default.
 	// Chainable.
-	Set(name string, v interface{}) Layout
+	Set(args ...interface{}) Layout
 
 	// Set option about the Layout. The options should be set as default.
 	// Checkable
@@ -66,9 +56,12 @@ func NewPatternLayout(pattern string) Layout {
 	return pl.Set("pattern", pattern).Set("utc", false)
 }
 
-// Set option of layout. chainable
-func (pl *PatternLayout) Set(k string, v interface{}) Layout {
-	pl.SetOption(k, v)
+// Set options of layout. chainable
+func (pl *PatternLayout) Set(args ...interface{}) Layout {
+	ops, index, _ := ArgsToMap(args)
+	for _, k := range index {
+		pl.SetOption(k, ops[k])
+	}
 	return pl
 }
 

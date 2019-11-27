@@ -38,9 +38,9 @@ func New(out io.Writer, prefix string, flag int) *Logger {
 		prefix: prefix,
 		flag:   flag,
 
+		caller:  true,
 		level:   INFO,
 		layout:  NewPatternLayout("%D %T %M\n"),
-		caller:  true,
 		filters: nil,
 	}
 	l.SetFlags(flag)

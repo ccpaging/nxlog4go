@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	l4g "github.com/ccpaging/nxlog4go"
-	_ "github.com/ccpaging/nxlog4go/color"
+	_ "github.com/ccpaging/nxlog4go/console"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
 	"io/ioutil"

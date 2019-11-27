@@ -49,14 +49,9 @@ func loadAppender(level int, typ string, props []NameValue) (app Appender, errs 
 		return nil, append(errs, fmt.Errorf("Trace: Disable appender type [%s] for level [%d]", typ, level))
 	}
 
-	newFunc := getAppenderNewFunc(typ)
-	if newFunc == nil {
-		return nil, append(errs, fmt.Errorf("Warn: Unknown appender type [%s]", typ))
-	}
-
-	app = newFunc()
+	app, err := Open(typ, "")
 	if app == nil {
-		return nil, append(errs, fmt.Errorf("Warn: Can not create appender type [%s]", typ))
+		return nil, append(errs, err)
 	}
 
 	for _, prop := range props {

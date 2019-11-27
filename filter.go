@@ -18,22 +18,24 @@ var (
 
 // Filter represents the log level below which no log entry are written to
 // the associated Appender.
+// 
+// DEPRECATED: Use appender owned level instead.
 type Filter struct {
+	entry    chan *Entry // write queue
+	runOnce  sync.Once
+	waitExit *sync.WaitGroup
+
 	Level int
 	Appender
-
-	runOnce sync.Once
-	running *chan struct{} // Notify exited looping
-	entry   chan *Entry    // write queue
 }
 
 // NewFilter creates a new filter.
 func NewFilter(level int, writer Appender) *Filter {
 	f := &Filter{
+		entry: make(chan *Entry, LogBufferLength),
+
 		Level:    level,
 		Appender: writer,
-
-		entry: make(chan *Entry, LogBufferLength),
 	}
 
 	return f
@@ -43,14 +45,13 @@ func NewFilter(level int, writer Appender) *Filter {
 // buffer is full.
 func (f *Filter) writeToChan(e *Entry) {
 	f.runOnce.Do(func() {
-		ready := make(chan struct{})
-		running := make(chan struct{})
-		f.running = &running
-		go f.run(ready, running)
-		<-ready
+		f.waitExit = &sync.WaitGroup{}
+		f.waitExit.Add(1)
+		go f.run(f.waitExit)
 	})
 
-	if f.running == nil {
+	// Write after closed
+	if f.waitExit == nil {
 		f.Write(e)
 		return
 	}
@@ -58,8 +59,7 @@ func (f *Filter) writeToChan(e *Entry) {
 	f.entry <- e
 }
 
-func (f *Filter) run(ready chan struct{}, running chan struct{}) {
-	close(ready)
+func (f *Filter) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
 		case e, ok := <-f.entry:
@@ -68,7 +68,7 @@ func (f *Filter) run(ready chan struct{}, running chan struct{}) {
 				for left := range f.entry {
 					f.Write(left)
 				}
-				close(running)
+				waitExit.Done()
 				return
 			}
 			f.Write(e)
@@ -78,15 +78,19 @@ func (f *Filter) run(ready chan struct{}, running chan struct{}) {
 
 // Close the filter
 func (f *Filter) Close() {
-	if f.running == nil {
+	if f.waitExit == nil {
 		return
 	}
 
 	defer f.Appender.Close()
 
-	// Notify log appender closing
+	// notify closing. See run()
 	close(f.entry)
-	// Waiting for running channel closed
-	<-(*f.running)
-	f.running = nil
+	// waiting for running channel closed
+	f.waitExit.Wait()
+	f.waitExit = nil
+	// drain channel
+	for e := range f.entry {
+		f.Write(e)
+	}
 }

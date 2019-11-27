@@ -7,12 +7,10 @@ import (
 	"testing"
 )
 
-const testGlobalPattern = "[%L] (%s) %M"
-
 func TestGlobal(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := GetLogger().SetOutput(buf).Set("level", WARN).Set("pattern", testGlobalPattern)
+	l := GetLogger().SetOutput(buf).Set("level", WARN).Set("pattern", "[%L] (%s) %M")
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}

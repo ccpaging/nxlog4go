@@ -7,7 +7,7 @@
             "level": "DEBUG",
             "properties": [
                 {
-                    "name": "color",
+                    "name": "console",
                     "value": "true"
                 },
                 {
@@ -30,8 +30,8 @@
         },
         {
             "enabled": "true",
-            "tag": "color",
-            "type": "color",
+            "tag": "console",
+            "type": "console",
             "level": "DEBUG",
             "properties": [
                 {
@@ -74,7 +74,7 @@
         },
         {
             "enabled": "true",
-            "tag": "xmllog",
+            "tag": "xmlog",
             "type": "xml",
             "level": "TRACE",
             "properties": [

@@ -31,7 +31,7 @@ func newEntry(level int, src string, msg string) *l4g.Entry {
 }
 
 func TestFileAppender(t *testing.T) {
-	w := NewFileAppender(testLogFile, false)
+	w, _ := NewAppender(testLogFile, "rotate", false)
 	if w == nil {
 		t.Fatalf("Invalid return: w should not be nil")
 	}
@@ -59,7 +59,8 @@ func TestFileLog(t *testing.T) {
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
 
 	// Create a default logger that is logging messages of FINE or higher
-	filters := l4g.NewFilters().Add("file", l4g.FINE, NewFileAppender(testLogFile, false))
+	a, _ := NewAppender(testLogFile, "rotate", false)
+	filters := l4g.NewFilters().Add("file", l4g.FINE, a)
 	log.SetFilters(filters)
 	writeSomethingToLogFile(log)
 	log.SetFilters(nil)
@@ -87,7 +88,7 @@ func TestFileLogRotate(t *testing.T) {
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
 
 	/* Can also specify manually via the following: (these are the defaults) */
-	filter := NewFileAppender(testLogFile, true).Set("maxbackup", 10)
+	filter, _ := NewAppender(testLogFile, "rotate", true, "maxbackup", 10)
 	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
 	filter.Set("cycle", 5).Set("clock", -1).Set("maxsize", "5k")
 
@@ -131,7 +132,7 @@ func TestRotateFile(t *testing.T) {
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
 
 	/* Can also specify manually via the following: (these are the defaults) */
-	filter := NewFileAppender(testLogFile, true).Set("maxbackup", 10)
+	filter, _ := NewAppender(testLogFile, "rotate", true, "maxbackup", 10)
 	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
 	filter.Set("cycle", 0).Set("maxsize", "5k")
 
@@ -170,7 +171,8 @@ func TestRotateFile(t *testing.T) {
 func BenchmarkFileLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
+	a, _ := NewAppender(benchLogFile, "rotate", "flush", 0)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -185,7 +187,8 @@ func BenchmarkFileLog(b *testing.B) {
 func BenchmarkFileNotLogged(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 0)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -200,7 +203,8 @@ func BenchmarkFileNotLogged(b *testing.B) {
 func BenchmarkFileUtilLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 0)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -215,7 +219,8 @@ func BenchmarkFileUtilLog(b *testing.B) {
 func BenchmarkFileUtilNotLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 0))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 0)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -230,7 +235,8 @@ func BenchmarkFileUtilNotLog(b *testing.B) {
 func BenchmarkCacheFileLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 4096)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -245,7 +251,8 @@ func BenchmarkCacheFileLog(b *testing.B) {
 func BenchmarkCacheFileNotLogged(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 4096)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -260,7 +267,8 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 func BenchmarkCacheFileUtilLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 4096)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -275,7 +283,8 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOutput(nil).Set("caller", false)
 	b.StopTimer()
-	fs := l4g.NewFilters().Add("file", l4g.INFO, NewFileAppender(benchLogFile, false).Set("flush", 4096))
+	a, _ := NewAppender(benchLogFile, "rotate", false, "flush", 4096)
+	fs := l4g.NewFilters().Add("file", l4g.INFO, a)
 	sl.SetFilters(fs)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {

@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package colorlog
+package console
 
 import (
 	"io"
@@ -26,9 +26,9 @@ var ColorBytes = [...][]byte{
 // ColorReset represents ANSI code to reset color
 var ColorReset = []byte("\x1b[0m")
 
-// ColorAppender is an Appender with ANSI color that prints to stderr.
+// Appender is an Appender with ANSI color that prints to stderr.
 // Support ANSI term includes ConEmu for windows.
-type ColorAppender struct {
+type Appender struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
 	out    io.Writer  // destination for output
 	layout l4g.Layout // format record for output
@@ -36,58 +36,63 @@ type ColorAppender struct {
 }
 
 func init() {
-	l4g.AddAppenderNewFunc("color", New)
+	l4g.Register("console", &Appender{})
 }
 
-// New creates the default ColorAppender output to os.Stderr.
-func New() l4g.Appender {
-	return NewColorAppender(os.Stderr)
-}
-
-// NewColorAppender creates a new ColorAppender.
-func NewColorAppender(w io.Writer) l4g.Appender {
-	return &ColorAppender{
+// NewAppender creates a new Appender.
+func NewAppender(w io.Writer, args ...interface{}) (*Appender, error) {
+	a := &Appender{
 		out:    w,
 		layout: l4g.NewPatternLayout(l4g.PatternDefault),
 		color:  false,
 	}
+	a.Set(args...)
+	return a, nil
 }
 
-// SetOutput sets the output destination for ColorAppender.
-func (ca *ColorAppender) SetOutput(w io.Writer) l4g.Appender {
-	ca.mu.Lock()
-	defer ca.mu.Unlock()
-	ca.out = w
-	return ca
+// Open creates a new appender which writes to stderr.
+func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+	return NewAppender(os.Stderr, args...)
+}
+
+// SetOutput sets the output destination for Appender.
+func (a *Appender) SetOutput(w io.Writer) l4g.Appender {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.out = w
+	return a
 }
 
 // Close is nothing to do here.
-func (ca *ColorAppender) Close() {
+func (a *Appender) Close() {
 }
 
 // Write a log recorder to stderr.
-func (ca *ColorAppender) Write(e *l4g.Entry) {
-	ca.mu.Lock()
-	defer ca.mu.Unlock()
+func (a *Appender) Write(e *l4g.Entry) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
-	if ca.color {
+	if a.color {
 		level := e.Level
 		if int(level) >= len(ColorBytes) {
 			level = l4g.INFO
 		}
-		ca.out.Write(ColorBytes[level])
-		ca.out.Write(ca.layout.Format(e))
-		ca.out.Write(ColorReset)
+		a.out.Write(ColorBytes[level])
+		a.out.Write(a.layout.Format(e))
+		a.out.Write(ColorReset)
 	} else {
-		ca.out.Write(ca.layout.Format(e))
+		a.out.Write(a.layout.Format(e))
 	}
 }
 
-// Set option.
+// Set options.
 // Return Appender interface.
-func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
-	ca.SetOption(name, v)
-	return ca
+func (a *Appender) Set(args ...interface{}) l4g.Appender {
+	ops, index, _ := l4g.ArgsToMap(args)
+	for _, k := range index {
+		a.SetOption(k, ops[k])
+	}
+	return a
 }
 
 // SetOption sets option with:
@@ -95,9 +100,9 @@ func (ca *ColorAppender) Set(name string, v interface{}) l4g.Appender {
 //	pattern	 - Layout format pattern
 //	utc 	 - Log recorder time zone
 // Return errors
-func (ca *ColorAppender) SetOption(k string, v interface{}) (err error) {
-	ca.mu.Lock()
-	defer ca.mu.Unlock()
+func (a *Appender) SetOption(k string, v interface{}) (err error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	err = nil
 
@@ -105,10 +110,10 @@ func (ca *ColorAppender) SetOption(k string, v interface{}) (err error) {
 	case "color":
 		color := false
 		if color, err = l4g.ToBool(v); err == nil {
-			ca.color = color
+			a.color = color
 		}
 	default:
-		return ca.layout.SetOption(k, v)
+		return a.layout.SetOption(k, v)
 	}
 	return
 }

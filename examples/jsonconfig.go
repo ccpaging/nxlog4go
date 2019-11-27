@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	l4g "github.com/ccpaging/nxlog4go"
-	_ "github.com/ccpaging/nxlog4go/color"
+	_ "github.com/ccpaging/nxlog4go/console"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
 	"os"
@@ -53,7 +53,7 @@ func main() {
 	log.Info("About that time, eh chaps?")
 
 	// Close all appenders in logger
-	log.Shutdown()
+	log.Close()
 
 	os.Remove("_test.log")
 	os.Remove("_trace.xml")

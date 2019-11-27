@@ -40,7 +40,7 @@ func (fs Filters) Close() {
 }
 
 // Skip checks log level and return whether skip or not
-func (fs Filters) Skip(level int) bool {
+func (fs Filters) skip(level int) bool {
 	for _, filt := range fs {
 		if level >= filt.Level {
 			return false

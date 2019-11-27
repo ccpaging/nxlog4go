@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// FileAppender represents the log appender that sends output to a file
-type FileAppender struct {
+// Appender represents the log appender that sends output to a file
+type Appender struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
 	layout l4g.Layout // format record for output
 	// 2nd cache, formatted message
@@ -20,8 +20,9 @@ type FileAppender struct {
 	// 3nd cache, destination for output with buffered and rotated
 	out *l4g.RotateFileWriter
 	// write loop
-	runOnce sync.Once
-	running *chan struct{} // Notify exited looping
+	runOnce  sync.Once
+	waitExit *sync.WaitGroup
+
 	// Rotate cycle in seconds
 	cycle int64
 	clock int64
@@ -29,80 +30,67 @@ type FileAppender struct {
 }
 
 // Write log record to channel
-func (fa *FileAppender) Write(e *l4g.Entry) {
-	fa.runOnce.Do(func() {
-		ready := make(chan struct{})
-		running := make(chan struct{})
-		fa.running = &running
-		go fa.writeLoop(ready, running)
-		<-ready
+func (a *Appender) Write(e *l4g.Entry) {
+	a.runOnce.Do(func() {
+		a.waitExit = &sync.WaitGroup{}
+		a.waitExit.Add(1)
+		go a.writeLoop(a.waitExit)
 	})
 
-	if fa.running == nil {
-		fa.out.Write(fa.layout.Format(e))
+	if a.waitExit == nil {
+		a.out.Write(a.layout.Format(e))
 	}
 
-	fa.messages <- fa.layout.Format(e)
+	a.messages <- a.layout.Format(e)
 }
 
 // Close drops write loop and closes opened file
-func (fa *FileAppender) Close() {
-	if fa.running == nil {
+func (a *Appender) Close() {
+	if a.waitExit == nil {
 		return
 	}
 
-	close(fa.messages)
+	close(a.messages)
 	// Waiting for running channel closed
-	<-(*fa.running)
-	fa.running = nil
+	a.waitExit.Wait()
+	a.waitExit = nil
 
-	close(fa.reset)
+	close(a.reset)
 
-	if fa.out != nil {
-		fa.out.Close()
+	if a.out != nil {
+		a.out.Close()
 	}
 }
 
 func init() {
-	l4g.AddAppenderNewFunc("file", New)
-	l4g.AddAppenderNewFunc("xml", NewXML)
+	l4g.Register("file", &Appender{})
 }
 
-// New creates a new file appender which writes to the file
-// named '<exe path base name>.log', and without rotation as default.
-func New() l4g.Appender {
-	base := filepath.Base(os.Args[0])
-	return NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
-}
-
-// NewXML creates a new file appender which XML format.
-func NewXML() l4g.Appender {
-	base := filepath.Base(os.Args[0])
-	appender := NewFileAppender(strings.TrimSuffix(base, filepath.Ext(base))+".log", false)
-	appender.SetOption("head", "<log created=\"%D %T\">%R")
-
-	appender.SetOption("pattern",
-		`	<record level="%L">
-		<timestamp>%D %T</timestamp>
-		<source>%s</source>
-		<message>%M</message>
-	</record>%R`)
-
-	appender.SetOption("foot", "</log>%R")
-	return appender
-}
-
-// NewFileAppender creates a new appender which writes to the given file and
+// NewAppender creates a new appender which writes to the given file and
 // has rotation enabled if maxbackup > 0.
-func NewFileAppender(fname string, rotate bool) l4g.Appender {
-	return &FileAppender{
+func NewAppender(filename string, args ...interface{}) (*Appender, error) {
+	if filename == "" {
+		base := filepath.Base(os.Args[0])
+		filename = strings.TrimSuffix(base, filepath.Ext(base)) + ".log"
+	}
+
+	a := &Appender{
 		layout:   l4g.NewPatternLayout(l4g.PatternDefault),
 		messages: make(chan []byte, l4g.LogBufferLength),
-		out:      l4g.NewRotateFileWriter(fname, rotate),
+		out:      l4g.NewRotateFileWriter(filename, false),
 		cycle:    86400,
 		clock:    -1,
 		reset:    make(chan time.Time, l4g.LogBufferLength),
 	}
+
+	a.Set(args...)
+	return a, nil
+}
+
+// Open creates a new appender which writes to the file
+// named '<exe full path base name>.log', and without rotating as default.
+func (*Appender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
+	return NewAppender(filename, args...)
 }
 
 func newRotateTimer(cycle, clock int64) *time.Timer {
@@ -131,106 +119,110 @@ func newRotateTimer(cycle, clock int64) *time.Timer {
 	return time.NewTimer(d)
 }
 
-func (fa *FileAppender) rotate() {
-	if fa.cycle <= 0 {
+func (a *Appender) rotate() {
+	if a.cycle <= 0 {
 		return
 	}
-	if fa.out == nil {
+	if a.out == nil {
 		return
 	}
-	if !fa.out.IsOverSize() {
+	if !a.out.IsOverSize() {
 		return
 	}
-	fa.out.Rotate()
+	a.out.Rotate()
 }
 
-func (fa *FileAppender) writeLoop(ready chan struct{}, running chan struct{}) {
-	fa.rotate()
-	t := newRotateTimer(fa.cycle, fa.clock)
-	close(ready)
+func (a *Appender) writeLoop(waitExit *sync.WaitGroup) {
+	a.rotate()
+	t := newRotateTimer(a.cycle, a.clock)
 	for {
 		select {
-		case bb, ok := <-fa.messages:
+		case bb, ok := <-a.messages:
 			if !ok {
 				// drain the log channel and write directly
-				fa.mu.Lock()
-				for bb := range fa.messages {
-					fa.out.Write(bb)
+				a.mu.Lock()
+				for bb := range a.messages {
+					a.out.Write(bb)
 				}
-				fa.mu.Unlock()
-				close(running)
+				a.mu.Unlock()
+				waitExit.Done()
 				return
 			}
 
-			fa.mu.Lock()
-			fa.out.Write(bb)
-			if len(fa.messages) <= 0 {
-				fa.out.Flush()
+			a.mu.Lock()
+			a.out.Write(bb)
+			if len(a.messages) <= 0 {
+				a.out.Flush()
 			}
-			fa.mu.Unlock()
+			a.mu.Unlock()
 
 		case <-t.C:
-			t = newRotateTimer(fa.cycle, fa.clock)
-			fa.rotate()
+			t = newRotateTimer(a.cycle, a.clock)
+			a.rotate()
 
-		case <-fa.reset:
-			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", fa.cycle, fa.clock)
-			t = newRotateTimer(fa.cycle, fa.clock)
+		case <-a.reset:
+			l4g.LogLogTrace("Reset. cycle = %d, clock = %d", a.cycle, a.clock)
+			t = newRotateTimer(a.cycle, a.clock)
 		}
 	}
 }
 
-func (fa *FileAppender) setLoop(k string, v interface{}) error {
+func (a *Appender) setLoop(k string, v interface{}) error {
 	isReset := false
 
 	switch k {
 	case "cycle":
 		if cycle, err := l4g.ToSeconds(v); err == nil {
-			fa.cycle = cycle
-			fa.out.Set("rotate", (fa.cycle <= 0))
+			a.cycle = cycle
+			a.out.Set("rotate", (a.cycle <= 0))
 			isReset = true
 		} else {
 			return l4g.ErrBadOption
 		}
 	case "clock", "delay0":
 		if clock, err := l4g.ToSeconds(v); err == nil {
-			fa.clock = clock
+			a.clock = clock
 			isReset = true
 		} else {
 			return l4g.ErrBadOption
 		}
 	case "daily":
 		if daily, err := l4g.ToBool(v); err == nil && daily {
-			fa.cycle = 86400
-			fa.clock = 0
-			fa.out.Set("rotate", false)
+			a.cycle = 86400
+			a.clock = 0
+			a.out.Set("rotate", false)
 			isReset = true
 		} else {
 			return l4g.ErrBadOption
 		}
+	case "weekly":
+	case "monthly":
 	default:
 		return l4g.ErrBadOption
 	}
 
-	if isReset && fa.running != nil {
-		fa.reset <- time.Now()
+	if isReset && a.waitExit != nil {
+		a.reset <- time.Now()
 	}
 	return nil
 }
 
 // Name returns file name.
-func (fa *FileAppender) Name() string {
-	if fa.out != nil {
-		return fa.out.Name()
+func (a *Appender) Name() string {
+	if a.out != nil {
+		return a.out.Name()
 	}
 	return ""
 }
 
-// Set option.
+// Set options.
 // Return Appender interface.
-func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
-	fa.SetOption(name, v)
-	return fa
+func (a *Appender) Set(args ...interface{}) l4g.Appender {
+	ops, index, _ := l4g.ArgsToMap(args)
+	for _, k := range index {
+		a.SetOption(k, ops[k])
+	}
+	return a
 }
 
 // SetOption sets option with:
@@ -247,9 +239,9 @@ func (fa *FileAppender) Set(name string, v interface{}) l4g.Appender {
 //	clock	  - The seconds since midnight
 //	daily	  - Checking rotate size at every midnight
 // Return errors
-func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
-	fa.mu.Lock()
-	defer fa.mu.Unlock()
+func (a *Appender) SetOption(k string, v interface{}) (err error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	err = nil
 
@@ -264,15 +256,16 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 			err = os.MkdirAll(filepath.Dir(fname), l4g.FilePermDefault)
 			if err == nil {
 				// Keep other options
-				fa.out.SetFileName(fname)
+				a.out.SetFileName(fname)
 			}
 		}
+	case "rotate":
 	case "flush", "head", "foot", "maxbackup", "maxsize", "maxlines":
-		err = fa.out.SetOption(k, v)
-	case "cycle", "clock", "delay0", "daily":
-		err = fa.setLoop(k, v)
+		err = a.out.SetOption(k, v)
+	case "cycle", "clock", "delay0", "daily", "weekly", "monthly":
+		err = a.setLoop(k, v)
 	default:
-		err = fa.layout.SetOption(k, v)
+		err = a.layout.SetOption(k, v)
 	}
 	return
 }
