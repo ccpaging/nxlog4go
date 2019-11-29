@@ -33,84 +33,66 @@ type cacheLevel struct {
 	cache map[int][]byte
 }
 
-func (ca *cacheLevel) std(buf *bytes.Buffer, n int) {
+func (ca *cacheLevel) write(out *bytes.Buffer, level int, format string, isColor bool) {
 	if ca.cache == nil {
-		ca.cache = make(map[int][]byte, len(levelStrings))
-		for i, s := range levelStrings {
-			ca.cache[i] = []byte(s)
+		ls := levelLowerStrings
+		isUpper := false
+		switch format {
+		case "upper":
+			isUpper = true
+		case "upperColor":
+			isUpper = true
+		case "lower":
+		case "lowerColor":
+		case "std":
+			fallthrough
+		default:
+			ls = levelStrings
+		}
+
+		ca.cache = make(map[int][]byte, len(ls))
+		for i, s := range ls {
+			if isUpper {
+				s = strings.ToUpper(s)
+			}
+			if isColor {
+				ca.cache[i] = levelColors[i].Wrap([]byte(s))
+			} else {
+				ca.cache[i] = []byte(s)
+			}
 		}
 	}
 
-	if b, ok := ca.cache[n]; ok {
-		buf.Write(b)
+	if b, ok := ca.cache[level]; ok {
+		out.Write(b)
 	} else {
-		s := Level(n).Unknown()
-		buf.Write([]byte(s))
+		s := Level(level).Unknown()
+		if isColor {
+			out.Write(Red.Wrap([]byte(s)))
+		} else {
+			out.Write([]byte(s))
+		}
 	}
 }
 
-func (ca *cacheLevel) lower(buf *bytes.Buffer, n int) {
-	if ca.cache == nil {
-		ca.cache = make(map[int][]byte, len(levelLowerStrings))
-		for i, s := range levelLowerStrings {
-			ca.cache[i] = []byte(s)
-		}
-	}
-
-	if b, ok := ca.cache[n]; ok {
-		buf.Write(b)
-	} else {
-		s := Level(n).Unknown()
-		buf.Write([]byte(s))
-	}
+func (ca *cacheLevel) std(out *bytes.Buffer, level int) {
+	ca.write(out, level, "std", false)
 }
 
-func (ca *cacheLevel) lowerColor(buf *bytes.Buffer, n int) {
-	if ca.cache == nil {
-		ca.cache = make(map[int][]byte, len(levelLowerStrings))
-		for i, s := range levelLowerStrings {
-			ca.cache[i] = levelColors[i].Wrap([]byte(s))
-		}
-	}
-
-	if b, ok := ca.cache[n]; ok {
-		buf.Write(b)
-	} else {
-		s := Level(n).Unknown()
-		buf.Write(Red.Wrap([]byte(s)))
-	}
+func (ca *cacheLevel) lower(out *bytes.Buffer, level int) {
+	ca.write(out, level, "lower", false)
 }
 
-func (ca *cacheLevel) upper(buf *bytes.Buffer, n int) {
-	if ca.cache == nil {
-		ca.cache = make(map[int][]byte, len(levelLowerStrings))
-		for i, s := range levelLowerStrings {
-			ca.cache[i] = []byte(strings.ToUpper(s))
-		}
-	}
-
-	if b, ok := ca.cache[n]; ok {
-		buf.Write(b)
-	} else {
-		s := Level(n).Unknown()
-		buf.Write([]byte(s))
-	}
+func (ca *cacheLevel) lowerColor(out *bytes.Buffer, level int) {
+	ca.write(out, level, "lowerColor", true)
 }
 
-func (ca *cacheLevel) upperColor(buf *bytes.Buffer, n int) {
-	if ca.cache == nil {
-		ca.cache = make(map[int][]byte, len(levelLowerStrings))
-		for i, s := range levelLowerStrings {
-			ca.cache[i] = levelColors[i].Wrap([]byte(strings.ToUpper(s)))
-		}
-	}
+func (ca *cacheLevel) upper(out *bytes.Buffer, level int) {
+	ca.write(out, level, "upper", false)
+}
 
-	if b, ok := ca.cache[n]; ok {
-		buf.Write(b)
-	} else {
-		s := Level(n).Unknown()
-		buf.Write(Red.Wrap([]byte(s)))
-	}
+func (ca *cacheLevel) upperColor(out *bytes.Buffer, level int) {
+	ca.write(out, level, "upperColor", true)
 }
 
 // LevelEncoder serializes a Level to a []byte type.
