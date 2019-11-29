@@ -56,7 +56,7 @@ func client() {
 	// Enable internal log
 	l4g.GetLogLog().Set("level", l4g.WARN)
 
-	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("pattern", "%P "+l4g.PatternDefault)
+	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").Set("format", "%P "+l4g.FormatDefault)
 
 	sa, err := l4g.Open("socket", "udp://"+addr, "level", l4g.FINEST)
 	checkError(err)

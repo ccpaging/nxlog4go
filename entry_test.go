@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const testEntryPatternText = "%L %s %M.%F"
-
 func TestEntryWithError(t *testing.T) {
 	l := NewLogger(FINEST)
 	e := NewEntry(l)
@@ -17,6 +15,22 @@ func TestEntryWithError(t *testing.T) {
 		t.Errorf("With(\"%s\", \"%s\"):", "error", err)
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", err)
+	}
+}
+
+func TestEntryArgs(t *testing.T) {
+	buf := new(bytes.Buffer)
+	l := NewLogger(FINEST).Set("format", "%L %S %M.%F").SetOutput(buf)
+	e := NewEntry(l)
+	err := fmt.Errorf("kaboom at layer %d", 4711)
+	e.Info("message", "error", err, "k1", "v1", "k2", "v2")
+	want := 3
+	if got := len(e.Data); got != want {
+		t.Errorf("   got %d", got)
+		t.Errorf("  want %d", want)
+	} else if got = len(e.index); got != want {
+		t.Errorf("   got index %d", got)
+		t.Errorf("  want index %d", want)
 	}
 }
 
@@ -49,15 +63,15 @@ func TestEntryWithFunc(t *testing.T) {
 	}
 }
 
-func TestEntryFormatText(t *testing.T) {
+func TestEntryFormatKeyValue(t *testing.T) {
 	errBoom := fmt.Errorf("boom time")
 
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOutput(buf).Set("pattern", testEntryPatternText)
+	l := NewLogger(INFO).SetOutput(buf).Set("format", "%L %S %M.%F")
 	e := NewEntry(l)
 
 	e.With("err", errBoom, "k2", "v2", "k1", "v1").Log(1, ERROR, "kaboom")
-	want := "EROR entry_test.go kaboom. err=\"boom time\" k2=v2 k1=v1"
+	want := "EROR nxlog4go/entry_test.go kaboom. err=\"boom time\" k2=v2 k1=v1\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
@@ -68,7 +82,7 @@ func TestEntryFormatJson(t *testing.T) {
 	errBoom := fmt.Errorf("boom time")
 
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOutput(buf).Set("pattern", PatternJSON)
+	l := NewLogger(INFO).SetOutput(buf).SetLayout(NewJSONLayout("callerEncoder", "fullpath"))
 	e := NewEntry(l)
 
 	e.With("error", errBoom).Log(1, ERROR, "kaboom")

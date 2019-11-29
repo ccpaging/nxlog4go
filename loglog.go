@@ -19,7 +19,7 @@ func GetLogLog() *Logger {
 			level:  DEBUG,
 			caller: true,
 			prefix: "logg",
-			layout: NewPatternLayout("%T %P %L %M\n"),
+			layout: NewPatternLayout(FormatLogLog),
 		}
 	}
 	return loglog

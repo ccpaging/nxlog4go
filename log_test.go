@@ -40,7 +40,7 @@ func New(out io.Writer, prefix string, flag int) *Logger {
 
 		caller:  true,
 		level:   INFO,
-		layout:  NewPatternLayout("%D %T %M\n"),
+		layout:  NewPatternLayout("%D %T %M"),
 		filters: nil,
 	}
 	l.SetFlags(flag)
@@ -67,29 +67,31 @@ func (l *Logger) SetFlags(flag int) {
 		l.layout.Set("utc", false)
 	}
 
-	pattern := "%P"
+	format := "%P"
 	if flag&Ldate != 0 {
-		pattern += "%D "
+		format += "%D "
 	}
 	if flag&(Ltime|Lmicroseconds) != 0 {
+		format += "%T "
 		if flag&Lmicroseconds != 0 {
-			pattern += "%U "
+			l.layout.Set("timeEncoder", "hms.us")
 		} else {
-			pattern += "%T "
+			l.layout.Set("timeEncoder", "hms")
 		}
 	}
 	if flag&(Lshortfile|Llongfile) != 0 {
+		format += "%S:%N: "
 		if flag&Lshortfile != 0 {
-			pattern += "%s:%N: "
+			l.layout.Set("callerEncoder", "nopath")
 		} else {
-			pattern += "%S:%N: "
+			l.layout.Set("callerEncoder", "fullpath")
 		}
 		l.caller = true
 	} else {
 		l.caller = false
 	}
-	pattern += "%M\n"
-	l.layout.Set("pattern", pattern)
+	format += "%M"
+	l.layout.Set("format", format)
 }
 
 // Output writes the output for a logging event. The string s contains

@@ -65,33 +65,3 @@ func (c Color) Bytes() []byte {
 	}
 	return []byte{}
 }
-
-func setColor(e *Entry) bool {
-	if out := e.logger.out; out != nil {
-		switch e.Level {
-		case CRITICAL:
-			out.Write(LightRed.Bytes())
-		case ERROR:
-			out.Write(Red.Bytes())
-		case WARN:
-			out.Write(LightYellow.Bytes())
-		case INFO:
-		case TRACE:
-			out.Write(Magenta.Bytes())
-		case DEBUG:
-			out.Write(Green.Bytes())
-		case FINE:
-			out.Write(Cyan.Bytes())
-		case FINEST:
-			out.Write(Blue.Bytes())
-		default:
-		}
-	}
-	return true
-}
-
-func resetColor(e *Entry, n int, err error) {
-	if out := e.logger.out; out != nil {
-		out.Write(ResetColor.Bytes())
-	}
-}

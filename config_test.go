@@ -23,23 +23,23 @@ var xmlBuf = `<logging>
     <level>DEBUG</level>
     <!--
       %T - Time (15:04:05 MST)
-      %` + `t - Time (15:04)
+      %t - Time (15:04)
       %D - Date (2006/01/02)
-      %` + `d - Date (01/02/06)
+      %d - Date (01/02/06)
       %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
       %S - Source
       %M - Message
       It ignores unknown format strings (and removes them)
-      Recommended: \"[%D %T] [%L] (%S) %M%R\"
+      Recommended: \"[%D %T] [%L] (%S) %M\"
     -->
-    <property name="console">true</property>
-    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
+    <property name="format">[%D %T] [%L] (%S) %M</property>
+    <property name="color">true</property>
   </filter>
   <filter enabled="true">
     <tag>loglog</tag>
     <type>loglog</type>
     <level>DEBUG</level>
-    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
+    <property name="format">[%D %T] [%L] (%S) %M</property>
   </filter>
   <filter enabled="true">
     <tag>console</tag>
@@ -52,7 +52,7 @@ var xmlBuf = `<logging>
     <type>file</type>
     <level>FINEST</level>
     <property name="filename">_test.log</property>
-    <property name="pattern">[%D %T] [%L] (%s) %M%R</property>
+    <property name="format">[%D %T] [%L] (%S) %M</property>
     <property name="maxbackup">7</property> <!-- 0, disables log rotation, otherwise append -->
     <property name="maxsize">10M</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
     <property name="maxlines">0</property> <!-- \\d+[KMG]? Suffixes are in terms of 2**10 -->
@@ -69,7 +69,7 @@ var xmlBuf = `<logging>
     <property name="cycle">24h</property> <!-- The cycle time with with fraction and a unit suffix -->
     <property name="clock">0</property> <!-- The cycle time with with fraction and a unit suffix -->
   </filter>
-  <filter enabled="false"><!-- enabled=false means this logger won\'t actually be created -->
+  <filter enabled="false"><!-- enabled=false means this logger won't actually be created -->
     <tag>socket</tag>
     <type>socket</type>
     <level>FINEST</level>

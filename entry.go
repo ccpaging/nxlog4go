@@ -4,10 +4,24 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"errors"
 	"runtime"
+	"sync"
 	"time"
 )
+
+var bufferPool *sync.Pool
+
+func init() {
+	bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+}
+
+/****** Entry ******/
 
 // A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all
@@ -74,21 +88,16 @@ func (e *Entry) flush() {
 	e.Source = source
 	e.Line = line
 
-	result := true
-	if l.preHook != nil {
-		result = l.preHook(e)
-	}
-	var (
-		n   int
-		err error
-	)
-	if result && l.out != nil && e.Level >= l.level {
-		l.out.Write(l.layout.Format(e))
-	}
-	if l.postHook != nil {
-		l.postHook(e, n, err)
+	if l.out != nil && e.Level >= l.level {
+		buf := bufferPool.Get().(*bytes.Buffer)
+		buf.Reset()
+		defer bufferPool.Put(buf)
+
+		l.layout.Encode(buf, e)
+		l.out.Write(buf.Bytes())
 	}
 
+	// Dispatch to all appender
 	if l.filters != nil {
 		l.filters.Dispatch(e)
 	}

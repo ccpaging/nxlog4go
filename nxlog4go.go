@@ -86,24 +86,13 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v1.0.2"
+	Version = "nxlog4go-v1.0.3"
 	Major   = 1
 	Minor   = 0
-	Build   = 2
+	Build   = 3
 )
 
 /****** Logger ******/
-
-// PreHook function runs before writing log record.
-// Return false then skip writing log record
-//
-// DEPRECATED: Use appender instead.
-type PreHook func(e *Entry) bool
-
-// PostHook function runs after writing log record even BeforeLog returns false.
-//
-// DEPRECATED: Use appender instead.
-type PostHook func(e *Entry, n int, err error)
 
 // A Logger represents an active logging object that generates lines of
 // output to an io.Writer, and a collection of Filters through which
@@ -119,10 +108,7 @@ type Logger struct {
 
 	out    io.Writer // destination for output
 	level  int       // The log level
-	layout Layout    // format record to []byte for output
-
-	preHook  PreHook
-	postHook PostHook
+	layout Layout    // Encode record to []byte for output
 
 	filters Filters // a collection of Filters
 }
@@ -130,14 +116,15 @@ type Logger struct {
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above level to standard output.
 func NewLogger(level int) *Logger {
-	return &Logger{
-		out:     os.Stderr,
-		level:   level,
-		caller:  true,
-		prefix:  "",
-		layout:  NewPatternLayout(PatternDefault),
+	l := &Logger{
+		out:    os.Stderr,
+		level:  level,
+		caller: true,
+		prefix: "",
+		layout: NewPatternLayout(FormatDefault),
 		filters: nil,
 	}
+	return l
 }
 
 // Prefix returns the output prefix for the logger.
@@ -201,21 +188,10 @@ func (l *Logger) SetOption(k string, v interface{}) error {
 		default:
 			return ErrBadValue
 		}
-	case "color":
-		if color, err := ToBool(v); err == nil {
-			if color {
-				l.preHook = setColor
-				l.postHook = resetColor
-			} else {
-				l.preHook = nil
-				l.postHook = nil
-			}
-		} else {
-			return err
-		}
 	default:
 		return l.layout.SetOption(k, v)
 	}
+
 	return nil
 }
 

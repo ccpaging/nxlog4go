@@ -8,7 +8,7 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var glog = l4g.NewLogger(l4g.DEBUG).Set("prefix", "example").Set("pattern", "[%T %D %Z] [%L] (%P:%s) %M\n")
+var glog = l4g.NewLogger(l4g.DEBUG).Set("prefix", "example").Set("pattern", "[%T %D %Z] [%L] (%P:%s) %M")
 
 var isTTY bool
 var out = os.Stderr
@@ -46,7 +46,7 @@ func main() {
 	glog.Error("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	glog.Critical("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 
-	log1 := l4g.NewLogger(l4g.DEBUG).Set("prefix", "example").Set("pattern", "%P[%T %D %z] [%L] (%s:%N) %M\n")
+	log1 := l4g.NewLogger(l4g.DEBUG).Set("prefix", "example").Set("pattern", "%P[%T %D %z] [%L] (%s:%N) %M")
 	log1.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	// set io.Writer as nil, no output
 	log2 := l4g.NewLogger(l4g.DEBUG).SetOutput(ioutil.Discard)

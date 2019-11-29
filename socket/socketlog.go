@@ -3,6 +3,7 @@
 package socketlog
 
 import (
+	"bytes"
 	"net"
 	"net/url"
 	"sync"
@@ -14,9 +15,10 @@ import (
 type Appender struct {
 	mu     sync.Mutex // ensures atomic writes; protects the following fields
 	layout l4g.Layout // format record for output
-	sock   net.Conn
-	prot   string
-	host   string
+
+	proto    string
+	hostport string
+	sock     net.Conn
 }
 
 // Close the socket if it opened.
@@ -26,35 +28,43 @@ func (a *Appender) Close() {
 	}
 }
 
+/* Bytes Buffer */
+var bufferPool *sync.Pool
+
 func init() {
+	bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+
 	l4g.Register("socket", &Appender{})
 }
 
-// NewAppender creates a new appender with given
-// socket protocol and endpoint.
-func NewAppender(protocol, host string) *Appender {
+// NewAppender creates a sock appender with proto and hostport.
+func NewAppender(proto, hostport string) *Appender {
 	return &Appender{
-		layout: l4g.NewPatternLayout(l4g.PatternJSON),
-		sock:   nil,
-		prot:   protocol,
-		host:   host,
+		layout: l4g.NewJSONLayout(),
+
+		proto:    proto,
+		hostport: hostport,
 	}
 }
 
 // Open creates a socket Appender with DSN.
-func (*Appender) Open(s string, args ...interface{}) (l4g.Appender, error) {
-	protocol, address := "udp", "127.0.0.1:12124"
-	if s != "" {
-		if u, err := url.Parse(s); err == nil {
+func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+	proto, hostport := "udp", "127.0.0.1:12124"
+	if dsn != "" {
+		if u, err := url.Parse(dsn); err == nil {
 			if u.Scheme != "" {
-				protocol = u.Scheme
+				proto = u.Scheme
 			}
 			if u.Host != "" {
-				address = u.Host
+				hostport = u.Host
 			}
 		}
 	}
-	return NewAppender(protocol, address).Set(args...), nil
+	return NewAppender(proto, hostport).Set(args...), nil
 }
 
 // Write a log recorder to a socket.
@@ -65,14 +75,20 @@ func (a *Appender) Write(e *l4g.Entry) {
 
 	var err error
 	if a.sock == nil {
-		a.sock, err = net.Dial(a.prot, a.host)
+		a.sock, err = net.Dial(a.proto, a.hostport)
 		if err != nil {
 			l4g.LogLogError(err)
 			return
 		}
 	}
 
-	_, err = a.sock.Write(a.layout.Format(e))
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	a.layout.Encode(buf, e)
+
+	_, err = a.sock.Write(buf.Bytes())
 	if err != nil {
 		l4g.LogLogError(err)
 		a.sock.Close()
@@ -83,44 +99,43 @@ func (a *Appender) Write(e *l4g.Entry) {
 // Set options.
 // Return Appender interface.
 func (a *Appender) Set(args ...interface{}) l4g.Appender {
-	ops, index, _ := l4g.ArgsToMap(args)
-	for _, k := range index {
+	ops, idx, _ := l4g.ArgsToMap(args)
+	for _, k := range idx {
 		a.SetOption(k, ops[k])
 	}
 	return a
 }
 
 // SetOption sets option with:
-//	protocol - The named network. See net.Dial()
-//	endpoint - The address and post number. See net.Dial()
 //	pattern	 - Layout format pattern
-//	utc 	 - Log recorder time zone
-// Return errors
-func (a *Appender) SetOption(k string, v interface{}) (err error) {
+//  ...
+//
+// Return error
+func (a *Appender) SetOption(k string, v interface{}) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	err = nil
-
 	switch k {
-	case "protocol":
-		protocol := ""
-		if protocol, err = l4g.ToString(v); err == nil && len(protocol) > 0 {
-			a.Close()
-			a.prot = protocol
+	case "protocol": // DEPRECATED. See Open function's dsn argument
+		if proto, err := l4g.ToString(v); err == nil && len(proto) > 0 {
+			if a.sock != nil {
+				a.sock.Close()
+			}
+			a.proto = proto
 		} else {
-			err = l4g.ErrBadValue
+			return l4g.ErrBadValue
 		}
-	case "endpoint":
-		endpoint := ""
-		if endpoint, err = l4g.ToString(v); err == nil && len(endpoint) > 0 {
-			a.Close()
-			a.host = endpoint
+	case "endpoint": // DEPRECATED. See Open function's dsn argument
+		if hostport, err := l4g.ToString(v); err == nil && len(hostport) > 0 {
+			if a.sock != nil {
+				a.sock.Close()
+			}
+			a.hostport = hostport
 		} else {
-			err = l4g.ErrBadValue
+			return l4g.ErrBadValue
 		}
 	default:
 		return a.layout.SetOption(k, v)
 	}
-	return
+	return nil
 }

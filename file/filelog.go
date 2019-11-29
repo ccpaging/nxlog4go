@@ -3,12 +3,14 @@
 package filelog
 
 import (
-	l4g "github.com/ccpaging/nxlog4go"
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	l4g "github.com/ccpaging/nxlog4go"
 )
 
 // Appender represents the log appender that sends output to a file
@@ -37,11 +39,17 @@ func (a *Appender) Write(e *l4g.Entry) {
 		go a.writeLoop(a.waitExit)
 	})
 
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	a.layout.Encode(buf, e)
+
 	if a.waitExit == nil {
-		a.out.Write(a.layout.Format(e))
+		a.out.Write(buf.Bytes())
 	}
 
-	a.messages <- a.layout.Format(e)
+	a.messages <- buf.Bytes()
 }
 
 // Close drops write loop and closes opened file
@@ -62,7 +70,16 @@ func (a *Appender) Close() {
 	}
 }
 
+/* Bytes Buffer */
+var bufferPool *sync.Pool
+
 func init() {
+	bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+
 	l4g.Register("file", &Appender{})
 }
 
@@ -75,7 +92,7 @@ func NewAppender(filename string, args ...interface{}) (*Appender, error) {
 	}
 
 	a := &Appender{
-		layout:   l4g.NewPatternLayout(l4g.PatternDefault),
+		layout:   l4g.NewPatternLayout(""),
 		messages: make(chan []byte, l4g.LogBufferLength),
 		out:      l4g.NewRotateFileWriter(filename, false),
 		cycle:    86400,

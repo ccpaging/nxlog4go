@@ -3,6 +3,7 @@
 package console
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"sync"
@@ -35,7 +36,16 @@ type Appender struct {
 	color  bool
 }
 
+/* Bytes Buffer */
+var bufferPool *sync.Pool
+
 func init() {
+	bufferPool = &sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+
 	l4g.Register("console", &Appender{})
 }
 
@@ -43,7 +53,7 @@ func init() {
 func NewAppender(w io.Writer, args ...interface{}) (*Appender, error) {
 	a := &Appender{
 		out:    w,
-		layout: l4g.NewPatternLayout(l4g.PatternDefault),
+		layout: l4g.NewPatternLayout(""),
 		color:  false,
 	}
 	a.Set(args...)
@@ -74,14 +84,21 @@ func (a *Appender) Write(e *l4g.Entry) {
 
 	if a.color {
 		level := e.Level
-		if int(level) >= len(ColorBytes) {
+		if level >= len(ColorBytes) {
 			level = l4g.INFO
 		}
 		a.out.Write(ColorBytes[level])
-		a.out.Write(a.layout.Format(e))
+	}
+
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufferPool.Put(buf)
+
+	a.layout.Encode(buf, e)
+	a.out.Write(buf.Bytes())
+
+	if a.color {
 		a.out.Write(ColorReset)
-	} else {
-		a.out.Write(a.layout.Format(e))
 	}
 }
 
@@ -96,24 +113,25 @@ func (a *Appender) Set(args ...interface{}) l4g.Appender {
 }
 
 // SetOption sets option with:
-//	color    - Force to color text or not
+//	color    - Force to color or not
+//
+// Pattern layout options (The default is JSON):
 //	pattern	 - Layout format pattern
-//	utc 	 - Log recorder time zone
-// Return errors
-func (a *Appender) SetOption(k string, v interface{}) (err error) {
+//  ...
+//
+// Return error
+func (a *Appender) SetOption(k string, v interface{}) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	err = nil
-
 	switch k {
 	case "color":
-		color := false
-		if color, err = l4g.ToBool(v); err == nil {
+		if color, err := l4g.ToBool(v); err == nil {
 			a.color = color
 		}
 	default:
 		return a.layout.SetOption(k, v)
 	}
-	return
+
+	return nil
 }

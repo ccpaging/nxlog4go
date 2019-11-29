@@ -7,12 +7,12 @@
             "level": "DEBUG",
             "properties": [
                 {
-                    "name": "console",
-                    "value": "true"
+                    "name": "format",
+                    "value": "[%D %T] [%L] (%S) %M"
                 },
                 {
-                    "name": "pattern",
-                    "value": "[%D %T] [%L] (%s) %M%R"
+                    "name": "color",
+                    "value": "true"
                 }
             ]
         },
@@ -23,8 +23,8 @@
             "level": "DEBUG",
             "properties": [
                 {
-                    "name": "pattern",
-                    "value": "[%D %T] [%L] (%s) %M%R"
+                    "name": "format",
+                    "value": "[%D %T] [%L] (%S) %M"
                 }
             ]
         },
@@ -51,8 +51,8 @@
                     "value": "_test.log"
                 },
                 {
-                    "name": "pattern",
-                    "value": "[%D %T] [%L] (%s) %M%R"
+                    "name": "format",
+                    "value": "[%D %T] [%L] (%S) %M"
                 },
                 {
                     "name": "maxbackup",

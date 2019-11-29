@@ -3,6 +3,7 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path"
@@ -46,6 +47,15 @@ func NewRotateFileWriter(fname string, rotate bool) *RotateFileWriter {
 	return rfw
 }
 
+func (rfw *RotateFileWriter) writeHeadFoot(pattern string) {
+	buf := bytes.NewBuffer(make([]byte, 0, 64))
+
+	layout := NewPatternLayout(pattern)
+	layout.Encode(buf, &Entry{Created: time.Now()})
+
+	rfw.FileBufWriter.Write(buf.Bytes())
+}
+
 // Write binaries to the file.
 // It will rotate files if necessary
 func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
@@ -67,8 +77,7 @@ func (rfw *RotateFileWriter) Write(bb []byte) (n int, err error) {
 	}
 
 	if len(rfw.header) > 0 && rfw.Size() == 0 {
-		layout := NewPatternLayout(rfw.header)
-		rfw.FileBufWriter.Write(layout.Format(&Entry{Created: time.Now()}))
+		rfw.writeHeadFoot(rfw.header)
 	}
 
 	return rfw.FileBufWriter.Write(bb)
@@ -124,8 +133,7 @@ func (rfw *RotateFileWriter) Rotate() {
 
 	// Write footer
 	if len(rfw.footer) > 0 && rfw.Size() > 0 {
-		layout := NewPatternLayout(rfw.footer)
-		rfw.FileBufWriter.Write(layout.Format(&Entry{Created: time.Now()}))
+		rfw.writeHeadFoot(rfw.footer)
 	}
 
 	LogLogTrace("Close %s", rfw.FileBufWriter.Name())

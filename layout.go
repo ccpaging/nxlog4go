@@ -4,9 +4,7 @@ package nxlog4go
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
-	"time"
+	"strconv"
 )
 
 // Layout is is an interface for formatting log record
@@ -20,295 +18,230 @@ type Layout interface {
 	SetOption(name string, v interface{}) error
 
 	// This will be called to log a Entry message.
-	Format(e *Entry) []byte
+	Encode(out *bytes.Buffer, e *Entry) int
 }
 
 var (
-	// PatternDefault includes date, time, zone, level, source, lines, and message
-	PatternDefault = "[%D %T %z] [%L] (%s:%N) %M%F\n"
-	// PatternConsole includes time, source, level and message
-	PatternConsole = "%T %L (%s:%N) %M%F\n"
-	// PatternShort includes short time, short date, level and message
-	PatternShort = "[%h:%m %d] [%L] %M%F\n"
-	// PatternAbbrev includes level and message
-	PatternAbbrev = "[%L] %M%F\n"
-	// PatternJSON is json format include everyone of log record
-	PatternJSON = "{\"Level\":%l,\"Created\":\"%YT%U%Z\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%J}"
+	// DefaultLineEnd defines the default line ending when writing logs.
+	// Alternate line endings specified in Encoder can override this
+	// behavior.
+	DefaultLineEnd = []byte("\n")
+	// FormatDefault includes date, time, zone, level, source, lines, and message
+	FormatDefault = "[%D %T %Z] [%L] (%S:%N) %M%F"
+	// FormatConsole includes time, source, level and message
+	FormatConsole = "%T %L (%S:%N) %M%F"
+	// FormatShort includes short time, short date, level and message
+	FormatShort = "[%T %D] [%L] %M%F"
+	// FormatAbbrev includes level and message
+	FormatAbbrev = "[%L] %M%F"
+	// FormatLogLog is format for internal log
+	FormatLogLog = "%T %P %L %M"
 )
 
-// PatternLayout formats log record with pattern
+// PatternLayout formats log record
 type PatternLayout struct {
-	verbs     [][]byte // Split the pattern into pieces by % signs
-	utc       bool
-	longZone  []byte
-	shortZone []byte
+	verbs   [][]byte // Split the format string into pieces by % signs
+	lineEnd []byte
+
+	utc   bool
+	color bool
+
+	EncodeLevel  LevelEncoder
+	EncodeCaller CallerEncoder
+	EncodeDate   DateEncoder
+	EncodeTime   TimeEncoder
+	EncodeZone   ZoneEncoder
+	EncodeFields FieldsEncoder
+
+	// DEPRECATED. Compatible with log4go
+	_encodeDate DateEncoder
+	_encodeTime TimeEncoder // DEPRECATED
 }
 
-// NewPatternLayout creates a new layout which format log record by pattern.
-// Using PatternDefault if pattern is empty string.
-func NewPatternLayout(pattern string) Layout {
-	if pattern == "" {
-		LogLogWarn("Layout pattern is empty and replaced with \"%s\".", PatternDefault)
-		pattern = PatternDefault
+func formatToVerbs(format string) [][]byte {
+	if format == "" {
+		format = FormatDefault
 	}
-	pl := &PatternLayout{}
-	// initial verbs, longZone, shortZone
-	return pl.Set("pattern", pattern).Set("utc", false)
+	if unq, err := strconv.Unquote(format); err == nil {
+		format = unq
+	}
+	return bytes.Split([]byte(format), []byte{'%'})
+}
+
+// NewPatternLayout creates a new layout which encode log record to bytes.
+func NewPatternLayout(format string, args ...interface{}) Layout {
+	lo := &PatternLayout{
+		verbs:   formatToVerbs(format),
+		lineEnd: DefaultLineEnd,
+
+		utc: false,
+
+		EncodeLevel:  NewLevelEncoder("std"),
+		EncodeCaller: shortCallerEncoder,
+		EncodeDate:   NewDateEncoder("cymdSlash"),
+		EncodeTime:   NewTimeEncoder("hms"),
+		EncodeZone:   NewZoneEncoder("mst"),
+		EncodeFields: keyvalFieldsEncoder,
+
+		// DEPRECATED. Compatible with log4go
+		_encodeDate: NewDateEncoder("mdy"),
+		_encodeTime: NewTimeEncoder("hhmm"),
+	}
+	return lo.Set(args...)
+}
+
+// NewJSONLayout creates a new layout which encode log record as JSON format.
+func NewJSONLayout(args ...interface{}) Layout {
+	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
+	lo := NewPatternLayout(jsonFormat, args...)
+	return lo.Set("timeEncoder", "rfc3339nano", "fieldsEncoder", "json")
+}
+
+// NewCSVLayout creates a new layout which encode log record as CSV format.
+func NewCSVLayout(args ...interface{}) Layout {
+	csvFormat := "%D|%T|%L|%P|%S:%N|%M%F"
+	lo := NewPatternLayout(csvFormat, args...)
+	return lo.Set("fieldsEncoder", "csv")
 }
 
 // Set options of layout. chainable
-func (pl *PatternLayout) Set(args ...interface{}) Layout {
-	ops, index, _ := ArgsToMap(args)
-	for _, k := range index {
-		pl.SetOption(k, ops[k])
+func (lo *PatternLayout) Set(args ...interface{}) Layout {
+	ops, idx, _ := ArgsToMap(args)
+	for _, k := range idx {
+		lo.SetOption(k, ops[k])
 	}
-	return pl
+	return lo
 }
 
 // SetOption set option with:
-//	pattern	- Layout format pattern
-//	utc     - Log record time zone
+//  format	- Layout format string. Auto-detecting quote string.
+//  lineEnd - line end string. Auto-detecting quote string.
+//	utc     - Log record time zone: local or utc.
 //
-// Known pattern codes are:
-//	%U - Time (15:04:05.000000)
-//	%T - Time (15:04:05)
-//	%h - hour
-//	%m - minute
-//	%Z - Zone (-0700)
-//	%z - Zone (MST)
+// Known encoder types are (The option's name and value are case-sensitive):
+//  levelEncoder  - "upper", "upperColor", "lower", "lowerColor", "std" is default.
+//	callerEncoder - "nopath", "fullpath", "shortpath" is default.
+//  dateEncoder   - "dmy", "mdy", "cymdDash", "cymdDot", "cymdSlash" is default.
+//  timeEncoder   - "hhmm",  "hms.us", "iso8601", "rfc3339nano", "hms" is default.
+//  zoneEncoder   - "rfc3339", "iso8601", "mst" is default.
+//  fieldsEncoder - "csv", "json", "keyval" is default.
+//
+// Known format codes are:
 //	%D - Date (2006/01/02)
-//	%Y - Date (2006-01-02)
-//	%d - Date (01/02/06)
+//	%T - Time (15:04:05)
+//	%Z - Zone (-0700)
 //	%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
-//	%l - Level
+//	%l - Integer level
 //	%P - Prefix
 //	%S - Source
-//	%s - Short Source
 //	%N - Line number
 //	%M - Message
-//  %F - Data in "key=value" format
-//	%J - Data in JSON format
-//	%t - Return (\t)
-//	%r - Return (\r)
-//	%n - Return (\n)
-//	Ignores other unknown formats
-func (pl *PatternLayout) SetOption(k string, v interface{}) (err error) {
-	err = nil
-
+//  %F - Data fields in "key=value" format
+//
+// DEPRECATED:
+//	%d - Date (01/02/06). Note: Do not using with %D in a layout
+//		 Replacing with setting "dateEncoder" as "mdy".
+//	%t - Time (15:04). Note: Do not using with %T in a layout
+//		 Replacing with setting "timeEncoder" as "hhmm".
+//
+//	Ignores other unknown format codes
+func (lo *PatternLayout) SetOption(k string, v interface{}) error {
 	switch k {
-	case "pattern", "format":
-		if value, ok := v.(string); ok {
-			pl.verbs = bytes.Split([]byte(value), []byte{'%'})
-		} else if value, ok := v.([]byte); ok {
-			pl.verbs = bytes.Split(value, []byte{'%'})
+	case "format", "pattern":
+		if format, err := ToString(v); err == nil && len(format) > 0 {
+			lo.verbs = formatToVerbs(format)
 		} else {
-			err = ErrBadValue
+			return err
+		}
+	case "lineEnd":
+		if lineEnd, err := ToString(v); err == nil {
+			if unq, err := strconv.Unquote(lineEnd); err == nil {
+				lineEnd = unq
+			}
+			lo.lineEnd = []byte(lineEnd)
+		} else {
+			return err
+		}
+	case "color":
+		if color, err := ToBool(v); err == nil {
+			lo.color = color
+		} else {
+			return err
 		}
 	case "utc":
-		utc := false
-		if utc, err = ToBool(v); err == nil {
-			pl.utc = utc
+		if utc, err := ToBool(v); err == nil {
+			lo.utc = utc
+		} else {
+			return err
 		}
-		// make sure shortZone and longZone initialized
-		t := time.Now()
-		if utc {
-			t = t.UTC()
+	case "levelEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeLevel = NewLevelEncoder(v.(string))
+		} else {
+			return ErrBadValue
 		}
-		pl.shortZone = []byte(t.Format("MST"))
-		pl.longZone = []byte(t.Format("Z07:00"))
-	default:
-		err = ErrBadOption
-	}
-
-	return
-}
-
-// Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
-func itoa(buf *[]byte, i int, wid int) {
-	// Assemble decimal in reverse order.
-	var b [20]byte
-	bp := len(b) - 1
-	for i >= 10 || wid > 1 {
-		wid--
-		q := i / 10
-		b[bp] = byte('0' + i - q*10)
-		bp--
-		i = q
-	}
-	// i < 10
-	b[bp] = byte('0' + i)
-	*buf = append(*buf, b[bp:]...)
-}
-
-func formatHMS(out *bytes.Buffer, t *time.Time, sep byte) {
-	hh, mm, ss := t.Clock()
-	var b [16]byte
-	b[0] = byte('0' + hh/10)
-	b[1] = byte('0' + hh%10)
-	b[2] = sep
-	b[3] = byte('0' + mm/10)
-	b[4] = byte('0' + mm%10)
-	b[5] = sep
-	b[6] = byte('0' + ss/10)
-	b[7] = byte('0' + ss%10)
-	out.Write(b[:8])
-}
-
-func formatDMY(out *bytes.Buffer, t *time.Time, sep byte) {
-	y, m, d := t.Date()
-	y %= 100
-	var b [16]byte
-	b[0] = byte('0' + d/10)
-	b[1] = byte('0' + d%10)
-	b[2] = sep
-	b[3] = byte('0' + m/10)
-	b[4] = byte('0' + m%10)
-	b[5] = sep
-	b[6] = byte('0' + y/10)
-	b[7] = byte('0' + y%10)
-	out.Write(b[:8])
-}
-
-func formatCYMD(out *bytes.Buffer, t *time.Time, sep byte) {
-	y, m, d := t.Date()
-	c := y / 100
-	y %= 100
-	var b [16]byte
-	b[0] = byte('0' + c/10)
-	b[1] = byte('0' + c%10)
-	b[2] = byte('0' + y/10)
-	b[3] = byte('0' + y%10)
-	b[4] = sep
-	b[5] = byte('0' + m/10)
-	b[6] = byte('0' + m%10)
-	b[7] = sep
-	b[8] = byte('0' + d/10)
-	b[9] = byte('0' + d%10)
-	out.Write(b[:10])
-}
-
-func (pl *PatternLayout) writeTime(out *bytes.Buffer, piece0 byte, t *time.Time) bool {
-	// assert len(pieces) > 0
-	var b []byte
-	switch piece0 {
-	case 'U':
-		formatHMS(out, t, ':')
-		b = append(b, '.')
-		itoa(&b, t.Nanosecond()/1e3, 6)
-		out.Write(b)
-	case 'T':
-		formatHMS(out, t, ':')
-	case 'h':
-		itoa(&b, t.Hour(), 2)
-		out.Write(b)
-	case 'm':
-		itoa(&b, t.Minute(), 2)
-		out.Write(b)
-	case 'Z':
-		out.Write(pl.longZone)
-	case 'z':
-		out.Write(pl.shortZone)
-	case 'D':
-		formatCYMD(out, t, '/')
-	case 'Y':
-		formatCYMD(out, t, '-')
-	case 'd':
-		formatDMY(out, t, '/')
-	default:
-		return false
-	}
-	return true
-}
-
-func writeKeyVal(out *bytes.Buffer, k string, v interface{}) {
-	out.WriteString(" " + k + "=")
-	var b []byte
-	if _, ok := v.(string); ok {
-		b = []byte(v.(string))
-	} else {
-		b = []byte(fmt.Sprint(v))
-	}
-	if len(b) <= 16 && bytes.IndexAny(b, " =") < 0 {
-		// no quote
-	} else {
-		b = append([]byte{'"'}, b...)
-		b = append(b, byte('"'))
-	}
-	out.Write(b)
-}
-
-func (pl *PatternLayout) writeRecord(out *bytes.Buffer, piece0 byte, e *Entry) bool {
-	// assert len(pieces) > 0
-	var b []byte
-	switch piece0 {
-	case 'L':
-		out.WriteString(levelStrings[e.Level])
-	case 'l':
-		itoa(&b, int(e.Level), -1)
-		out.Write(b)
-	case 'P':
-		out.WriteString(e.Prefix)
-	case 'S':
-		out.WriteString(e.Source)
-	case 's':
-		short := e.Source
-		for i := len(e.Source) - 1; i > 0; i-- {
-			if e.Source[i] == '/' {
-				short = e.Source[i+1:]
-				break
-			}
+	case "callerEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeCaller.SetAs(v.(string))
+		} else {
+			return ErrBadValue
 		}
-		out.WriteString(short)
-	case 'N':
-		itoa(&b, e.Line, -1)
-		out.Write(b)
-	case 'M':
-		out.WriteString(e.Message)
-	case 'F':
-		if len(e.Data) > 0 {
-			if len(e.index) > 1 {
-				for _, k := range e.index {
-					writeKeyVal(out, k, e.Data[k])
-				}
-			} else {
-				for k, v := range e.Data {
-					writeKeyVal(out, k, v)
-				}
-			}
+	case "dateEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeDate = NewDateEncoder(v.(string))
+		} else {
+			return ErrBadValue
 		}
-	case 'J':
-		if len(e.Data) > 0 {
-			out.WriteString(",\"Data\":")
-			encoder := json.NewEncoder(out)
-			encoder.Encode(e.Data)
+	case "timeEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeTime = NewTimeEncoder(v.(string))
+		} else {
+			return ErrBadValue
+		}
+	case "zoneEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeZone = NewZoneEncoder(v.(string))
+		} else {
+			return ErrBadValue
+		}
+	case "fieldsEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeFields.SetAs(v.(string))
+		} else {
+			return ErrBadValue
 		}
 	default:
-		return false
+		return ErrBadOption
 	}
-	return true
+
+	return nil
 }
 
-// Format log record.
-// Return bytes.
-func (pl *PatternLayout) Format(e *Entry) []byte {
+// Encode Entry to out buffer.
+// Return len.
+func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	if e == nil {
-		return []byte("<nil>")
+		out.Write([]byte("<nil>"))
+		return out.Len()
 	}
-	if len(pl.verbs) == 0 {
-		return nil
+	if len(lo.verbs) == 0 {
+		return out.Len()
 	}
 
 	t := e.Created
-	if pl.utc {
+	if lo.utc {
 		t = t.UTC()
 	}
 
-	out := bytes.NewBuffer(make([]byte, 0, 64))
+	if lo.color {
+		out.Write(Level(e.Level).Color())
+	}
 
 	// Iterate over the pieces, replacing known formats
 	// Split the string into pieces by % signs
-	// pieces := bytes.Split([]byte(format), []byte{'%'})
-	for i, piece := range pl.verbs {
+	// verbs := bytes.Split([]byte(format), []byte{'%'})
+
+	for i, piece := range lo.verbs {
 		if i == 0 && len(piece) > 0 {
 			out.Write(piece)
 			continue
@@ -316,24 +249,46 @@ func (pl *PatternLayout) Format(e *Entry) []byte {
 		if len(piece) <= 0 {
 			continue
 		}
-		if pl.writeTime(out, piece[0], &t) == false {
-			if pl.writeRecord(out, piece[0], e) == false {
-				switch piece[0] {
-				case 't':
-					out.WriteByte('\t')
-				case 'r':
-					out.WriteByte('\r')
-				case 'n', 'R':
-					out.WriteByte('\n')
-				default:
-					// unknown format
-				}
-			}
+		switch piece[0] {
+		case 'D':
+			lo.EncodeDate(out, &t)
+		case 'd':
+			lo._encodeDate(out, &t)
+		case 'T':
+			lo.EncodeTime(out, &t)
+		case 't':
+			lo._encodeTime(out, &t)
+		case 'Z':
+			lo.EncodeZone(out, &t)
+		case 'L':
+			lo.EncodeLevel(out, e.Level)
+		case 'l':
+			var b []byte
+			itoa(&b, int(e.Level), -1)
+			out.Write(b)
+		case 'P':
+			out.WriteString(e.Prefix)
+		case 'S':
+			lo.EncodeCaller(out, e.Source)
+		case 'N':
+			var b []byte
+			itoa(&b, e.Line, -1)
+			out.Write(b)
+		case 'M':
+			out.WriteString(e.Message)
+		case 'F':
+			lo.EncodeFields(out, e.Data, e.index)
+		default:
+			// unknown format code. Ignored.
 		}
 		if len(piece) > 1 {
 			out.Write(piece[1:])
 		}
 	}
 
-	return out.Bytes()
+	out.Write(lo.lineEnd)
+	if lo.color {
+		out.Write(ResetColor.Bytes())
+	}
+	return out.Len()
 }

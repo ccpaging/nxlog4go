@@ -9,41 +9,11 @@ import (
 	"time"
 )
 
-func TestFormatHMS(t *testing.T) {
-	now := time.Now()
-	//year, month, day := now.Date()
-	out := bytes.NewBuffer(make([]byte, 0, 64))
-	formatHMS(out, &now, ':')
-	want := now.Format("15:04:05")
-	if got := string(out.Bytes()); got != want {
-		t.Errorf("Incorrect time format: %s should be %s", got, want)
-	}
-}
-
-func TestFormatDMY(t *testing.T) {
-	now := time.Now()
-	out := bytes.NewBuffer(make([]byte, 0, 64))
-	formatDMY(out, &now, '/')
-	want := now.Format("02/01/06")
-	if got := string(out.Bytes()); got != want {
-		t.Errorf("Incorrect time format: %s should be %s", got, want)
-	}
-}
-
-func TestFormatCYMD(t *testing.T) {
-	now := time.Now()
-	out := bytes.NewBuffer(make([]byte, 0, 64))
-	formatCYMD(out, &now, '/')
-	want := now.Format("2006/01/02")
-	if got := string(out.Bytes()); got != want {
-		t.Errorf("Incorrect time format: %s should be %s", got, want)
-	}
-}
-
-var patternTests = []struct {
-	Test     string
-	Record   *Entry
-	Patterns map[string]string
+var formatTests = []struct {
+	Test    string
+	Record  *Entry
+	Formats map[string]string
+	Args    map[string][]interface{}
 }{
 	{
 		Test: "Standard formats",
@@ -53,32 +23,39 @@ var patternTests = []struct {
 			Message: "message",
 			Created: now,
 		},
-		Patterns: map[string]string{
+		Formats: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			PatternDefault: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
-			PatternShort:   "[23:31 13/02/09] [EROR] message\n",
-			PatternAbbrev:  "[EROR] message\n",
+			FormatDefault: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
+			FormatShort:   "[23:31 13/02/09] [EROR] message\n",
+			FormatAbbrev:  "[EROR] message\n",
+		},
+		Args: map[string][]interface{}{
+			FormatShort: []interface{}{"timeEncoder", "hhmm", "dateEncoder", "dmy"},
 		},
 	},
 }
 
 func TestPatternLayout(t *testing.T) {
-	for _, test := range patternTests {
+	out := new(bytes.Buffer)
+	for _, test := range formatTests {
 		name := test.Test
-		for pattern, want := range test.Patterns {
-			layout := NewPatternLayout(pattern).Set("utc", true)
-			if got := string(layout.Format(test.Record)); got != want {
-				t.Errorf("%s - %s:", name, pattern)
+		for format, want := range test.Formats {
+			layout := NewPatternLayout(format, "utc", true)
+			if args, ok := test.Args[format]; ok {
+				layout.Set(args...)
+			}
+			layout.Encode(out, test.Record)
+			if got := out.String(); got != want {
+				t.Errorf("%s - %q:", name, format)
 				t.Errorf("   got %q", got)
 				t.Errorf("  want %q", want)
 			}
+			out.Reset()
 		}
 	}
 }
 
-func TestDataField(t *testing.T) {
-	buf := new(bytes.Buffer)
-
+func TestKeyValueEncoder(t *testing.T) {
 	data := map[string]interface{}{
 		"int":   3,
 		"short": "abcdefghijk",
@@ -90,12 +67,11 @@ func TestDataField(t *testing.T) {
 		"long",
 	}
 
-	for _, k := range index {
-		writeKeyVal(buf, k, data[k])
-	}
+	out := new(bytes.Buffer)
+	keyvalFieldsEncoder(out, data, index)
 
 	want := " int=3 short=abcdefghijk long=\"0123456789abcdefg\""
-	if got := buf.String(); got != want {
+	if got := out.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
 	}
@@ -110,10 +86,12 @@ func BenchmarkPatternLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	layout := NewPatternLayout(testPattern)
+	layout := NewPatternLayout(testFormat)
+	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
 		e.Created = e.Created.Add(1 * time.Second / updateEvery)
-		layout.Format(e)
+		layout.Encode(out, e)
+		out.Reset()
 	}
 }
 
@@ -141,9 +119,11 @@ func BenchmarkJsonLayout(b *testing.B) {
 		Source:  "source",
 		Message: "message",
 	}
-	layout := NewPatternLayout(PatternJSON)
+	layout := NewJSONLayout()
+	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
 		e.Created = e.Created.Add(1 * time.Second / updateEvery)
-		layout.Format(e)
+		layout.Encode(out, e)
+		out.Reset()
 	}
 }

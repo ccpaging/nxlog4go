@@ -30,12 +30,19 @@ func newEntry(level int, src string, msg string) *l4g.Entry {
 	}
 }
 
+func removeFile(t *testing.T, filename string) {
+	err := os.Remove(filename)
+	if err != nil && t != nil {
+		t.Errorf("remove (%q): %s", filename, err)
+	}
+}
+
 func TestFileAppender(t *testing.T) {
 	w, _ := NewAppender(testLogFile, "rotate", false)
 	if w == nil {
 		t.Fatalf("Invalid return: w should not be nil")
 	}
-	defer os.Remove(testLogFile)
+	defer removeFile(t, testLogFile)
 
 	w.Write(newEntry(l4g.CRITICAL, "source", "message"))
 	runtime.Gosched()
@@ -68,7 +75,7 @@ func TestFileLog(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 168 {
+	} else if len(contents) != 178 {
 		t.Errorf("malformed FileLog: %q (%d bytes)", string(contents), len(contents))
 	}
 
@@ -89,7 +96,7 @@ func TestFileLogRotate(t *testing.T) {
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	filter, _ := NewAppender(testLogFile, "rotate", true, "maxbackup", 10)
-	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
+	filter.Set("format", "[%D %T] [%L] (%x) %M")
 	filter.Set("cycle", 5).Set("clock", -1).Set("maxsize", "5k")
 
 	filters := l4g.NewFilters().Add("file", l4g.FINE, filter)
@@ -133,7 +140,7 @@ func TestRotateFile(t *testing.T) {
 
 	/* Can also specify manually via the following: (these are the defaults) */
 	filter, _ := NewAppender(testLogFile, "rotate", true, "maxbackup", 10)
-	filter.Set("format", "[%D %T] [%L] (%x) %M%R")
+	filter.Set("format", "[%D %T] [%L] (%x) %M")
 	filter.Set("cycle", 0).Set("maxsize", "5k")
 
 	filters := l4g.NewFilters().Add("file", l4g.FINE, filter)
