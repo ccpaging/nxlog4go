@@ -113,6 +113,51 @@ func (lo *PatternLayout) Set(args ...interface{}) Layout {
 	return lo
 }
 
+func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
+	switch k {
+	case "levelEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeLevel = NewLevelEncoder(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	case "callerEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeCaller.SetAs(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	case "dateEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeDate = NewDateEncoder(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	case "timeEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeTime = NewTimeEncoder(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	case "zoneEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeZone = NewZoneEncoder(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	case "fieldsEncoder":
+		if _, ok := v.(string); ok {
+			lo.EncodeFields.SetAs(v.(string))
+		} else {
+			err = ErrBadValue
+		}
+	default:
+		return ErrBadOption
+	}
+
+	return
+}
+
 // SetOption set option with:
 //  format	- Layout format string. Auto-detecting quote string.
 //  lineEnd - line end string. Auto-detecting quote string.
@@ -145,13 +190,11 @@ func (lo *PatternLayout) Set(args ...interface{}) Layout {
 //		 Replacing with setting "timeEncoder" as "hhmm".
 //
 //	Ignores other unknown format codes
-func (lo *PatternLayout) SetOption(k string, v interface{}) error {
+func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "format", "pattern":
 		if format, err := ToString(v); err == nil && len(format) > 0 {
 			lo.verbs = formatToVerbs(format)
-		} else {
-			return err
 		}
 	case "lineEnd":
 		if lineEnd, err := ToString(v); err == nil {
@@ -159,62 +202,20 @@ func (lo *PatternLayout) SetOption(k string, v interface{}) error {
 				lineEnd = unq
 			}
 			lo.lineEnd = []byte(lineEnd)
-		} else {
-			return err
 		}
 	case "color":
 		if color, err := ToBool(v); err == nil {
 			lo.color = color
-		} else {
-			return err
 		}
 	case "utc":
 		if utc, err := ToBool(v); err == nil {
 			lo.utc = utc
-		} else {
-			return err
-		}
-	case "levelEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeLevel = NewLevelEncoder(v.(string))
-		} else {
-			return ErrBadValue
-		}
-	case "callerEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeCaller.SetAs(v.(string))
-		} else {
-			return ErrBadValue
-		}
-	case "dateEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeDate = NewDateEncoder(v.(string))
-		} else {
-			return ErrBadValue
-		}
-	case "timeEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeTime = NewTimeEncoder(v.(string))
-		} else {
-			return ErrBadValue
-		}
-	case "zoneEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeZone = NewZoneEncoder(v.(string))
-		} else {
-			return ErrBadValue
-		}
-	case "fieldsEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeFields.SetAs(v.(string))
-		} else {
-			return ErrBadValue
 		}
 	default:
-		return ErrBadOption
+		return lo.setEncoder(k, v)
 	}
 
-	return nil
+	return
 }
 
 // Encode Entry to out buffer.
@@ -223,8 +224,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	if e == nil {
 		out.Write([]byte("<nil>"))
 		return out.Len()
-	}
-	if len(lo.verbs) == 0 {
+	} else if len(lo.verbs) == 0 {
 		return out.Len()
 	}
 
@@ -245,8 +245,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 		if i == 0 && len(piece) > 0 {
 			out.Write(piece)
 			continue
-		}
-		if len(piece) <= 0 {
+		} else if len(piece) <= 0 {
 			continue
 		}
 		switch piece[0] {

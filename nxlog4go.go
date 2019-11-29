@@ -117,11 +117,11 @@ type Logger struct {
 // formatted log messages at or above level to standard output.
 func NewLogger(level int) *Logger {
 	l := &Logger{
-		out:    os.Stderr,
-		level:  level,
-		caller: true,
-		prefix: "",
-		layout: NewPatternLayout(FormatDefault),
+		out:     os.Stderr,
+		level:   level,
+		caller:  true,
+		prefix:  "",
+		layout:  NewPatternLayout(FormatDefault),
 		filters: nil,
 	}
 	return l
