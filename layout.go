@@ -218,23 +218,10 @@ func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	return
 }
 
-// Encode Entry to out buffer.
-// Return len.
-func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
-	if e == nil {
-		out.Write([]byte("<nil>"))
-		return out.Len()
-	} else if len(lo.verbs) == 0 {
-		return out.Len()
-	}
-
+func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {
 	t := e.Created
 	if lo.utc {
 		t = t.UTC()
-	}
-
-	if lo.color {
-		out.Write(Level(e.Level).Color())
 	}
 
 	// Iterate over the pieces, replacing known formats
@@ -284,6 +271,23 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 			out.Write(piece[1:])
 		}
 	}
+}
+
+// Encode Entry to out buffer.
+// Return len.
+func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
+	if e == nil {
+		out.Write([]byte("<nil>"))
+		return out.Len()
+	} else if len(lo.verbs) == 0 {
+		return out.Len()
+	}
+
+	if lo.color {
+		out.Write(Level(e.Level).Color())
+	}
+
+	lo.encode(out, e)
 
 	out.Write(lo.lineEnd)
 	if lo.color {
