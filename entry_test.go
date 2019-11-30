@@ -67,11 +67,11 @@ func TestEntryFormatKeyValue(t *testing.T) {
 	errBoom := fmt.Errorf("boom time")
 
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOutput(buf).Set("format", "%L %S %M.%F")
+	l := NewLogger(INFO).SetOutput(buf).Set("format", "%L %S %M.%F", "fieldsEncoder", "quote")
 	e := NewEntry(l)
 
 	e.With("err", errBoom, "k2", "v2", "k1", "v1").Log(1, ERROR, "kaboom")
-	want := "EROR nxlog4go/entry_test.go kaboom. err=\"boom time\" k2=v2 k1=v1\n"
+	want := "EROR nxlog4go/entry_test.go kaboom. err=\"boom time\" k2=\"v2\" k1=\"v1\"\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)

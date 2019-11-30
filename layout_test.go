@@ -55,28 +55,6 @@ func TestPatternLayout(t *testing.T) {
 	}
 }
 
-func TestKeyValueEncoder(t *testing.T) {
-	data := map[string]interface{}{
-		"int":   3,
-		"short": "abcdefghijk",
-		"long":  "0123456789abcdefg",
-	}
-	index := []string{
-		"int",
-		"short",
-		"long",
-	}
-
-	out := new(bytes.Buffer)
-	keyvalFieldsEncoder(out, data, index)
-
-	want := " int=3 short=abcdefghijk long=\"0123456789abcdefg\""
-	if got := out.String(); got != want {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", want)
-	}
-}
-
 func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
 	e := &Entry{

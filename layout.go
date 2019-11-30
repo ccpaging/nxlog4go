@@ -77,11 +77,11 @@ func NewPatternLayout(format string, args ...interface{}) Layout {
 		utc: false,
 
 		EncodeLevel:  NewLevelEncoder("std"),
-		EncodeCaller: shortCallerEncoder,
+		EncodeCaller: NewCallerEncoder("shortpath"),
 		EncodeDate:   NewDateEncoder("cymdSlash"),
 		EncodeTime:   NewTimeEncoder("hms"),
 		EncodeZone:   NewZoneEncoder("mst"),
-		EncodeFields: keyvalFieldsEncoder,
+		EncodeFields: NewFieldsEncoder("std"),
 
 		// DEPRECATED. Compatible with log4go
 		_encodeDate: NewDateEncoder("mdy"),
@@ -123,7 +123,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 		}
 	case "callerEncoder":
 		if _, ok := v.(string); ok {
-			lo.EncodeCaller.SetAs(v.(string))
+			lo.EncodeCaller = NewCallerEncoder(v.(string))
 		} else {
 			err = ErrBadValue
 		}
@@ -147,7 +147,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 		}
 	case "fieldsEncoder":
 		if _, ok := v.(string); ok {
-			lo.EncodeFields.SetAs(v.(string))
+			lo.EncodeFields = NewFieldsEncoder(v.(string))
 		} else {
 			err = ErrBadValue
 		}
@@ -169,7 +169,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 //  dateEncoder   - "dmy", "mdy", "cymdDash", "cymdDot", "cymdSlash" is default.
 //  timeEncoder   - "hhmm",  "hms.us", "iso8601", "rfc3339nano", "hms" is default.
 //  zoneEncoder   - "rfc3339", "iso8601", "mst" is default.
-//  fieldsEncoder - "csv", "json", "keyval" is default.
+//  fieldsEncoder - "quote", "csv", "json", "quote", "std" is default.
 //
 // Known format codes are:
 //	%D - Date (2006/01/02)
@@ -290,6 +290,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	lo.encode(out, e)
 
 	out.Write(lo.lineEnd)
+
 	if lo.color {
 		out.Write(ResetColor.Bytes())
 	}

@@ -49,7 +49,7 @@ func TestCallerEncoder(t *testing.T) {
 	var out bytes.Buffer
 	var enc CallerEncoder
 	for _, tt := range tests {
-		enc.SetAs(tt.name)
+		enc = NewCallerEncoder(tt.name)
 		enc(&out, filename)
 		if got := string(out.Bytes()); got != tt.want {
 			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
@@ -113,5 +113,28 @@ func TestTimeEncoder(t *testing.T) {
 			}
 			out.Reset()
 		}
+	}
+}
+
+func TestFieldsEncoder(t *testing.T) {
+	data := map[string]interface{}{
+		"int":   3,
+		"short": "abcdefghijk",
+		"long":  "0123456789abcdefg",
+	}
+	index := []string{
+		"int",
+		"short",
+		"long",
+	}
+
+	out := new(bytes.Buffer)
+	enc := NewFieldsEncoder("std")
+	enc(out, data, index)
+
+	want := " int=3 short=abcdefghijk long=0123456789abcdefg"
+	if got := out.String(); got != want {
+		t.Errorf("   got %q", got)
+		t.Errorf("  want %q", want)
 	}
 }
