@@ -16,16 +16,19 @@ var (
 )
 
 // FormatMessage builds a format string by the arguments
-// Return a format string which depends on the first argument:
-// - arg[0] is a string
-//   When given a string as the first argument, this behaves like fmt.Sprintf
-//   the first argument is interpreted as a format for the latter arguments.
-// - arg[0] is a func()string
-//   When given a closure of type func()string, this logs the string returned by
-//   the closure if it will be logged.  The closure runs at most one time.
-// - arg[0] is interface{}
-//   When given anything else, the return message will be each of the arguments
-//   formatted with %v and separated by spaces (ala Sprint).
+// Return a format string which depends on the first argument
+//
+// arg[0] is a string
+//  When given a string as the first argument, this behaves like fmt.Sprintf
+//  the first argument is interpreted as a format for the latter arguments.
+//
+// arg[0] is a func()string
+//  When given a closure of type func()string, this logs the string returned by
+//  the closure if it will be logged.  The closure runs at most one time.
+//
+// arg[0] is interface{}
+//  When given anything else, the return message will be each of the arguments
+//  formatted with %v and separated by spaces (ala Sprint).
 func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
 	switch first := arg0.(type) {
 	case string:
