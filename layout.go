@@ -172,24 +172,24 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 //  fieldsEncoder - "quote", "csv", "json", "quote", "std" is default.
 //
 // Known format codes are:
-//	%D - Date (2006/01/02)
-//	%T - Time (15:04:05)
-//	%Z - Zone (-0700)
-//	%L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
-//	%l - Integer level
-//	%P - Prefix
-//	%S - Source
-//	%N - Line number
-//	%M - Message
+//  %D - Date (2006/01/02)
+//  %T - Time (15:04:05)
+//  %Z - Zone (-0700)
+//  %L - Level (FNST, FINE, DEBG, TRAC, WARN, EROR, CRIT)
+//  %l - Integer level
+//  %P - Prefix
+//  %S - Source
+//  %N - Line number
+//  %M - Message
 //  %F - Data fields in "key=value" format
 //
 // DEPRECATED:
-//	%d - Date (01/02/06). Note: Do not using with %D in a layout
-//		 Replacing with setting "dateEncoder" as "mdy".
-//	%t - Time (15:04). Note: Do not using with %T in a layout
-//		 Replacing with setting "timeEncoder" as "hhmm".
+//  %d - Date (01/02/06). Note: Do not using with %D in a layout
+//       Replacing with setting "dateEncoder" as "mdy".
+//  %t - Time (15:04). Note: Do not using with %T in a layout
+//       Replacing with setting "timeEncoder" as "hhmm".
 //
-//	Ignores other unknown format codes
+// Ignores other unknown format codes
 func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "format", "pattern":
