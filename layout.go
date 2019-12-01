@@ -159,13 +159,13 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 }
 
 // SetOption set option with:
-//  format	- Layout format string. Auto-detecting quote string.
+//  format  - Layout format string. Auto-detecting quote string.
 //  lineEnd - line end string. Auto-detecting quote string.
-//	utc     - Log record time zone: local or utc.
+//  utc     - Log record time zone: local or utc.
 //
 // Known encoder types are (The option's name and value are case-sensitive):
 //  levelEncoder  - "upper", "upperColor", "lower", "lowerColor", "std" is default.
-//	callerEncoder - "nopath", "fullpath", "shortpath" is default.
+//  callerEncoder - "nopath", "fullpath", "shortpath" is default.
 //  dateEncoder   - "dmy", "mdy", "cymdDash", "cymdDot", "cymdSlash" is default.
 //  timeEncoder   - "hhmm",  "hms.us", "iso8601", "rfc3339nano", "hms" is default.
 //  zoneEncoder   - "rfc3339", "iso8601", "mst" is default.
