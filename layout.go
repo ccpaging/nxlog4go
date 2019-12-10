@@ -284,7 +284,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	}
 
 	if lo.color {
-		out.Write(Level(e.Level).Color())
+		out.Write(Level(e.Level).ColorBytes())
 	}
 
 	lo.encode(out, e)
@@ -292,7 +292,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	out.Write(lo.lineEnd)
 
 	if lo.color {
-		out.Write(ResetColor.Bytes())
+		out.Write(Level(e.Level).ColorReset())
 	}
 	return out.Len()
 }

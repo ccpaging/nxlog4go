@@ -64,21 +64,35 @@ func (l Level) String() string {
 	if ok {
 		return s
 	}
-	return l.Unknown()
+	return l.unknown()
 }
 
 // Unknown return unknown level string
-func (l Level) Unknown() string {
+func (l Level) unknown() string {
 	return fmt.Sprintf("Level(%d)", l)
 }
 
-// Color return the ANSI color bytes of level
-func (l Level) Color() []byte {
+// ColorBytes return the ANSI color bytes by level
+func (l Level) ColorBytes() []byte {
 	c, ok := levelColors[int(l)]
 	if ok {
 		return c.Bytes()
 	}
 	return Red.Bytes()
+}
+
+// ColorReset return the reset ANSI color bytes
+func (l Level) ColorReset() []byte {
+	return ResetColor.Bytes()
+}
+
+// Colorize return the ANSI color wrap bytes by level
+func (l Level) Colorize(s string) []byte {
+	c, ok := levelColors[int(l)]
+	if ok {
+		return c.Wrap([]byte(s))
+	}
+	return Red.Wrap([]byte(s))
 }
 
 // Int return the integer level of string
