@@ -83,7 +83,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // Version information

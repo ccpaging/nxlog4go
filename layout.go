@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // Layout is is an interface for formatting log record

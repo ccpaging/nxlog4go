@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // Appender is an Appender that sends output to an UDP/TCP server

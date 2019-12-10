@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // NameValue stores every single option's name and value.

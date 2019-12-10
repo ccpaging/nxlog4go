@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // RotateFileWriter represents the buffered writer with lock, header, footer and rotating.

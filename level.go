@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ccpaging/nxlog4go/internal/ansicolor"
+	"github.com/ccpaging/nxlog4go/ansicolor"
 )
 
 // logging levels used by the logger

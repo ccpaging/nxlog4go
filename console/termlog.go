@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
-	"github.com/ccpaging/nxlog4go/internal/cast"
+	"github.com/ccpaging/nxlog4go/cast"
 )
 
 // ColorBytes represents ANSI code to set different color of levels
