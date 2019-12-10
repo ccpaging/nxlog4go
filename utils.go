@@ -15,7 +15,7 @@ var (
 	ErrBadValue = errors.New("Invalid option value")
 )
 
-// FormatMessage builds a format string by the arguments
+// ArgsToString builds a format string by the arguments
 // Return a format string which depends on the first argument
 //
 // arg[0] is a string
@@ -29,7 +29,7 @@ var (
 // arg[0] is interface{}
 //  When given anything else, the return message will be each of the arguments
 //  formatted with %v and separated by spaces (ala Sprint).
-func FormatMessage(arg0 interface{}, args ...interface{}) (s string) {
+func ArgsToString(arg0 interface{}, args ...interface{}) (s string) {
 	switch first := arg0.(type) {
 	case string:
 		if len(args) == 0 {

@@ -8,13 +8,25 @@ import (
 )
 
 func TestEntryWithError(t *testing.T) {
-	l := NewLogger(FINEST)
-	e := NewEntry(l)
+	e := &Entry{}
 	err := fmt.Errorf("kaboom at layer %d", 4711)
 	if got := e.With("error", err).Data["error"]; got != err.Error() {
 		t.Errorf("With(\"%s\", \"%s\"):", "error", err)
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", err)
+	}
+}
+
+func TestEntryWithArgs(t *testing.T) {
+	e := &Entry{}
+	err := fmt.Errorf("kaboom at layer %d", 4711)
+	want := 3
+	if got := len(e.With("error", err, "k1", "v1", "k2", "v2").Data); got != want {
+		t.Errorf("   got %q", got)
+		t.Errorf("  want %q", want)
+	} else if got = len(e.Index); got != want {
+		t.Errorf("   got index %q", got)
+		t.Errorf("  want index %q", want)
 	}
 }
 
@@ -28,23 +40,9 @@ func TestEntryArgs(t *testing.T) {
 	if got := len(e.Data); got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
-	} else if got = len(e.index); got != want {
+	} else if got = len(e.Index); got != want {
 		t.Errorf("   got index %d", got)
 		t.Errorf("  want index %d", want)
-	}
-}
-
-func TestEntryWithArgs(t *testing.T) {
-	l := NewLogger(FINEST)
-	e := NewEntry(l)
-	err := fmt.Errorf("kaboom at layer %d", 4711)
-	want := 3
-	if got := len(e.With("error", err, "k1", "v1", "k2", "v2").Data); got != want {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", want)
-	} else if got = len(e.index); got != want {
-		t.Errorf("   got index %q", got)
-		t.Errorf("  want index %q", want)
 	}
 }
 

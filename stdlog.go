@@ -46,21 +46,21 @@ func Info(arg0 interface{}, args ...interface{}) {
 
 // Warn is a wrapper for (*Logger).Warn
 func Warn(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	std.Log(2, WARN, msg)
 	return errors.New(msg)
 }
 
 // Error is a wrapper for (*Logger).Error
 func Error(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	std.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
 
 // Critical is a wrapper for (*Logger).Critical
 func Critical(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	std.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }

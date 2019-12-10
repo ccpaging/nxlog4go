@@ -274,7 +274,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {
 		case 'M':
 			out.WriteString(e.Message)
 		case 'F':
-			lo.EncodeFields(out, e.Data, e.index)
+			lo.EncodeFields(out, e.Data, e.Index)
 		default:
 			// unknown format code. Ignored.
 		}

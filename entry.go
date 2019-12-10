@@ -36,7 +36,7 @@ type Entry struct {
 	Created time.Time // The time at which the log message was created (nanoseconds)
 
 	Data  map[string]interface{} // Contains all the fields set by the user.
-	index []string
+	Index []string
 
 	logger    *Logger
 	calldepth int
@@ -55,18 +55,27 @@ func (e *Entry) With(args ...interface{}) *Entry {
 	if len(args) == 0 {
 		return e
 	}
+	e.Data, e.Index, _ = ArgsToMap(args)
+	return e
+}
+
+func (e *Entry) moreWith(args ...interface{}) *Entry {
+	if len(args) == 0 {
+		return e
+	}
+
+	data, index, _ := ArgsToMap(args)
+	if len(data) <= 0 {
+		return e
+	}
 
 	if e.Data == nil {
 		e.Data = make(map[string]interface{}, len(args)/2)
-	}
-	data, index, err := ArgsToMap(args)
-	if err != nil {
-		LogLogWarn(err)
-	}
+	} 
 	for k, v := range data {
 		e.Data[k] = v
 	}
-	e.index = append(e.index, index...)
+	e.Index = append(e.Index, index...)
 	return e
 }
 
@@ -114,8 +123,8 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 	}
 
 	e.Level = level
-	e.Message = FormatMessage(arg0)
-	e.With(args...)
+	e.Message = ArgsToString(arg0)
+	e.moreWith(args...)
 	e.calldepth = calldepth + 1
 	e.flush()
 }
@@ -165,7 +174,7 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
 func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0)
+	msg := ArgsToString(arg0)
 	e.Log(2, WARN, msg, args...)
 	return errors.New(msg)
 }
@@ -174,7 +183,7 @@ func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (e *Entry) Error(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0)
+	msg := ArgsToString(arg0)
 	e.Log(2, ERROR, msg, args...)
 	return errors.New(msg)
 }
@@ -183,7 +192,7 @@ func (e *Entry) Error(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (e *Entry) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0)
+	msg := ArgsToString(arg0)
 	e.Log(2, CRITICAL, msg, args...)
 	return errors.New(msg)
 }

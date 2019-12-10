@@ -29,7 +29,7 @@ func (l *Logger) Log(calldepth int, level int, arg0 interface{}, args ...interfa
 	e := &Entry{
 		Prefix:    l.prefix,
 		Level:     level,
-		Message:   FormatMessage(arg0, args...),
+		Message:   ArgsToString(arg0, args...),
 		logger:    l,
 		calldepth: calldepth + 1,
 	}
@@ -49,13 +49,13 @@ func (l *Logger) Fine(arg0 interface{}, args ...interface{}) {
 }
 
 // Debug is a utility method for debug log messages.
-// See FormatMessage for an explanation of the arguments.
+// See ArgsToString for an explanation of the arguments.
 func (l *Logger) Debug(arg0 interface{}, args ...interface{}) {
 	l.Log(2, DEBUG, arg0, args...)
 }
 
 // Trace logs a message at the trace log level.
-// See FormatMessage for an explanation of the arguments.
+// See ArgsToString for an explanation of the arguments.
 func (l *Logger) Trace(arg0 interface{}, args ...interface{}) {
 	l.Log(2, TRACE, arg0, args...)
 }
@@ -70,27 +70,27 @@ func (l *Logger) Info(arg0 interface{}, args ...interface{}) {
 // At the warn level and higher, there is no performance benefit if the
 // message is not actually logged, because all formats are processed and all
 // closures are executed to format the error message.
-// See FormatMessage for further explanation of the arguments.
+// See ArgsToString for further explanation of the arguments.
 func (l *Logger) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	l.Log(2, WARN, msg)
 	return errors.New(msg)
 }
 
 // Error logs a message at the error log level and returns the formatted error,
-// See Warn for an explanation of the performance and FormatMessage for an explanation
+// See Warn for an explanation of the performance and ArgsToString for an explanation
 // of the parameters.
 func (l *Logger) Error(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	l.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
 
 // Critical logs a message at the critical log level and returns the formatted error,
-// See Warn for an explanation of the performance and FormatMessage for an explanation
+// See Warn for an explanation of the performance and ArgsToString for an explanation
 // of the parameters.
 func (l *Logger) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := FormatMessage(arg0, args...)
+	msg := ArgsToString(arg0, args...)
 	l.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }
