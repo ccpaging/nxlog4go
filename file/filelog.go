@@ -11,6 +11,7 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // Appender represents the log appender that sends output to a file
@@ -189,28 +190,28 @@ func (a *Appender) setLoop(k string, v interface{}) error {
 
 	switch k {
 	case "cycle":
-		if cycle, err := l4g.ToSeconds(v); err == nil {
+		if cycle, err := cast.ToSeconds(v); err == nil {
 			a.cycle = cycle
 			a.out.Set("rotate", (a.cycle <= 0))
 			isReset = true
 		} else {
-			return l4g.ErrBadOption
+			return err
 		}
 	case "clock", "delay0":
-		if clock, err := l4g.ToSeconds(v); err == nil {
+		if clock, err := cast.ToSeconds(v); err == nil {
 			a.clock = clock
 			isReset = true
 		} else {
-			return l4g.ErrBadOption
+			return err
 		}
 	case "daily":
-		if daily, err := l4g.ToBool(v); err == nil && daily {
+		if daily, err := cast.ToBool(v); err == nil && daily {
 			a.cycle = 86400
 			a.clock = 0
 			a.out.Set("rotate", false)
 			isReset = true
 		} else {
-			return l4g.ErrBadOption
+			return err
 		}
 	case "weekly":
 	case "monthly":
@@ -265,7 +266,7 @@ func (a *Appender) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "filename":
 		fname := ""
-		fname, err = l4g.ToString(v)
+		fname, err = cast.ToString(v)
 		if err != nil && len(fname) <= 0 {
 			err = l4g.ErrBadValue
 		} else {

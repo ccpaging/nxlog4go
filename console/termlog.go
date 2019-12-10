@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // ColorBytes represents ANSI code to set different color of levels
@@ -126,7 +127,7 @@ func (a *Appender) SetOption(k string, v interface{}) error {
 
 	switch k {
 	case "color":
-		if color, err := l4g.ToBool(v); err == nil {
+		if color, err := cast.ToBool(v); err == nil {
 			a.color = color
 		}
 	default:

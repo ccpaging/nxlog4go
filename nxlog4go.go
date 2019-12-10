@@ -82,6 +82,8 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // Version information
@@ -166,13 +168,13 @@ func (l *Logger) SetOption(k string, v interface{}) error {
 
 	switch k {
 	case "prefix":
-		if prefix, err := ToString(v); err == nil {
+		if prefix, err := cast.ToString(v); err == nil {
 			l.prefix = prefix
 		} else {
 			return err
 		}
 	case "caller":
-		if caller, err := ToBool(v); err == nil {
+		if caller, err := cast.ToBool(v); err == nil {
 			l.caller = caller
 		} else {
 			return err

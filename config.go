@@ -5,6 +5,8 @@ package nxlog4go
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // NameValue stores every single option's name and value.
@@ -79,7 +81,7 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 			continue
 		}
 
-		if enabled, err := ToBool(fc.Enabled); !enabled {
+		if enabled, err := cast.ToBool(fc.Enabled); !enabled {
 			errs = append(errs, fmt.Errorf("Trace: Disable filter [%s]. Error: %v", fc.Tag, err))
 			continue
 		}

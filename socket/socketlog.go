@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // Appender is an Appender that sends output to an UDP/TCP server
@@ -117,22 +118,22 @@ func (a *Appender) SetOption(k string, v interface{}) error {
 
 	switch k {
 	case "protocol": // DEPRECATED. See Open function's dsn argument
-		if proto, err := l4g.ToString(v); err == nil && len(proto) > 0 {
+		if proto, err := cast.ToString(v); err == nil && len(proto) > 0 {
 			if a.sock != nil {
 				a.sock.Close()
 			}
 			a.proto = proto
 		} else {
-			return l4g.ErrBadValue
+			return err
 		}
 	case "endpoint": // DEPRECATED. See Open function's dsn argument
-		if hostport, err := l4g.ToString(v); err == nil && len(hostport) > 0 {
+		if hostport, err := cast.ToString(v); err == nil && len(hostport) > 0 {
 			if a.sock != nil {
 				a.sock.Close()
 			}
 			a.hostport = hostport
 		} else {
-			return l4g.ErrBadValue
+			return err
 		}
 	default:
 		return a.layout.SetOption(k, v)

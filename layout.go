@@ -4,7 +4,10 @@ package nxlog4go
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
+
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // Layout is is an interface for formatting log record
@@ -113,49 +116,49 @@ func (lo *PatternLayout) Set(args ...interface{}) Layout {
 	return lo
 }
 
-func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
+func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 	switch k {
 	case "levelEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeLevel = NewLevelEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeLevel = NewLevelEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	case "callerEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeCaller = NewCallerEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeCaller = NewCallerEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	case "dateEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeDate = NewDateEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeDate = NewDateEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	case "timeEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeTime = NewTimeEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeTime = NewTimeEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	case "zoneEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeZone = NewZoneEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeZone = NewZoneEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	case "fieldsEncoder":
-		if _, ok := v.(string); ok {
-			lo.EncodeFields = NewFieldsEncoder(v.(string))
+		if s, err := cast.ToString(v); err == nil {
+			lo.EncodeFields = NewFieldsEncoder(s)
 		} else {
-			err = ErrBadValue
+			return err
 		}
 	default:
-		return ErrBadOption
+		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
 
-	return
+	return nil
 }
 
 // SetOption set option with:
@@ -190,32 +193,40 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 //       Replacing with setting "timeEncoder" as "hhmm".
 //
 // Ignores other unknown format codes
-func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
+func (lo *PatternLayout) SetOption(k string, v interface{}) error {
 	switch k {
 	case "format", "pattern":
-		if format, err := ToString(v); err == nil && len(format) > 0 {
+		if format, err := cast.ToString(v); err == nil && len(format) > 0 {
 			lo.verbs = formatToVerbs(format)
+		} else {
+			return err
 		}
 	case "lineEnd":
-		if lineEnd, err := ToString(v); err == nil {
+		if lineEnd, err := cast.ToString(v); err == nil {
 			if unq, err := strconv.Unquote(lineEnd); err == nil {
 				lineEnd = unq
 			}
 			lo.lineEnd = []byte(lineEnd)
+		} else {
+			return err
 		}
 	case "color":
-		if color, err := ToBool(v); err == nil {
+		if color, err := cast.ToBool(v); err == nil {
 			lo.color = color
+		} else {
+			return err
 		}
 	case "utc":
-		if utc, err := ToBool(v); err == nil {
+		if utc, err := cast.ToBool(v); err == nil {
 			lo.utc = utc
+		} else {
+			return err
 		}
 	default:
 		return lo.setEncoder(k, v)
 	}
 
-	return
+	return nil
 }
 
 func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {

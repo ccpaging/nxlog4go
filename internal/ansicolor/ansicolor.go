@@ -1,7 +1,7 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 // Copyright (c) 2016 Uber Technologies, Inc.
 
-package nxlog4go
+package color
 
 // Color represents a text color.
 type Color uint8
@@ -24,7 +24,7 @@ const (
 	LightMagenta
 	LightCyan
 	LightWhite
-	ResetColor
+	Reset
 )
 
 var colorBytes = map[Color][]byte{
@@ -45,14 +45,14 @@ var colorBytes = map[Color][]byte{
 	LightMagenta: []byte("\033[35;1m"),
 	LightCyan:    []byte("\033[36;1m"),
 	LightWhite:   []byte("\033[37;1m"),
-	ResetColor:   []byte("\033[0m"),
+	Reset:        []byte("\033[0m"),
 }
 
 // Wrap the coloring to the given bytes and return.
 func (c Color) Wrap(s []byte) []byte {
 	if b, ok := colorBytes[c]; ok {
 		b = append(b, s...)
-		b = append(b, colorBytes[ResetColor]...)
+		b = append(b, colorBytes[Reset]...)
 		return b
 	}
 	return s

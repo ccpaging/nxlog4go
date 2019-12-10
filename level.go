@@ -5,6 +5,8 @@ package nxlog4go
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ccpaging/nxlog4go/internal/ansicolor"
 )
 
 // logging levels used by the logger
@@ -32,15 +34,15 @@ var levelStrings = map[int]string{
 }
 
 // Logging level color
-var levelColors = map[int]Color{
-	FINEST:   Gray,
-	FINE:     Green,
-	DEBUG:    Magenta,
-	TRACE:    Cyan,
-	INFO:     White,
-	WARN:     LightYellow,
-	ERROR:    Red,
-	CRITICAL: LightRed,
+var levelColors = map[int]color.Color{
+	FINEST:   color.Gray,
+	FINE:     color.Green,
+	DEBUG:    color.Magenta,
+	TRACE:    color.Cyan,
+	INFO:     color.White,
+	WARN:     color.LightYellow,
+	ERROR:    color.Red,
+	CRITICAL: color.LightRed,
 }
 
 // Logging level lowercase strings
@@ -78,12 +80,12 @@ func (l Level) ColorBytes() []byte {
 	if ok {
 		return c.Bytes()
 	}
-	return Red.Bytes()
+	return color.Red.Bytes()
 }
 
 // ColorReset return the reset ANSI color bytes
 func (l Level) ColorReset() []byte {
-	return ResetColor.Bytes()
+	return color.Reset.Bytes()
 }
 
 // Colorize return the ANSI color wrap bytes by level
@@ -92,7 +94,7 @@ func (l Level) Colorize(s string) []byte {
 	if ok {
 		return c.Wrap([]byte(s))
 	}
-	return Red.Wrap([]byte(s))
+	return color.Red.Wrap([]byte(s))
 }
 
 // Int return the integer level of string

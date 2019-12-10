@@ -1,8 +1,9 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package nxlog4go
+package cast
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -19,7 +20,7 @@ func ToString(i interface{}) (s string, err error) {
 	case []byte:
 		s = string(i.([]byte))
 	default:
-		err = ErrBadValue
+		err = fmt.Errorf("unable to cast %#v of type %T to String", i, i)
 	}
 	return
 }
@@ -44,7 +45,7 @@ func ToBool(i interface{}) (b bool, err error) {
 	case string:
 		return strconv.ParseBool(i.(string))
 	default:
-		err = ErrBadValue
+		err = fmt.Errorf("unable to cast %#v of type %T to Bool", i, i)
 	}
 	return
 }
@@ -87,7 +88,7 @@ func ToInt(i interface{}) (n int, err error) {
 		i64, err = strToNumSuffix(i.(string), 1024)
 		n = int(i64)
 	default:
-		err = ErrBadValue
+		err = fmt.Errorf("unable to cast %#v of type %T to Int", i, i)
 	}
 	return
 }
@@ -110,7 +111,7 @@ func ToInt64(i interface{}) (n int64, err error) {
 	case string:
 		n, err = strToNumSuffix(i.(string), 1024)
 	default:
-		err = ErrBadValue
+		err = fmt.Errorf("unable to cast %#v of type %T to Int64", i, i)
 	}
 	return
 }
@@ -133,7 +134,7 @@ func ToSeconds(i interface{}) (n int64, err error) {
 		dur, err = time.ParseDuration(i.(string))
 		n = int64(dur) / int64(time.Second)
 	default:
-		err = ErrBadValue
+		err = fmt.Errorf("unable to cast %#v of type %T to Seconds", i, i)
 	}
 	return
 }

@@ -9,6 +9,8 @@ import (
 	"path"
 	"sync"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/internal/cast"
 )
 
 // RotateFileWriter represents the buffered writer with lock, header, footer and rotating.
@@ -178,43 +180,43 @@ func (rfw *RotateFileWriter) SetOption(k string, v interface{}) (err error) {
 	switch k {
 	case "flush":
 		flush := 0
-		if flush, err = ToInt(v); err == nil {
+		if flush, err = cast.ToInt(v); err == nil {
 			rfw.SetFlush(flush)
 		}
 	case "head":
 		header := ""
-		if header, err = ToString(v); err == nil {
+		if header, err = cast.ToString(v); err == nil {
 			rfw.header = header
 		}
 	case "foot":
 		footer := ""
-		if footer, err = ToString(v); err == nil {
+		if footer, err = cast.ToString(v); err == nil {
 			rfw.footer = footer
 		}
 	case "maxsize":
 		maxsize := 0
-		if maxsize, err = ToInt(v); err == nil {
+		if maxsize, err = cast.ToInt(v); err == nil {
 			rfw.maxsize = maxsize
 		}
 	case "maxlines":
 		maxlines := 0
-		if maxlines, err = ToInt(v); err == nil {
+		if maxlines, err = cast.ToInt(v); err == nil {
 			rfw.maxlines = maxlines
 		}
 	case "daily":
 		daily := false
-		if daily, err = ToBool(v); err == nil {
+		if daily, err = cast.ToBool(v); err == nil {
 			rfw.daily = daily
 		}
 	case "rotate":
 		rotate := false
-		if rotate, err = ToBool(v); err == nil {
+		if rotate, err = cast.ToBool(v); err == nil {
 			LogLogTrace("Set rotate to %v", rotate)
 			rfw.rotate = rotate
 		}
 	case "maxbackup":
 		maxbackup := 0
-		if maxbackup, err = ToInt(v); err == nil {
+		if maxbackup, err = cast.ToInt(v); err == nil {
 			rfw.maxbackup = maxbackup
 		}
 	default:
