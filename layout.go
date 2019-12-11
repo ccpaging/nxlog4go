@@ -12,16 +12,14 @@ import (
 
 // Layout is is an interface for formatting log record
 type Layout interface {
-	// Set option about the Layout. The options should be set as default.
-	// Chainable.
+	// Set sets options about the Layout. Chainable.
 	Set(args ...interface{}) Layout
 
-	// Set option about the Layout. The options should be set as default.
-	// Checkable
+	// SetOption sets option about the Layout. Checkable.
 	SetOption(name string, v interface{}) error
 
-	// This will be called to log a Entry message.
-	Encode(out *bytes.Buffer, e *Entry) int
+	// Encode will be called to encode a log recorder to bytes.
+	Encode(out *bytes.Buffer, r *Recorder) int
 }
 
 var (
@@ -229,8 +227,8 @@ func (lo *PatternLayout) SetOption(k string, v interface{}) error {
 	return nil
 }
 
-func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {
-	t := e.Created
+func (lo *PatternLayout) encode(out *bytes.Buffer, r *Recorder) {
+	t := r.Created
 	if lo.utc {
 		t = t.UTC()
 	}
@@ -258,23 +256,23 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {
 		case 'Z':
 			lo.EncodeZone(out, &t)
 		case 'L':
-			lo.EncodeLevel(out, e.Level)
+			lo.EncodeLevel(out, r.Level)
 		case 'l':
 			var b []byte
-			itoa(&b, int(e.Level), -1)
+			itoa(&b, int(r.Level), -1)
 			out.Write(b)
 		case 'P':
-			out.WriteString(e.Prefix)
+			out.WriteString(r.Prefix)
 		case 'S':
-			lo.EncodeCaller(out, e.Source)
+			lo.EncodeCaller(out, r.Source)
 		case 'N':
 			var b []byte
-			itoa(&b, e.Line, -1)
+			itoa(&b, r.Line, -1)
 			out.Write(b)
 		case 'M':
-			out.WriteString(e.Message)
+			out.WriteString(r.Message)
 		case 'F':
-			lo.EncodeFields(out, e.Data, e.Index)
+			lo.EncodeFields(out, r.Data, r.Index)
 		default:
 			// unknown format code. Ignored.
 		}
@@ -286,8 +284,8 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, e *Entry) {
 
 // Encode Entry to out buffer.
 // Return len.
-func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
-	if e == nil {
+func (lo *PatternLayout) Encode(out *bytes.Buffer, r *Recorder) int {
+	if r == nil {
 		out.Write([]byte("<nil>"))
 		return out.Len()
 	} else if len(lo.verbs) == 0 {
@@ -295,15 +293,15 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, e *Entry) int {
 	}
 
 	if lo.color {
-		out.Write(Level(e.Level).ColorBytes())
+		out.Write(Level(r.Level).ColorBytes())
 	}
 
-	lo.encode(out, e)
+	lo.encode(out, r)
 
 	out.Write(lo.lineEnd)
 
 	if lo.color {
-		out.Write(Level(e.Level).ColorReset())
+		out.Write(Level(r.Level).ColorReset())
 	}
 	return out.Len()
 }

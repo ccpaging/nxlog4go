@@ -3,17 +3,16 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"errors"
+	"runtime"
+	"time"
 )
 
 // With adds key-value pairs to the log record, note that it doesn't log until you call
 // Debug, Print, Info, Warn, Error, Fatal or Panic. It only creates a log record.
 func (l *Logger) With(args ...interface{}) *Entry {
-	e := &Entry{
-		Prefix: l.prefix,
-		logger: l,
-	}
-	return e.With(args...)
+	return NewEntry(l).With(args...)
 }
 
 // Log sends a log message with level and message.
@@ -22,18 +21,37 @@ func (l *Logger) With(args ...interface{}) *Entry {
 //  1 - Where calling logger.Log(...)
 //  0 - Where internal calling entry.flush()
 func (l *Logger) Log(calldepth int, level int, arg0 interface{}, args ...interface{}) {
-	if l.skip(level) {
+	if !l.enabled(level) {
 		return
 	}
 
-	e := &Entry{
+	r := &Recorder{
 		Prefix:    l.prefix,
 		Level:     level,
 		Message:   ArgsToString(arg0, args...),
-		logger:    l,
-		calldepth: calldepth + 1,
+		Created: time.Now(),
 	}
-	e.flush()
+
+	if l.caller {
+		// Determine caller func - it's expensive.
+		_, r.Source, r.Line, _ = runtime.Caller(calldepth)
+	} else {
+		r.Source, r.Line = "", 0
+	}
+	
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.out != nil {
+		buf := new(bytes.Buffer)
+		l.layout.Encode(buf, r)
+		l.out.Write(buf.Bytes())
+	}
+
+	// Dispatch to all appender
+	if l.filters != nil {
+		l.filters.Dispatch(r)
+	}
 }
 
 // Finest logs a message at the finest log level.

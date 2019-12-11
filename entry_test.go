@@ -7,29 +7,6 @@ import (
 	"testing"
 )
 
-func TestEntryWithError(t *testing.T) {
-	e := &Entry{}
-	err := fmt.Errorf("kaboom at layer %d", 4711)
-	if got := e.With("error", err).Data["error"]; got != err.Error() {
-		t.Errorf("With(\"%s\", \"%s\"):", "error", err)
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", err)
-	}
-}
-
-func TestEntryWithArgs(t *testing.T) {
-	e := &Entry{}
-	err := fmt.Errorf("kaboom at layer %d", 4711)
-	want := 3
-	if got := len(e.With("error", err, "k1", "v1", "k2", "v2").Data); got != want {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", want)
-	} else if got = len(e.Index); got != want {
-		t.Errorf("   got index %q", got)
-		t.Errorf("  want index %q", want)
-	}
-}
-
 func TestEntryArgs(t *testing.T) {
 	buf := new(bytes.Buffer)
 	l := NewLogger(FINEST).Set("format", "%L %S %M.%F").SetOutput(buf)
@@ -37,27 +14,12 @@ func TestEntryArgs(t *testing.T) {
 	err := fmt.Errorf("kaboom at layer %d", 4711)
 	e.Info("message", "error", err, "k1", "v1", "k2", "v2")
 	want := 3
-	if got := len(e.Data); got != want {
+	if got := len(e.r.Data); got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
-	} else if got = len(e.Index); got != want {
+	} else if got = len(e.r.Index); got != want {
 		t.Errorf("   got index %d", got)
 		t.Errorf("  want index %d", want)
-	}
-}
-
-func TestEntryWithFunc(t *testing.T) {
-	fn := func() string { return "Hello, world!" }
-
-	l := NewLogger(FINEST)
-	e := NewEntry(l)
-	if got, ok := e.With("fn()", fn).Data["fn()"]; !ok {
-		t.Errorf("With(\"fn()\", fn) should not be ignored")
-	} else if s, ok := got.(string); !ok {
-		t.Errorf("Not string")
-	} else if s != fn() {
-		t.Errorf("   got %q", got)
-		t.Errorf("  want %q", fn())
 	}
 }
 
@@ -85,40 +47,41 @@ func TestEntryFormatJson(t *testing.T) {
 
 	e.With("error", errBoom).Log(1, ERROR, "kaboom")
 
+	r := e.r
 	b := buf.Bytes()
-	um := NewEntry(l)
+	um := &Recorder{}
 
 	if err := json.Unmarshal(b, &um); err != nil {
 		t.Errorf("   got %q", b)
 		t.Errorf(" error %v", err)
 	}
 
-	if got, want := um.Level, e.Level; got != want {
+	if got, want := um.Level, r.Level; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Created, e.Created; got.Unix() != want.Unix() {
+	if got, want := um.Created, r.Created; got.Unix() != want.Unix() {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Prefix, e.Prefix; got != want {
+	if got, want := um.Prefix, r.Prefix; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Source, e.Source; got != want {
+	if got, want := um.Source, r.Source; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Line, e.Line; got != want {
+	if got, want := um.Line, r.Line; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Message, e.Message; got != want {
+	if got, want := um.Message, r.Message; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
@@ -126,7 +89,7 @@ func TestEntryFormatJson(t *testing.T) {
 	if len(um.Data) < 1 {
 		t.Errorf("   got %s", b)
 		t.Errorf("Missing Data %v", um.Data)
-	} else if want, ok := e.Data["error"]; !ok {
+	} else if want, ok := r.Data["error"]; !ok {
 		t.Errorf("Missing want field %q", "error")
 	} else if wantStr, ok := want.(string); !ok {
 		t.Errorf("Missing want type [%T]", want)

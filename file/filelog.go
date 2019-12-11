@@ -33,7 +33,7 @@ type Appender struct {
 }
 
 // Write log record to channel
-func (a *Appender) Write(e *l4g.Entry) {
+func (a *Appender) Write(r *l4g.Recorder) {
 	a.runOnce.Do(func() {
 		a.waitExit = &sync.WaitGroup{}
 		a.waitExit.Add(1)
@@ -44,7 +44,7 @@ func (a *Appender) Write(e *l4g.Entry) {
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.layout.Encode(buf, e)
+	a.layout.Encode(buf, r)
 
 	if a.waitExit == nil {
 		a.out.Write(buf.Bytes())
@@ -213,8 +213,6 @@ func (a *Appender) setLoop(k string, v interface{}) error {
 		} else {
 			return err
 		}
-	case "weekly":
-	case "monthly":
 	default:
 		return l4g.ErrBadOption
 	}

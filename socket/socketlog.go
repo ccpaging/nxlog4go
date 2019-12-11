@@ -70,7 +70,7 @@ func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
 
 // Write a log recorder to a socket.
 // Connecting to the server on demand.
-func (a *Appender) Write(e *l4g.Entry) {
+func (a *Appender) Write(r *l4g.Recorder) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -87,7 +87,7 @@ func (a *Appender) Write(e *l4g.Entry) {
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.layout.Encode(buf, e)
+	a.layout.Encode(buf, r)
 
 	_, err = a.sock.Write(buf.Bytes())
 	if err != nil {

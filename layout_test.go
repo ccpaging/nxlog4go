@@ -11,13 +11,13 @@ import (
 
 var formatTests = []struct {
 	Test    string
-	Record  *Entry
+	Record  *Recorder
 	Formats map[string]string
 	Args    map[string][]interface{}
 }{
 	{
 		Test: "Standard formats",
-		Record: &Entry{
+		Record: &Recorder{
 			Level:   ERROR,
 			Source:  "source",
 			Message: "message",
@@ -57,7 +57,7 @@ func TestPatternLayout(t *testing.T) {
 
 func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
-	e := &Entry{
+	r := &Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -67,15 +67,15 @@ func BenchmarkPatternLayout(b *testing.B) {
 	layout := NewPatternLayout(testFormat)
 	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
-		e.Created = e.Created.Add(1 * time.Second / updateEvery)
-		layout.Encode(out, e)
+		r.Created = r.Created.Add(1 * time.Second / updateEvery)
+		layout.Encode(out, r)
 		out.Reset()
 	}
 }
 
 func BenchmarkJson(b *testing.B) {
 	const updateEvery = 1
-	e := &Entry{
+	r := &Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -83,14 +83,14 @@ func BenchmarkJson(b *testing.B) {
 		Message: "message",
 	}
 	for i := 0; i < b.N; i++ {
-		e.Created = e.Created.Add(1 * time.Second / updateEvery)
-		json.Marshal(e)
+		r.Created = r.Created.Add(1 * time.Second / updateEvery)
+		json.Marshal(r)
 	}
 }
 
 func BenchmarkJsonLayout(b *testing.B) {
 	const updateEvery = 1
-	e := &Entry{
+	r := &Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -100,8 +100,8 @@ func BenchmarkJsonLayout(b *testing.B) {
 	layout := NewJSONLayout()
 	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
-		e.Created = e.Created.Add(1 * time.Second / updateEvery)
-		layout.Encode(out, e)
+		r.Created = r.Created.Add(1 * time.Second / updateEvery)
+		layout.Encode(out, r)
 		out.Reset()
 	}
 }

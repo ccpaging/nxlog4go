@@ -21,8 +21,8 @@ type Appender interface {
 	// Return error if option name or value is bad.
 	SetOption(k string, v interface{}) error
 
-	// Write will be called to log a Entry message.
-	Write(e *Entry)
+	// Write will be called to write a log recorder.
+	Write(r *Recorder)
 
 	// Close should clean up anything lingering about the Appender, as it is called before
 	// the Appender is removed.  Write should not be called after Close.
@@ -68,18 +68,18 @@ func (l *Logger) Close() {
 }
 
 // Skip determines whether any logging will be skipped or not.
-func (l *Logger) skip(level int) bool {
+func (l *Logger) enabled(level int) bool {
 	if l.out != nil && level >= l.level {
-		return false
+		return true
 	}
 
 	if l.filters != nil {
-		if l.filters.skip(level) == false {
-			return false
+		if l.filters.enabled(level) {
+			return true
 		}
 	}
 
 	// l.out == nil and l.filters == nil
 	// or level < l.Level
-	return true
+	return false
 }

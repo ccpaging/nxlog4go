@@ -53,7 +53,7 @@ func (rfw *RotateFileWriter) writeHeadFoot(pattern string) {
 	buf := bytes.NewBuffer(make([]byte, 0, 64))
 
 	layout := NewPatternLayout(pattern)
-	layout.Encode(buf, &Entry{Created: time.Now()})
+	layout.Encode(buf, &Recorder{Created: time.Now()})
 
 	rfw.FileBufWriter.Write(buf.Bytes())
 }

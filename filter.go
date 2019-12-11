@@ -21,7 +21,7 @@ var (
 //
 // DEPRECATED: Use appender owned level instead.
 type Filter struct {
-	entry    chan *Entry // write queue
+	rec      chan *Recorder // write queue
 	runOnce  sync.Once
 	waitExit *sync.WaitGroup
 
@@ -32,8 +32,7 @@ type Filter struct {
 // NewFilter creates a new filter.
 func NewFilter(level int, writer Appender) *Filter {
 	f := &Filter{
-		entry: make(chan *Entry, LogBufferLength),
-
+		rec:      make(chan *Recorder, LogBufferLength),
 		Level:    level,
 		Appender: writer,
 	}
@@ -43,7 +42,7 @@ func NewFilter(level int, writer Appender) *Filter {
 
 // This is the filter's output method. This will block if the output
 // buffer is full.
-func (f *Filter) writeToChan(e *Entry) {
+func (f *Filter) writeToChan(r *Recorder) {
 	f.runOnce.Do(func() {
 		f.waitExit = &sync.WaitGroup{}
 		f.waitExit.Add(1)
@@ -52,26 +51,26 @@ func (f *Filter) writeToChan(e *Entry) {
 
 	// Write after closed
 	if f.waitExit == nil {
-		f.Write(e)
+		f.Write(r)
 		return
 	}
 
-	f.entry <- e
+	f.rec <- r
 }
 
 func (f *Filter) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
-		case e, ok := <-f.entry:
+		case r, ok := <-f.rec:
 			if !ok {
 				// drain channel
-				for left := range f.entry {
+				for left := range f.rec {
 					f.Write(left)
 				}
 				waitExit.Done()
 				return
 			}
-			f.Write(e)
+			f.Write(r)
 		}
 	}
 }
@@ -85,12 +84,12 @@ func (f *Filter) Close() {
 	defer f.Appender.Close()
 
 	// notify closing. See run()
-	close(f.entry)
+	close(f.rec)
 	// waiting for running channel closed
 	f.waitExit.Wait()
 	f.waitExit = nil
 	// drain channel
-	for e := range f.entry {
-		f.Write(e)
+	for r := range f.rec {
+		f.Write(r)
 	}
 }

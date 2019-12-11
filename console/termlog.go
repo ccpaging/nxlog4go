@@ -79,12 +79,12 @@ func (a *Appender) Close() {
 }
 
 // Write a log recorder to stderr.
-func (a *Appender) Write(e *l4g.Entry) {
+func (a *Appender) Write(r *l4g.Recorder) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if a.color {
-		level := e.Level
+		level := r.Level
 		if level >= len(ColorBytes) {
 			level = l4g.INFO
 		}
@@ -95,7 +95,7 @@ func (a *Appender) Write(e *l4g.Entry) {
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.layout.Encode(buf, e)
+	a.layout.Encode(buf, r)
 	a.out.Write(buf.Bytes())
 
 	if a.color {

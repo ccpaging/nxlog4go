@@ -40,21 +40,21 @@ func (fs Filters) Close() {
 }
 
 // Skip checks log level and return whether skip or not
-func (fs Filters) skip(level int) bool {
+func (fs Filters) enabled(level int) bool {
 	for _, filt := range fs {
 		if level >= filt.Level {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // Dispatch the logs
-func (fs Filters) Dispatch(e *Entry) {
+func (fs Filters) Dispatch(r *Recorder) {
 	for _, filt := range fs {
-		if e.Level < filt.Level {
+		if r.Level < filt.Level {
 			continue
 		}
-		filt.writeToChan(e)
+		filt.writeToChan(r)
 	}
 }

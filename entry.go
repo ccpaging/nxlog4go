@@ -7,109 +7,37 @@ import (
 	"bytes"
 	"errors"
 	"runtime"
-	"sync"
 	"time"
 )
-
-var bufferPool *sync.Pool
-
-func init() {
-	bufferPool = &sync.Pool{
-		New: func() interface{} {
-			return new(bytes.Buffer)
-		},
-	}
-}
-
-/****** Entry ******/
 
 // A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all
 // the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
 // Info, Warn, Error, Fatal or Panic is called on it.
 type Entry struct {
-	Prefix  string    // The message prefix
-	Source  string    // The message source
-	Line    int       // The source line
-	Level   int       // The log level
-	Message string    // The log message
-	Created time.Time // The time at which the log message was created (nanoseconds)
-
-	Data  map[string]interface{} // Contains all the fields set by the user.
-	Index []string
-
-	logger    *Logger
-	calldepth int
+	r *Recorder
+	l *Logger
 }
 
 // NewEntry creates a new logging entry with a logger
 func NewEntry(l *Logger) *Entry {
 	return &Entry{
-		Prefix: l.prefix,
-		logger: l,
+		r: &Recorder{
+			Prefix: l.prefix,
+		},
+		l: l,
 	}
 }
 
 // With adds key-value pairs to the log record.
 func (e *Entry) With(args ...interface{}) *Entry {
-	if len(args) == 0 {
-		return e
-	}
-	e.Data, e.Index, _ = ArgsToMap(args)
+	e.r.With(args...)
 	return e
 }
 
-func (e *Entry) moreWith(args ...interface{}) *Entry {
-	if len(args) == 0 {
-		return e
-	}
-
-	data, index, _ := ArgsToMap(args)
-	if len(data) <= 0 {
-		return e
-	}
-
-	if e.Data == nil {
-		e.Data = make(map[string]interface{}, len(args)/2)
-	} 
-	for k, v := range data {
-		e.Data[k] = v
-	}
-	e.Index = append(e.Index, index...)
+func (e *Entry) WithMore(args ...interface{}) *Entry {
+	e.r.WithMore(args...)
 	return e
-}
-
-func (e *Entry) flush() {
-	l := e.logger
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	source, line := "", 0
-	if l.caller {
-		l.mu.Unlock()
-		// Determine caller func - it's expensive.
-		_, source, line, _ = runtime.Caller(e.calldepth)
-		l.mu.Lock()
-	}
-
-	// Make the log record
-	e.Created = time.Now()
-	e.Source = source
-	e.Line = line
-
-	if l.out != nil && e.Level >= l.level {
-		buf := bufferPool.Get().(*bytes.Buffer)
-		buf.Reset()
-		defer bufferPool.Put(buf)
-
-		l.layout.Encode(buf, e)
-		l.out.Write(buf.Bytes())
-	}
-
-	// Dispatch to all appender
-	if l.filters != nil {
-		l.filters.Dispatch(e)
-	}
 }
 
 // Log sends a log message with level, and message.
@@ -118,15 +46,35 @@ func (e *Entry) flush() {
 //  1 - Where calling entry.Log(...)
 //  0 - Where internal calling entry.flush()
 func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interface{}) {
-	if e.logger.skip(level) {
+	r, l := e.r, e.l
+	if !l.enabled(level) {
 		return
 	}
+	r.Level = level
+	r.Message = ArgsToString(arg0)
+	r.WithMore(args...)
+	r.Created = time.Now()
 
-	e.Level = level
-	e.Message = ArgsToString(arg0)
-	e.moreWith(args...)
-	e.calldepth = calldepth + 1
-	e.flush()
+	if l.caller {
+		// Determine caller func - it's expensive.
+		_, r.Source, r.Line, _ = runtime.Caller(calldepth)
+	} else {
+		r.Source, r.Line = "", 0
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.out != nil && level >= l.level {
+		buf := new(bytes.Buffer)
+		l.layout.Encode(buf, r)
+		l.out.Write(buf.Bytes())
+	}
+
+	// Dispatch to all appender
+	if l.filters != nil {
+		l.filters.Dispatch(r)
+	}
 }
 
 // Finest logs a message at the finest log level.
