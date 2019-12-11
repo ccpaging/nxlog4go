@@ -35,6 +35,7 @@ func (e *Entry) With(args ...interface{}) *Entry {
 	return e
 }
 
+// WithMore appends name-value pairs to the log entry.
 func (e *Entry) WithMore(args ...interface{}) *Entry {
 	e.r.WithMore(args...)
 	return e

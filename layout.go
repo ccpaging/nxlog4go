@@ -114,49 +114,38 @@ func (lo *PatternLayout) Set(args ...interface{}) Layout {
 	return lo
 }
 
-func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
+func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
+	var s string
 	switch k {
 	case "levelEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeLevel = NewLevelEncoder(s)
-		} else {
-			return err
 		}
 	case "callerEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeCaller = NewCallerEncoder(s)
-		} else {
-			return err
 		}
 	case "dateEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeDate = NewDateEncoder(s)
-		} else {
-			return err
 		}
 	case "timeEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeTime = NewTimeEncoder(s)
-		} else {
-			return err
 		}
 	case "zoneEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeZone = NewZoneEncoder(s)
-		} else {
-			return err
 		}
 	case "fieldsEncoder":
-		if s, err := cast.ToString(v); err == nil {
+		if s, err = cast.ToString(v); err == nil {
 			lo.EncodeFields = NewFieldsEncoder(s)
-		} else {
-			return err
 		}
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
 
-	return nil
+	return
 }
 
 // SetOption set option with:
@@ -191,40 +180,37 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 //       Replacing with setting "timeEncoder" as "hhmm".
 //
 // Ignores other unknown format codes
-func (lo *PatternLayout) SetOption(k string, v interface{}) error {
+func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
+	var (
+		s  string
+		ok bool
+	)
 	switch k {
 	case "format", "pattern":
-		if format, err := cast.ToString(v); err == nil && len(format) > 0 {
-			lo.verbs = formatToVerbs(format)
-		} else {
-			return err
+		if s, err = cast.ToString(v); err == nil && len(s) > 0 {
+			lo.verbs = formatToVerbs(s)
 		}
 	case "lineEnd":
-		if lineEnd, err := cast.ToString(v); err == nil {
-			if unq, err := strconv.Unquote(lineEnd); err == nil {
-				lineEnd = unq
+		if s, err = cast.ToString(v); err == nil {
+			var u string
+			if u, err = strconv.Unquote(s); err == nil {
+				s = u
 			}
-			lo.lineEnd = []byte(lineEnd)
-		} else {
-			return err
+			lo.lineEnd = []byte(s)
 		}
 	case "color":
-		if color, err := cast.ToBool(v); err == nil {
-			lo.color = color
-		} else {
-			return err
+		if ok, err = cast.ToBool(v); err == nil {
+			lo.color = ok
 		}
 	case "utc":
-		if utc, err := cast.ToBool(v); err == nil {
-			lo.utc = utc
-		} else {
-			return err
+		if ok, err = cast.ToBool(v); err == nil {
+			lo.utc = ok
 		}
 	default:
 		return lo.setEncoder(k, v)
 	}
 
-	return nil
+	return
 }
 
 func (lo *PatternLayout) encode(out *bytes.Buffer, r *Recorder) {

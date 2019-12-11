@@ -26,6 +26,7 @@ func (r *Recorder) With(args ...interface{}) *Recorder {
 	return r
 }
 
+// WithMore appends name-value pairs to the log record.
 func (r *Recorder) WithMore(args ...interface{}) *Recorder {
 	if len(args) == 0 {
 		return r

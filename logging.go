@@ -26,9 +26,9 @@ func (l *Logger) Log(calldepth int, level int, arg0 interface{}, args ...interfa
 	}
 
 	r := &Recorder{
-		Prefix:    l.prefix,
-		Level:     level,
-		Message:   ArgsToString(arg0, args...),
+		Prefix:  l.prefix,
+		Level:   level,
+		Message: ArgsToString(arg0, args...),
 		Created: time.Now(),
 	}
 
@@ -38,7 +38,7 @@ func (l *Logger) Log(calldepth int, level int, arg0 interface{}, args ...interfa
 	} else {
 		r.Source, r.Line = "", 0
 	}
-	
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
