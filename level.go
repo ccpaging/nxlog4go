@@ -113,8 +113,3 @@ func (l Level) Int(s string) int {
 	}
 	return int(l)
 }
-
-// Max return maximum level int
-func (l Level) Max() int {
-	return CRITICAL
-}

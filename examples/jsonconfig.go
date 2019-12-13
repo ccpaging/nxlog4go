@@ -13,7 +13,7 @@ import (
 
 var (
 	debug = flag.Bool("debug", false, "")
-	fname = flag.String("conf", "config.json", "config file")
+	fname = flag.String("conf", "example.json", "config file")
 )
 
 var log = l4g.GetLogger().Set("caller", false).Set("format", "[%T] [%L] (%S) %M\n")

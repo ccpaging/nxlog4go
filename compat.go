@@ -3,7 +3,6 @@
 package nxlog4go
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -118,23 +117,10 @@ func (l *Logger) Output(calldepth int, s string) error {
 	if l.caller {
 		// Determine caller func - it's expensive.
 		_, r.Source, r.Line, _ = runtime.Caller(calldepth)
-	} else {
-		r.Source, r.Line = "", 0
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	l.Dispatch(r)
 
-	if l.out != nil {
-		buf := new(bytes.Buffer)
-		l.layout.Encode(buf, r)
-		l.out.Write(buf.Bytes())
-	}
-
-	// Dispatch to all appender
-	if l.filters != nil {
-		l.filters.Dispatch(r)
-	}
 	return nil
 }
 

@@ -19,16 +19,20 @@ func main() {
 	// disable default term output of logger
 	logger := log.GetLogger().SetOutput(ioutil.Discard)
 	a, _ := log.Open("console", "",
+		"level", "FINEST",
 		"color", true)
 
-	fs := log.NewFilters().Add("console", log.FINEST, a)
-	logger.SetFilters(fs)
+	// fs := log.NewFilters().Add("console", log.FINEST, a)
+	f := log.NewFilter(0, nil, a)
+	logger.Attach(f)
+
 	log.Finest("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Fine("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Debug("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Trace("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Warn("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
-	logger.SetFilters(nil)
-	fs.Close()
+
+	logger.Detach(f)
+	f.Close()
 }

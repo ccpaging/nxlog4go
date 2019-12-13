@@ -4,7 +4,6 @@
 package nxlog4go
 
 import (
-	"bytes"
 	"errors"
 	"runtime"
 	"time"
@@ -63,19 +62,7 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 		r.Source, r.Line = "", 0
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.out != nil && level >= l.level {
-		buf := new(bytes.Buffer)
-		l.layout.Encode(buf, r)
-		l.out.Write(buf.Bytes())
-	}
-
-	// Dispatch to all appender
-	if l.filters != nil {
-		l.filters.Dispatch(r)
-	}
+	l.Dispatch(r)
 }
 
 // Finest logs a message at the finest log level.

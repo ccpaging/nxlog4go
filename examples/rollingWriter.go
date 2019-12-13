@@ -8,11 +8,12 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/rolling"
 )
 
 const (
 	filename = "_rfw.log"
-	backups  = "_rfw.*"
+	backups  = "_rfw*.log"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	l4g.GetLogLog().Set("level", l4g.TRACE)
 
 	// Can also specify manually via the following: (these are the defaults)
-	rfw := l4g.NewRotateFileWriter(filename, true).Set("maxsize", 1024*5).Set("maxbackup", 10)
+	rfw := rolling.NewWriter(filename, 1024*5)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
 	log := l4g.NewLogger(l4g.FINEST).SetOutput(ww).Set("format", "[%D %T] [%L] (%S) %M")
@@ -35,8 +36,6 @@ func main() {
 	}
 
 	rfw.Close()
-	fmt.Printf("Remove %s\n", filename)
-	os.Remove(filename)
 
 	// contains a list of all files in the current directory
 	files, _ := filepath.Glob(backups)

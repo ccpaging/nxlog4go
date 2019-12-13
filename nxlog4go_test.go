@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/rolling"
 )
 
 const testFormat = "[%D %T %Z] [%L] (%S:%N) %M"
@@ -381,7 +383,7 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 }
 
 func BenchmarkFileBufWriter(b *testing.B) {
-	w := NewFileBufWriter(benchLogFile)
+	w := rolling.NewWriter(benchLogFile, 0)
 	defer func() {
 		w.Close()
 		os.Remove(benchLogFile)
@@ -401,7 +403,7 @@ func BenchmarkFileBufWriter(b *testing.B) {
 }
 
 func BenchmarkFileBufUtilWriter(b *testing.B) {
-	w := NewFileBufWriter(benchLogFile)
+	w := rolling.NewWriter(benchLogFile, 0)
 	defer func() {
 		w.Close()
 		os.Remove(benchLogFile)

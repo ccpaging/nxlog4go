@@ -1,9 +1,11 @@
 {
+    "version": "2.0.0",
     "filters": [
         {
             "enabled": "true",
             "tag": "stdout",
             "type": "stdout",
+            "dsn": "",
             "level": "DEBUG",
             "properties": [
                 {
@@ -20,6 +22,7 @@
             "enabled": "true",
             "tag": "loglog",
             "type": "loglog",
+            "dsn": "",
             "level": "DEBUG",
             "properties": [
                 {
@@ -32,6 +35,7 @@
             "enabled": "true",
             "tag": "console",
             "type": "console",
+            "dsn": "",
             "level": "DEBUG",
             "properties": [
                 {
@@ -44,31 +48,32 @@
             "enabled": "true",
             "tag": "file",
             "type": "file",
+            "dsn": "_test.log",
             "level": "FINEST",
             "properties": [
-                {
-                    "name": "filename",
-                    "value": "_test.log"
-                },
                 {
                     "name": "format",
                     "value": "[%D %T] [%L] (%S) %M"
                 },
                 {
-                    "name": "maxbackup",
-                    "value": "7"
+                    "name": "rotate",
+                    "value": "-1"
                 },
                 {
                     "name": "maxsize",
-                    "value": "10M"
+                    "value": "5k"
                 },
                 {
                     "name": "maxlines",
-                    "value": "0"
+                    "value": "0K"
                 },
                 {
                     "name": "cycle",
-                    "value": "5m"
+                    "value": "86400s"
+                },
+                {
+                    "name": "clock",
+                    "value": "0s"
                 }
             ]
         },
@@ -76,49 +81,38 @@
             "enabled": "true",
             "tag": "xmlog",
             "type": "xml",
+            "dsn": "_trace.xml",
             "level": "TRACE",
             "properties": [
                 {
-                    "name": "filename",
-                    "value": "_trace.xml"
-                },
-                {
-                    "name": "maxbackup",
-                    "value": "7"
+                    "name": "rotate",
+                    "value": "1"
                 },
                 {
                     "name": "maxsize",
-                    "value": "0"
+                    "value": "100M"
                 },
                 {
-                    "name": "maxlines",
-                    "value": "100"
+                    "name": "maxrecords",
+                    "value": "6K"
                 },
                 {
                     "name": "cycle",
-                    "value": "24h"
+                    "value": "5s"
                 },
                 {
                     "name": "clock",
-                    "value": "0"
+                    "value": "0s"
                 }
             ]
         },
         {
             "enabled": "false",
-            "tag": "socket",
+            "tag": "donotopen",
             "type": "socket",
+            "dsn": "udp://192.168.1.255:12124",
             "level": "FINEST",
-            "properties": [
-                {
-                    "name": "endpoint",
-                    "value": "192.168.1.255:12124"
-                },
-                {
-                    "name": "protocol",
-                    "value": "udp"
-                }
-            ]
+            "properties": null
         }
     ]
 }

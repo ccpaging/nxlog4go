@@ -21,8 +21,15 @@ type Appender interface {
 	// Return error if option name or value is bad.
 	SetOption(k string, v interface{}) error
 
-	// Write will be called to write a log recorder.
-	Write(r *Recorder)
+	// Enabled returns true if the given recorder should be encoded
+	// and written bytes by calling Write after.
+	//
+	// The recorder can be written with owner format now,
+	// and then return false.
+	Enabled(*Recorder) bool
+
+	// Write will be called to write the log bytes.
+	Write([]byte) (int, error)
 
 	// Close should clean up anything lingering about the Appender, as it is called before
 	// the Appender is removed.  Write should not be called after Close.
@@ -51,35 +58,4 @@ func Open(name string, dsn string, args ...interface{}) (Appender, error) {
 		return app.Open(dsn, args...)
 	}
 	return nil, errors.New("Not register " + name)
-}
-
-// Close closes all log filters in preparation for exiting the program.
-// Calling this is not really imperative, unless you want to
-// guarantee that all log messages are written.  Close() removes
-// all filters (and thus all appenders) from the logger.
-func (l *Logger) Close() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.filters != nil {
-		l.filters.Close()
-		l.filters = nil
-	}
-}
-
-// Skip determines whether any logging will be skipped or not.
-func (l *Logger) enabled(level int) bool {
-	if l.out != nil && level >= l.level {
-		return true
-	}
-
-	if l.filters != nil {
-		if l.filters.enabled(level) {
-			return true
-		}
-	}
-
-	// l.out == nil and l.filters == nil
-	// or level < l.Level
-	return false
 }

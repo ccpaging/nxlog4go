@@ -79,6 +79,7 @@
 package nxlog4go
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -88,10 +89,10 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v1.0.3"
-	Major   = 1
+	Version = "nxlog4go-v2.0.4"
+	Major   = 2
 	Minor   = 0
-	Build   = 3
+	Build   = 0
 )
 
 /****** Logger ******/
@@ -108,23 +109,22 @@ type Logger struct {
 	flag   int    // properties compatible with go std log
 	caller bool   // runtime caller skip
 
-	out    io.Writer // destination for output
 	level  int       // The log level
 	layout Layout    // Encode record to []byte for output
+	out    io.Writer // destination for output
 
-	filters Filters // a collection of Filters
+	filters []*Filter // a collection of Filter
 }
 
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above level to standard output.
 func NewLogger(level int) *Logger {
 	l := &Logger{
-		out:     os.Stderr,
-		level:   level,
-		caller:  true,
-		prefix:  "",
-		layout:  NewPatternLayout(FormatDefault),
-		filters: nil,
+		out:    os.Stderr,
+		level:  level,
+		caller: true,
+		prefix: "",
+		layout: NewPatternLayout(FormatDefault),
 	}
 	return l
 }
@@ -188,7 +188,7 @@ func (l *Logger) SetOption(k string, v interface{}) error {
 		case string:
 			l.level = Level(INFO).Int(v.(string))
 		default:
-			return ErrBadValue
+			return fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
 		}
 	default:
 		return l.layout.SetOption(k, v)
@@ -221,16 +221,34 @@ func (l *Logger) SetLayout(layout Layout) *Logger {
 }
 
 // Filters returns the output filters for the logger.
-func (l *Logger) Filters() Filters {
+func (l *Logger) Filters() []*Filter {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.filters
 }
 
-// SetFilters sets the output filters for the logger.
-func (l *Logger) SetFilters(filters Filters) *Logger {
+// Close closes all log filters in preparation for exiting the program.
+// Calling this is not really imperative, unless you want to
+// guarantee that all log messages are written.  Close() removes
+// all filters (and thus all appenders) from the logger.
+func (l *Logger) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.filters = filters
-	return l
+
+	closeFilters(l.filters)
+	l.filters = nil
+}
+
+func (l *Logger) enabled(level int) bool {
+	if l.out != nil && level >= l.level {
+		return true
+	}
+
+	if l.filters != nil {
+		return true
+	}
+
+	// l.out == nil and l.filters == nil
+	// or level < l.Level
+	return false
 }

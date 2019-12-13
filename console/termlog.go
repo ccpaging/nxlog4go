@@ -4,6 +4,7 @@ package console
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -31,10 +32,16 @@ var ColorReset = []byte("\x1b[0m")
 // Appender is an Appender with ANSI color that prints to stderr.
 // Support ANSI term includes ConEmu for windows.
 type Appender struct {
-	mu     sync.Mutex // ensures atomic writes; protects the following fields
-	out    io.Writer  // destination for output
-	layout l4g.Layout // format record for output
-	color  bool
+	mu       sync.Mutex         // ensures atomic writes; protects the following fields
+	rec      chan *l4g.Recorder // entry channel
+	runOnce  sync.Once
+	waitExit *sync.WaitGroup
+
+	level  int
+	layout l4g.Layout // format entry for output
+
+	out   io.Writer // destination for output
+	color bool
 }
 
 /* Bytes Buffer */
@@ -50,20 +57,24 @@ func init() {
 	l4g.Register("console", &Appender{})
 }
 
-// NewAppender creates a new Appender.
-func NewAppender(w io.Writer, args ...interface{}) (*Appender, error) {
+// NewAppender creates the appender output to os.Stderr.
+func NewAppender(w io.Writer, args ...interface{}) *Appender {
 	a := &Appender{
-		out:    w,
+		rec: make(chan *l4g.Recorder, 32),
+
+		level:  l4g.INFO,
 		layout: l4g.NewPatternLayout(""),
-		color:  false,
+
+		out:   os.Stderr,
+		color: false,
 	}
 	a.Set(args...)
-	return a, nil
+	return a
 }
 
 // Open creates a new appender which writes to stderr.
 func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
-	return NewAppender(os.Stderr, args...)
+	return NewAppender(os.Stderr, args...), nil
 }
 
 // SetOutput sets the output destination for Appender.
@@ -74,12 +85,82 @@ func (a *Appender) SetOutput(w io.Writer) l4g.Appender {
 	return a
 }
 
-// Close is nothing to do here.
-func (a *Appender) Close() {
+// Set options.
+// Return Appender interface.
+func (a *Appender) Set(args ...interface{}) l4g.Appender {
+	ops, idx, _ := l4g.ArgsToMap(args)
+	for _, k := range idx {
+		a.SetOption(k, ops[k])
+	}
+	return a
 }
 
-// Write a log recorder to stderr.
-func (a *Appender) Write(r *l4g.Recorder) {
+// Enabled encodes log Recorder and output it.
+func (a *Appender) Enabled(r *l4g.Recorder) bool {
+	if r == nil {
+		return false
+	}
+
+	if r.Level < a.level {
+		return false
+	}
+
+	a.runOnce.Do(func() {
+		a.waitExit = &sync.WaitGroup{}
+		a.waitExit.Add(1)
+		go a.run(a.waitExit)
+	})
+
+	// Write after closed
+	if a.waitExit == nil {
+		a.output(r)
+		return false
+	}
+
+	a.rec <- r
+	return false
+}
+
+// Write is the filter's output method. This will block if the output
+// buffer is full.
+func (a *Appender) Write(b []byte) (int, error) {
+	return 0, nil
+}
+
+func (a *Appender) run(waitExit *sync.WaitGroup) {
+	for {
+		select {
+		case r, ok := <-a.rec:
+			if !ok {
+				waitExit.Done()
+				return
+			}
+			a.output(r)
+		}
+	}
+}
+
+func (a *Appender) closeChannel() {
+	// notify closing. See run()
+	close(a.rec)
+	// waiting for running channel closed
+	a.waitExit.Wait()
+	a.waitExit = nil
+	// drain channel
+	for r := range a.rec {
+		a.output(r)
+	}
+}
+
+// Close is nothing to do here.
+func (a *Appender) Close() {
+	if a.waitExit == nil {
+		return
+	}
+	a.closeChannel()
+}
+
+func (a *Appender) output(r *l4g.Recorder) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -103,36 +184,36 @@ func (a *Appender) Write(r *l4g.Recorder) {
 	}
 }
 
-// Set options.
-// Return Appender interface.
-func (a *Appender) Set(args ...interface{}) l4g.Appender {
-	ops, index, _ := l4g.ArgsToMap(args)
-	for _, k := range index {
-		a.SetOption(k, ops[k])
-	}
-	return a
-}
-
 // SetOption sets option with:
+//  level    - The output level
 //	color    - Force to color or not
 //
 // Pattern layout options (The default is JSON):
-//	pattern	 - Layout format pattern
+//	format	 - Layout format string
 //  ...
 //
 // Return error
-func (a *Appender) SetOption(k string, v interface{}) error {
+func (a *Appender) SetOption(k string, v interface{}) (err error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	switch k {
+	case "level":
+		if _, ok := v.(int); ok {
+			a.level = v.(int)
+		} else if _, ok := v.(string); ok {
+			a.level = l4g.Level(0).Int(v.(string))
+		} else {
+			err = fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
+		}
 	case "color":
-		if color, err := cast.ToBool(v); err == nil {
+		var color bool
+		if color, err = cast.ToBool(v); err == nil {
 			a.color = color
 		}
 	default:
 		return a.layout.SetOption(k, v)
 	}
 
-	return nil
+	return
 }

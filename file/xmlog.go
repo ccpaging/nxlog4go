@@ -7,16 +7,16 @@ import (
 )
 
 var (
-	// XMLHead is layout pattern of log file header
-	XMLHead = "<log created=\"%D %T\">%R"
-	// XMLPattern is layout pattern of log record
-	XMLPattern = `	<record level="%L">
-		<timestamp>%D %T</timestamp>
-		<source>%S</source>
-		<message>%M</message>
-	</record>%R`
-	// XMLFoot is layout pattern of log file trailer
-	XMLFoot = "</log>%R"
+	// XMLHead is layout format of log file header
+	XMLHead = "<log created=\"%D %T\">"
+	// XMLPattern is layout format of log record
+	XMLRecord = "\t<record level=\"%L\">\n" +
+		"\t\t<timestamp>%D %T</timestamp>\n" +
+		"\t\t<source>%S</source>\n" +
+		"\t\t<message>%M</message>\n" +
+		"\t</record>"
+	// XMLFoot is layout format of log file trailer
+	XMLFoot = "</log>"
 )
 
 // XMLAppender represents the log appender that sends XML format records to a file
@@ -34,9 +34,6 @@ func (*XMLAppender) Open(filename string, args ...interface{}) (l4g.Appender, er
 	if err != nil {
 		return nil, err
 	}
-
-	a.SetOption("head", XMLHead)
-	a.SetOption("pattern", XMLPattern)
-	a.SetOption("foot", XMLFoot)
-	return &XMLAppender{a}, err
+	a.Set("head", XMLHead, "format", XMLRecord, "foot", XMLFoot)
+	return &XMLAppender{a}, nil
 }

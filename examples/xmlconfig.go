@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-var fname = "config.xml"
+var fname = "example.xml"
 
 var log = l4g.GetLogger()
 
@@ -49,10 +49,8 @@ func main() {
 
 	fmt.Printf("Total appenders installed: %d\n", len(filters))
 
-	if _, ok := filters["color"]; ok {
-		// disable default console writer
-		log.SetOutput(nil)
-	}
+	// disable default console writer
+	log.SetOutput(nil)
 
 	// And now we're ready!
 	log.Finest("This will only go to those of you really cool UDP kids!  If you change enabled=true.")
@@ -61,9 +59,13 @@ func main() {
 	log.Info("About that time, eh chaps?")
 
 	// Unload filters
-	log.SetFilters(nil)
+	log.Detach(filters...)
 	// Do not forget close all filters
-	filters.Close()
+	for _, f := range filters {
+		if f != nil {
+			f.Close()
+		}
+	}
 
 	os.Remove("_test.log")
 	os.Remove("_trace.xml")

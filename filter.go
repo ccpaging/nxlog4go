@@ -3,93 +3,121 @@
 package nxlog4go
 
 import (
-	"sync"
+	"bytes"
 )
 
-/****** Variables ******/
-
-var (
-	// LogBufferLength specifies how many log messages a particular log4go
-	// logger can buffer at a time before writing them.
-	LogBufferLength = 32
-)
-
-/****** Filter ******/
-
-// Filter represents the log level below which no log entry are written to
-// the associated Appender.
-//
-// DEPRECATED: Use appender owned level instead.
+// A Filter contains an int level, a Layout and multi appenders.
 type Filter struct {
-	rec      chan *Recorder // write queue
-	runOnce  sync.Once
-	waitExit *sync.WaitGroup
-
-	Level int
-	Appender
+	level   int
+	encoder Layout
+	apps    []Appender
 }
 
-// NewFilter creates a new filter.
-func NewFilter(level int, writer Appender) *Filter {
-	f := &Filter{
-		rec:      make(chan *Recorder, LogBufferLength),
-		Level:    level,
-		Appender: writer,
+// NewFilter creates a new filter with an int level, a layout
+// and appenders.
+func NewFilter(level int, enco Layout, apps ...Appender) *Filter {
+	return &Filter{level: level, encoder: enco, apps: apps}
+}
+
+// Close closes all log appenders in preparation for exiting the program.
+// Calling this is not really imperative, unless you want to
+// guarantee that all log messages are written.  Close() removes
+// all appenders from the filter.
+func (f *Filter) Close() {
+	for _, a := range f.apps {
+		if a != nil {
+			a.Close()
+		}
 	}
-
-	return f
+	f.apps = nil
 }
 
-// This is the filter's output method. This will block if the output
-// buffer is full.
-func (f *Filter) writeToChan(r *Recorder) {
-	f.runOnce.Do(func() {
-		f.waitExit = &sync.WaitGroup{}
-		f.waitExit.Add(1)
-		go f.run(f.waitExit)
-	})
-
-	// Write after closed
-	if f.waitExit == nil {
-		f.Write(r)
+// Dispatch encodes a log recorder to bytes and writes it to all appenders.
+func (f *Filter) Dispatch(r *Recorder) {
+	if r.Level < f.level {
 		return
 	}
 
-	f.rec <- r
+	out := new(bytes.Buffer)
+	enco := false
+	for _, a := range f.apps {
+		if !a.Enabled(r) {
+			continue
+		}
+		if f.encoder == nil {
+			continue
+		}
+		if !enco {
+			f.encoder.Encode(out, r)
+			enco = true
+		}
+		a.Write(out.Bytes())
+	}
 }
 
-func (f *Filter) run(waitExit *sync.WaitGroup) {
-	for {
-		select {
-		case r, ok := <-f.rec:
-			if !ok {
-				// drain channel
-				for left := range f.rec {
-					f.Write(left)
-				}
-				waitExit.Done()
-				return
-			}
-			f.Write(r)
+func closeFilters(filters []*Filter) {
+	for _, f := range filters {
+		if f != nil {
+			f.Close()
+		}
+	}
+}
+func findFilter(filters []*Filter, filter *Filter) int {
+	for i, f := range filters {
+		if f == filter {
+			return i
+		}
+	}
+	return -1
+}
+
+// Attach adds the filters to logger.
+func (l *Logger) Attach(filters ...*Filter) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for _, f := range filters {
+		if f == nil {
+			continue
+		}
+		if i := findFilter(l.filters, f); i >= 0 {
+			// Existed
+			continue
+		}
+		l.filters = append(l.filters, f)
+	}
+}
+
+// Detach removes the filters from logger.
+func (l *Logger) Detach(filters ...*Filter) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for _, f := range filters {
+		if f == nil {
+			continue
+		}
+		if i := findFilter(l.filters, f); i >= 0 {
+			// Existed
+			l.filters = append(l.filters[:i], l.filters[i+1:]...)
 		}
 	}
 }
 
-// Close the filter
-func (f *Filter) Close() {
-	if f.waitExit == nil {
-		return
+// Dispatch encodes a log recorder to bytes and writes it.
+func (l *Logger) Dispatch(r *Recorder) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.out != nil && r.Level >= l.level {
+		buf := new(bytes.Buffer)
+		l.layout.Encode(buf, r)
+		l.out.Write(buf.Bytes())
 	}
 
-	defer f.Appender.Close()
-
-	// notify closing. See run()
-	close(f.rec)
-	// waiting for running channel closed
-	f.waitExit.Wait()
-	f.waitExit = nil
-	// drain channel
-	for r := range f.rec {
-		f.Write(r)
+	for _, f := range l.filters {
+		if f != nil {
+			f.Dispatch(r)
+		}
 	}
 }

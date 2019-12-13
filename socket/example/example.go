@@ -28,7 +28,7 @@ func server(ready chan struct{}) {
 	checkError(err)
 	defer conn.Close()
 
-	var e l4g.Entry
+	var r l4g.Recorder
 	fmt.Printf("Listening on %v...\n", laddr)
 
 	close(ready)
@@ -40,11 +40,11 @@ func server(ready chan struct{}) {
 			// log to standard output
 			fmt.Println(a, string(buffer[:size]))
 			// fmt.Println(buffer[:size])
-			err = json.Unmarshal(buffer[:size], &e)
+			err = json.Unmarshal(buffer[:size], &r)
 			if err != nil {
 				fmt.Println("Error:", err)
 			} else {
-				fmt.Println("Unmarshal:", e)
+				fmt.Println("Unmarshal:", r)
 			}
 			fmt.Println("---")
 		}
@@ -61,18 +61,16 @@ func client() {
 	sa, err := l4g.Open("socket", "udp://"+addr, "level", l4g.FINEST)
 	checkError(err)
 
-	fs := l4g.NewFilters().Add("network", l4g.FINEST, sa)
+	f := l4g.NewFilter(0, nil, sa)
+	log.Attach(f)
 	defer func() {
-		if fs := log.Filters(); fs != nil {
-			log.SetFilters(nil).SetOutput(os.Stderr)
-			fs.Close()
-		}
+		log.Detach(f)
+		f.Close()
 	}()
-
-	log.SetFilters(fs)
 
 	// Run `nc -u -l -p 12124` or similar before you run this to see the following message
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
+	time.Sleep(1 * time.Second)
 
 	for i := 0; i < 5; i++ {
 		log.Debug("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
