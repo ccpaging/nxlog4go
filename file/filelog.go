@@ -95,7 +95,8 @@ func (fa *FileAppender) Set(args ...interface{}) l4g.Appender {
 
 // Enabled encodes log Recorder and output it.
 func (fa *FileAppender) Enabled(r *l4g.Recorder) bool {
-	if r.Level < ca.level {
+	// r.Level < fa.level
+	if fa.level != 0 && r.Level < fa.level {
 		return false
 	}
 
