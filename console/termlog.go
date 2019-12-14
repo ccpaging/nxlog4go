@@ -28,9 +28,9 @@ var ColorBytes = [...][]byte{
 // ColorReset represents ANSI code to reset color
 var ColorReset = []byte("\x1b[0m")
 
-// ConsoleAppender is an ConsoleAppender with ANSI color that prints to stderr.
+// Appender is an Appender with ANSI color that prints to stderr.
 // Support ANSI term includes ConEmu for windows.
-type ConsoleAppender struct {
+type Appender struct {
 	mu       sync.Mutex         // ensures atomic writes; protects the following fields
 	rec      chan *l4g.Recorder // entry channel
 	runOnce  sync.Once
@@ -53,12 +53,12 @@ func init() {
 		},
 	}
 
-	l4g.Register("console", &ConsoleAppender{})
+	l4g.Register("console", &Appender{})
 }
 
-// NewConsoleAppender creates the appender output to os.Stderr.
-func NewConsoleAppender(w io.Writer, args ...interface{}) *ConsoleAppender {
-	ca := &ConsoleAppender{
+// NewAppender creates the appender output to os.Stderr.
+func NewAppender(w io.Writer, args ...interface{}) *Appender {
+	ca := &Appender{
 		rec: make(chan *l4g.Recorder, 32),
 
 		level:  l4g.INFO,
@@ -72,12 +72,12 @@ func NewConsoleAppender(w io.Writer, args ...interface{}) *ConsoleAppender {
 }
 
 // Open creates a new appender which writes to stderr.
-func (*ConsoleAppender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
-	return NewConsoleAppender(os.Stderr, args...), nil
+func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+	return NewAppender(os.Stderr, args...), nil
 }
 
-// SetOutput sets the output destination for ConsoleAppender.
-func (ca *ConsoleAppender) SetOutput(w io.Writer) l4g.Appender {
+// SetOutput sets the output destination for Appender.
+func (ca *Appender) SetOutput(w io.Writer) l4g.Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 	ca.out = w
@@ -85,8 +85,8 @@ func (ca *ConsoleAppender) SetOutput(w io.Writer) l4g.Appender {
 }
 
 // Set options.
-// Return ConsoleAppender interface.
-func (ca *ConsoleAppender) Set(args ...interface{}) l4g.Appender {
+// Return Appender interface.
+func (ca *Appender) Set(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
 		ca.SetOption(k, ops[k])
@@ -95,11 +95,7 @@ func (ca *ConsoleAppender) Set(args ...interface{}) l4g.Appender {
 }
 
 // Enabled encodes log Recorder and output it.
-func (ca *ConsoleAppender) Enabled(r *l4g.Recorder) bool {
-	if r == nil {
-		return false
-	}
-
+func (ca *Appender) Enabled(r *l4g.Recorder) bool {
 	if r.Level < ca.level {
 		return false
 	}
@@ -122,11 +118,11 @@ func (ca *ConsoleAppender) Enabled(r *l4g.Recorder) bool {
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (ca *ConsoleAppender) Write(b []byte) (int, error) {
+func (ca *Appender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (ca *ConsoleAppender) run(waitExit *sync.WaitGroup) {
+func (ca *Appender) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
 		case r, ok := <-ca.rec:
@@ -139,7 +135,7 @@ func (ca *ConsoleAppender) run(waitExit *sync.WaitGroup) {
 	}
 }
 
-func (ca *ConsoleAppender) closeChannel() {
+func (ca *Appender) closeChannel() {
 	// notify closing. See run()
 	close(ca.rec)
 	// waiting for running channel closed
@@ -152,14 +148,14 @@ func (ca *ConsoleAppender) closeChannel() {
 }
 
 // Close is nothing to do here.
-func (ca *ConsoleAppender) Close() {
+func (ca *Appender) Close() {
 	if ca.waitExit == nil {
 		return
 	}
 	ca.closeChannel()
 }
 
-func (ca *ConsoleAppender) output(r *l4g.Recorder) {
+func (ca *Appender) output(r *l4g.Recorder) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
@@ -192,7 +188,7 @@ func (ca *ConsoleAppender) output(r *l4g.Recorder) {
 //  ...
 //
 // Return error
-func (ca *ConsoleAppender) SetOption(k string, v interface{}) (err error) {
+func (ca *Appender) SetOption(k string, v interface{}) (err error) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 

@@ -71,10 +71,6 @@ func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, erro
 
 // Enabled encodes log Recorder and output it.
 func (sa *SocketAppender) Enabled(r *l4g.Recorder) bool {
-	if r == nil {
-		return false
-	}
-
 	if r.Level < sa.level {
 		return false
 	}

@@ -97,7 +97,6 @@ func (l Level) Colorize(s string) []byte {
 	return color.Red.Wrap([]byte(s))
 }
 
-// Int return the integer level of string
 func (l Level) string2int(s string) int {
 	s = strings.ToLower(s)
 	for i := 0; (i < len(levelStrings)) || (i < len(levelStrings)); i++ {
@@ -114,6 +113,7 @@ func (l Level) string2int(s string) int {
 	return int(l)
 }
 
+// IntE casts an interface to a level int.
 func (l Level) IntE(v interface{}) (int, error) {
 	if _, ok := v.(int); ok {
 		return v.(int), nil
@@ -128,7 +128,8 @@ func (l Level) IntE(v interface{}) (int, error) {
 	return INFO, fmt.Errorf("unknown level value %#v of type %T", v, v)
 }
 
-func (l Level) Int(i interface{}) int {
-	n, _ := l.IntE(i)
+// Int casts an interface to a level int.
+func (l Level) Int(v interface{}) int {
+	n, _ := l.IntE(v)
 	return n
 }
