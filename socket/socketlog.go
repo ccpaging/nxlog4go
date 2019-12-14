@@ -4,7 +4,6 @@ package socketlog
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"net/url"
 	"sync"
@@ -13,8 +12,8 @@ import (
 	"github.com/ccpaging/nxlog4go/cast"
 )
 
-// Appender is an Appender that sends output to an UDP/TCP server
-type Appender struct {
+// SocketAppender is an SocketAppender that sends output to an UDP/TCP server
+type SocketAppender struct {
 	mu       sync.Mutex         // ensures atomic writes; protects the following fields
 	rec      chan *l4g.Recorder // entry channel
 	runOnce  sync.Once
@@ -38,12 +37,12 @@ func init() {
 		},
 	}
 
-	l4g.Register("socket", &Appender{})
+	l4g.Register("socket", &SocketAppender{})
 }
 
-// NewAppender creates a socket appender with proto and hostport.
-func NewAppender(proto, hostport string) *Appender {
-	return &Appender{
+// NewSocketAppender creates a socket appender with proto and hostport.
+func NewSocketAppender(proto, hostport string) *SocketAppender {
+	return &SocketAppender{
 		rec: make(chan *l4g.Recorder, 32),
 
 		level:  l4g.INFO,
@@ -54,8 +53,8 @@ func NewAppender(proto, hostport string) *Appender {
 	}
 }
 
-// Open creates a socket Appender with DSN.
-func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+// Open creates a socket SocketAppender with DSN.
+func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
 	proto, hostport := "udp", "127.0.0.1:12124"
 	if dsn != "" {
 		if u, err := url.Parse(dsn); err == nil {
@@ -67,89 +66,89 @@ func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
 			}
 		}
 	}
-	return NewAppender(proto, hostport).Set(args...), nil
+	return NewSocketAppender(proto, hostport).Set(args...), nil
 }
 
 // Enabled encodes log Recorder and output it.
-func (a *Appender) Enabled(r *l4g.Recorder) bool {
+func (sa *SocketAppender) Enabled(r *l4g.Recorder) bool {
 	if r == nil {
 		return false
 	}
 
-	if r.Level < a.level {
+	if r.Level < sa.level {
 		return false
 	}
 
-	a.runOnce.Do(func() {
-		a.waitExit = &sync.WaitGroup{}
-		a.waitExit.Add(1)
-		go a.run(a.waitExit)
+	sa.runOnce.Do(func() {
+		sa.waitExit = &sync.WaitGroup{}
+		sa.waitExit.Add(1)
+		go sa.run(sa.waitExit)
 	})
 
 	// Write after closed
-	if a.waitExit == nil {
-		a.output(r)
+	if sa.waitExit == nil {
+		sa.output(r)
 		return false
 	}
 
-	a.rec <- r
+	sa.rec <- r
 	return false
 }
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (a *Appender) Write(b []byte) (int, error) {
+func (sa *SocketAppender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (a *Appender) run(waitExit *sync.WaitGroup) {
+func (sa *SocketAppender) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
-		case r, ok := <-a.rec:
+		case r, ok := <-sa.rec:
 			if !ok {
 				waitExit.Done()
 				return
 			}
-			a.output(r)
+			sa.output(r)
 		}
 	}
 }
 
-func (a *Appender) closeChannel() {
+func (sa *SocketAppender) closeChannel() {
 	// notify closing. See run()
-	close(a.rec)
+	close(sa.rec)
 	// waiting for running channel closed
-	a.waitExit.Wait()
-	a.waitExit = nil
+	sa.waitExit.Wait()
+	sa.waitExit = nil
 	// drain channel
-	for r := range a.rec {
-		a.output(r)
+	for r := range sa.rec {
+		sa.output(r)
 	}
 }
 
 // Close the socket if it opened.
-func (a *Appender) Close() {
-	if a.waitExit == nil {
+func (sa *SocketAppender) Close() {
+	if sa.waitExit == nil {
 		return
 	}
-	a.closeChannel()
+	sa.closeChannel()
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
 
-	if a.sock != nil {
-		a.sock.Close()
+	if sa.sock != nil {
+		sa.sock.Close()
 	}
 }
 
 // Output a log recorder to a socket. Connecting to the server on demand.
-func (a *Appender) output(r *l4g.Recorder) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (sa *SocketAppender) output(r *l4g.Recorder) {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
 
 	var err error
-	if a.sock == nil {
-		a.sock, err = net.Dial(a.proto, a.hostport)
+	if sa.sock == nil {
+		sa.sock, err = net.Dial(sa.proto, sa.hostport)
 		if err != nil {
 			l4g.LogLogError(err)
 			return
@@ -160,24 +159,24 @@ func (a *Appender) output(r *l4g.Recorder) {
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.layout.Encode(buf, r)
+	sa.layout.Encode(buf, r)
 
-	_, err = a.sock.Write(buf.Bytes())
+	_, err = sa.sock.Write(buf.Bytes())
 	if err != nil {
 		l4g.LogLogError(err)
-		a.sock.Close()
-		a.sock = nil
+		sa.sock.Close()
+		sa.sock = nil
 	}
 }
 
 // Set options.
-// Return Appender interface.
-func (a *Appender) Set(args ...interface{}) l4g.Appender {
+// Return SocketAppender interface.
+func (sa *SocketAppender) Set(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		a.SetOption(k, ops[k])
+		sa.SetOption(k, ops[k])
 	}
-	return a
+	return sa
 }
 
 // SetOption sets option with:
@@ -188,37 +187,34 @@ func (a *Appender) Set(args ...interface{}) l4g.Appender {
 //  ...
 //
 // Return error
-func (a *Appender) SetOption(k string, v interface{}) (err error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
 
 	var s string
 
 	switch k {
 	case "level":
-		if _, ok := v.(int); ok {
-			a.level = v.(int)
-		} else if _, ok := v.(string); ok {
-			a.level = l4g.Level(0).Int(v.(string))
-		} else {
-			err = fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
+		var n int
+		if n, err = l4g.Level(l4g.INFO).IntE(v); err == nil {
+			sa.level = n
 		}
 	case "protocol": // DEPRECATED. See Open function's dsn argument
 		if s, err = cast.ToString(v); err == nil && len(s) > 0 {
-			if a.sock != nil {
-				a.sock.Close()
+			if sa.sock != nil {
+				sa.sock.Close()
 			}
-			a.proto = s
+			sa.proto = s
 		}
 	case "endpoint": // DEPRECATED. See Open function's dsn argument
 		if s, err = cast.ToString(v); err == nil && len(s) > 0 {
-			if a.sock != nil {
-				a.sock.Close()
+			if sa.sock != nil {
+				sa.sock.Close()
 			}
-			a.hostport = s
+			sa.hostport = s
 		}
 	default:
-		return a.layout.SetOption(k, v)
+		return sa.layout.SetOption(k, v)
 	}
 	return
 }

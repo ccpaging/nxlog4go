@@ -9,7 +9,7 @@ import (
 var (
 	// XMLHead is layout format of log file header
 	XMLHead = "<log created=\"%D %T\">"
-	// XMLPattern is layout format of log record
+	// XMLRecord is layout format of log record
 	XMLRecord = "\t<record level=\"%L\">\n" +
 		"\t\t<timestamp>%D %T</timestamp>\n" +
 		"\t\t<source>%S</source>\n" +
@@ -21,7 +21,7 @@ var (
 
 // XMLAppender represents the log appender that sends XML format records to a file
 type XMLAppender struct {
-	*Appender
+	*FileAppender
 }
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 
 // Open creates a new file appender which XML format.
 func (*XMLAppender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
-	a, err := NewAppender(filename, args...)
+	a, err := NewFileAppender(filename, args...)
 	if err != nil {
 		return nil, err
 	}

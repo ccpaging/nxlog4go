@@ -4,7 +4,6 @@ package console
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -29,9 +28,9 @@ var ColorBytes = [...][]byte{
 // ColorReset represents ANSI code to reset color
 var ColorReset = []byte("\x1b[0m")
 
-// Appender is an Appender with ANSI color that prints to stderr.
+// ConsoleAppender is an ConsoleAppender with ANSI color that prints to stderr.
 // Support ANSI term includes ConEmu for windows.
-type Appender struct {
+type ConsoleAppender struct {
 	mu       sync.Mutex         // ensures atomic writes; protects the following fields
 	rec      chan *l4g.Recorder // entry channel
 	runOnce  sync.Once
@@ -54,12 +53,12 @@ func init() {
 		},
 	}
 
-	l4g.Register("console", &Appender{})
+	l4g.Register("console", &ConsoleAppender{})
 }
 
-// NewAppender creates the appender output to os.Stderr.
-func NewAppender(w io.Writer, args ...interface{}) *Appender {
-	a := &Appender{
+// NewConsoleAppender creates the appender output to os.Stderr.
+func NewConsoleAppender(w io.Writer, args ...interface{}) *ConsoleAppender {
+	ca := &ConsoleAppender{
 		rec: make(chan *l4g.Recorder, 32),
 
 		level:  l4g.INFO,
@@ -68,119 +67,119 @@ func NewAppender(w io.Writer, args ...interface{}) *Appender {
 		out:   os.Stderr,
 		color: false,
 	}
-	a.Set(args...)
-	return a
+	ca.Set(args...)
+	return ca
 }
 
 // Open creates a new appender which writes to stderr.
-func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
-	return NewAppender(os.Stderr, args...), nil
+func (*ConsoleAppender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+	return NewConsoleAppender(os.Stderr, args...), nil
 }
 
-// SetOutput sets the output destination for Appender.
-func (a *Appender) SetOutput(w io.Writer) l4g.Appender {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.out = w
-	return a
+// SetOutput sets the output destination for ConsoleAppender.
+func (ca *ConsoleAppender) SetOutput(w io.Writer) l4g.Appender {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	ca.out = w
+	return ca
 }
 
 // Set options.
-// Return Appender interface.
-func (a *Appender) Set(args ...interface{}) l4g.Appender {
+// Return ConsoleAppender interface.
+func (ca *ConsoleAppender) Set(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		a.SetOption(k, ops[k])
+		ca.SetOption(k, ops[k])
 	}
-	return a
+	return ca
 }
 
 // Enabled encodes log Recorder and output it.
-func (a *Appender) Enabled(r *l4g.Recorder) bool {
+func (ca *ConsoleAppender) Enabled(r *l4g.Recorder) bool {
 	if r == nil {
 		return false
 	}
 
-	if r.Level < a.level {
+	if r.Level < ca.level {
 		return false
 	}
 
-	a.runOnce.Do(func() {
-		a.waitExit = &sync.WaitGroup{}
-		a.waitExit.Add(1)
-		go a.run(a.waitExit)
+	ca.runOnce.Do(func() {
+		ca.waitExit = &sync.WaitGroup{}
+		ca.waitExit.Add(1)
+		go ca.run(ca.waitExit)
 	})
 
 	// Write after closed
-	if a.waitExit == nil {
-		a.output(r)
+	if ca.waitExit == nil {
+		ca.output(r)
 		return false
 	}
 
-	a.rec <- r
+	ca.rec <- r
 	return false
 }
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (a *Appender) Write(b []byte) (int, error) {
+func (ca *ConsoleAppender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (a *Appender) run(waitExit *sync.WaitGroup) {
+func (ca *ConsoleAppender) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
-		case r, ok := <-a.rec:
+		case r, ok := <-ca.rec:
 			if !ok {
 				waitExit.Done()
 				return
 			}
-			a.output(r)
+			ca.output(r)
 		}
 	}
 }
 
-func (a *Appender) closeChannel() {
+func (ca *ConsoleAppender) closeChannel() {
 	// notify closing. See run()
-	close(a.rec)
+	close(ca.rec)
 	// waiting for running channel closed
-	a.waitExit.Wait()
-	a.waitExit = nil
+	ca.waitExit.Wait()
+	ca.waitExit = nil
 	// drain channel
-	for r := range a.rec {
-		a.output(r)
+	for r := range ca.rec {
+		ca.output(r)
 	}
 }
 
 // Close is nothing to do here.
-func (a *Appender) Close() {
-	if a.waitExit == nil {
+func (ca *ConsoleAppender) Close() {
+	if ca.waitExit == nil {
 		return
 	}
-	a.closeChannel()
+	ca.closeChannel()
 }
 
-func (a *Appender) output(r *l4g.Recorder) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (ca *ConsoleAppender) output(r *l4g.Recorder) {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
 
-	if a.color {
+	if ca.color {
 		level := r.Level
 		if level >= len(ColorBytes) {
 			level = l4g.INFO
 		}
-		a.out.Write(ColorBytes[level])
+		ca.out.Write(ColorBytes[level])
 	}
 
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.layout.Encode(buf, r)
-	a.out.Write(buf.Bytes())
+	ca.layout.Encode(buf, r)
+	ca.out.Write(buf.Bytes())
 
-	if a.color {
-		a.out.Write(ColorReset)
+	if ca.color {
+		ca.out.Write(ColorReset)
 	}
 }
 
@@ -193,26 +192,23 @@ func (a *Appender) output(r *l4g.Recorder) {
 //  ...
 //
 // Return error
-func (a *Appender) SetOption(k string, v interface{}) (err error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (ca *ConsoleAppender) SetOption(k string, v interface{}) (err error) {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
 
 	switch k {
 	case "level":
-		if _, ok := v.(int); ok {
-			a.level = v.(int)
-		} else if _, ok := v.(string); ok {
-			a.level = l4g.Level(0).Int(v.(string))
-		} else {
-			err = fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
+		var n int
+		if n, err = l4g.Level(l4g.INFO).IntE(v); err == nil {
+			ca.level = n
 		}
 	case "color":
 		var color bool
 		if color, err = cast.ToBool(v); err == nil {
-			a.color = color
+			ca.color = color
 		}
 	default:
-		return a.layout.SetOption(k, v)
+		return ca.layout.SetOption(k, v)
 	}
 
 	return

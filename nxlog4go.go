@@ -79,7 +79,6 @@
 package nxlog4go
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -89,7 +88,7 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v2.0.4"
+	Version = "nxlog4go-v2.0.0"
 	Major   = 2
 	Minor   = 0
 	Build   = 0
@@ -162,39 +161,34 @@ func (l *Logger) Set(args ...interface{}) *Logger {
 // layout options...
 //
 // Return errors.
-func (l *Logger) SetOption(k string, v interface{}) error {
+func (l *Logger) SetOption(k string, v interface{}) (err error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	var (
+		s  string
+		ok bool
+		n  int
+	)
+
 	switch k {
 	case "prefix":
-		if prefix, err := cast.ToString(v); err == nil {
-			l.prefix = prefix
-		} else {
-			return err
+		if s, err = cast.ToString(v); err == nil {
+			l.prefix = s
 		}
 	case "caller":
-		if caller, err := cast.ToBool(v); err == nil {
-			l.caller = caller
-		} else {
-			return err
+		if ok, err = cast.ToBool(v); err == nil {
+			l.caller = ok
 		}
 	case "level":
-		switch v.(type) {
-		case int:
-			l.level = v.(int)
-		case Level:
-			l.level = int(v.(Level))
-		case string:
-			l.level = Level(INFO).Int(v.(string))
-		default:
-			return fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
+		if n, err = Level(INFO).IntE(v); err == nil {
+			l.level = n
 		}
 	default:
 		return l.layout.SetOption(k, v)
 	}
 
-	return nil
+	return
 }
 
 // SetOutput sets the output destination for the logger.

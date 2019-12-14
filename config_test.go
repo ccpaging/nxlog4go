@@ -148,9 +148,8 @@ func TestXMLConfig(t *testing.T) {
 	// Keep xmlFile so that an example with the documentation is available
 
 	// Create xmlFile so that an example with the documentation is available
-	nlc := lc.Upgrade()
 
-	jsonBuf, _ := json.MarshalIndent(nlc, "", "    ")
+	jsonBuf, _ := json.MarshalIndent(lc, "", "    ")
 
 	fd, err = os.Create(jsonFile)
 	if err != nil {

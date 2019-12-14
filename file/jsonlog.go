@@ -8,7 +8,7 @@ import (
 
 // JSONAppender represents the log appender that sends JSON format records to a file
 type JSONAppender struct {
-	*Appender
+	*FileAppender
 }
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 
 // Open creates a new file appender which json format.
 func (*JSONAppender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
-	a, err := NewAppender(filename, args...)
+	a, err := NewFileAppender(filename, args...)
 	if err != nil {
 		return nil, err
 	}

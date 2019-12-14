@@ -67,10 +67,8 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 		return append(errs, fmt.Errorf("Warn: Logger configuration is NIL"))
 	}
 
-	nlc := lc.Upgrade()
-
 	var filters []*Filter
-	for i, fc := range nlc.Filters {
+	for i, fc := range lc.Filters {
 		if fc.Type == "" {
 			errs = append(errs, fmt.Errorf("Warn: The type of Filter [%d] is not defined", i))
 			continue

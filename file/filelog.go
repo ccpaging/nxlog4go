@@ -19,8 +19,8 @@ var (
 	dayToSecs int64 = 86400
 )
 
-// Appender represents the log appender that sends output to a file
-type Appender struct {
+// FileAppender represents the log appender that sends output to a file
+type FileAppender struct {
 	mu       sync.Mutex         // ensures atomic writes; protects the following fields
 	rec      chan *l4g.Recorder // entry channel
 	runOnce  sync.Once
@@ -49,18 +49,18 @@ func init() {
 		},
 	}
 
-	l4g.Register("file", &Appender{})
+	l4g.Register("file", &FileAppender{})
 }
 
-// NewAppender creates a new file appender which writes to the file
+// NewFileAppender creates a new file appender which writes to the file
 // named '<exe full path base name>.log'., and without rotating as default.
-func NewAppender(filename string, args ...interface{}) (*Appender, error) {
+func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error) {
 	if filename == "" {
 		base := filepath.Base(os.Args[0])
 		filename = strings.TrimSuffix(base, filepath.Ext(base)) + ".log"
 	}
 
-	a := &Appender{
+	fa := &FileAppender{
 		rec: make(chan *l4g.Recorder, 32),
 
 		level:  l4g.INFO,
@@ -74,51 +74,51 @@ func NewAppender(filename string, args ...interface{}) (*Appender, error) {
 		reset: make(chan time.Time, 8),
 	}
 
-	a.Set(args...)
-	return a, nil
+	fa.Set(args...)
+	return fa, nil
 }
 
 // Open creates a new appender which writes to the file
 // named '<exe full path base name>.log', and without rotating as default.
-func (*Appender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
-	return NewAppender(filename, args...)
+func (*FileAppender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
+	return NewFileAppender(filename, args...)
 }
 
 // Set options.
-// Return Appender interface.
-func (a *Appender) Set(args ...interface{}) l4g.Appender {
+// Return FileAppender interface.
+func (fa *FileAppender) Set(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		a.SetOption(k, ops[k])
+		fa.SetOption(k, ops[k])
 	}
-	return a
+	return fa
 }
 
 // Enabled encodes log Recorder and output it.
-func (a *Appender) Enabled(r *l4g.Recorder) bool {
-	if r.Level < a.level {
+func (fa *FileAppender) Enabled(r *l4g.Recorder) bool {
+	if r.Level < fa.level {
 		return false
 	}
 
-	a.runOnce.Do(func() {
-		a.waitExit = &sync.WaitGroup{}
-		a.waitExit.Add(1)
-		go a.run(a.waitExit)
+	fa.runOnce.Do(func() {
+		fa.waitExit = &sync.WaitGroup{}
+		fa.waitExit.Add(1)
+		go fa.run(fa.waitExit)
 	})
 
-	if a.waitExit == nil {
+	if fa.waitExit == nil {
 		// Closed alreay
-		a.output(r)
+		fa.output(r)
 		return false
 	}
 
-	a.rec <- r
+	fa.rec <- r
 	return false
 }
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (a *Appender) Write(b []byte) (int, error) {
+func (fa *FileAppender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
@@ -144,62 +144,62 @@ func newRotateTimer(cycle int64, delay int64) *time.Timer {
 	return time.NewTimer(d)
 }
 
-func (a *Appender) run(waitExit *sync.WaitGroup) {
-	l4g.LogLogTrace("cycle %v", time.Duration(a.cycle)*time.Second)
-	a.doRotate()
+func (fa *FileAppender) run(waitExit *sync.WaitGroup) {
+	l4g.LogLogTrace("cycle %v", time.Duration(fa.cycle)*time.Second)
+	fa.doRotate()
 
-	t := newRotateTimer(a.cycle, a.delay)
+	t := newRotateTimer(fa.cycle, fa.delay)
 
 	for {
 		select {
 		case <-t.C:
-			t = newRotateTimer(a.cycle, a.delay)
-			a.doRotate()
+			t = newRotateTimer(fa.cycle, fa.delay)
+			fa.doRotate()
 
-		case r, ok := <-a.rec:
+		case r, ok := <-fa.rec:
 			if !ok {
 				waitExit.Done()
 				return
 			}
-			a.output(r)
+			fa.output(r)
 
-		case _, ok := <-a.reset:
+		case _, ok := <-fa.reset:
 			if !ok {
 				return
 			}
-			t = newRotateTimer(a.cycle, a.delay)
-			l4g.LogLogTrace("Reset cycle %d, delay %d", a.cycle, a.delay)
+			t = newRotateTimer(fa.cycle, fa.delay)
+			l4g.LogLogTrace("Reset cycle %d, delay %d", fa.cycle, fa.delay)
 		}
 	}
 }
 
-func (a *Appender) closeChannel() {
+func (fa *FileAppender) closeChannel() {
 	// notify closing. See run()
-	close(a.rec)
+	close(fa.rec)
 	// waiting for running channel closed
-	a.waitExit.Wait()
-	a.waitExit = nil
+	fa.waitExit.Wait()
+	fa.waitExit = nil
 	// drain channel
-	for left := range a.rec {
-		a.output(left)
+	for left := range fa.rec {
+		fa.output(left)
 	}
 }
 
 // Close is nothing to do here.
-func (a *Appender) Close() {
-	if a.waitExit == nil {
+func (fa *FileAppender) Close() {
+	if fa.waitExit == nil {
 		return
 	}
-	a.closeChannel()
+	fa.closeChannel()
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
 
-	close(a.reset)
-	a.out.Close()
+	close(fa.reset)
+	fa.out.Close()
 }
 
-func (a *Appender) output(r *l4g.Recorder) {
+func (fa *FileAppender) output(r *l4g.Recorder) {
 	if r == nil {
 		return
 	}
@@ -208,32 +208,82 @@ func (a *Appender) output(r *l4g.Recorder) {
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	a.mu.Lock()
-	a.layout.Encode(buf, r)
-	a.out.Write(buf.Bytes())
-	a.mu.Unlock()
+	fa.mu.Lock()
+	fa.layout.Encode(buf, r)
+	fa.out.Write(buf.Bytes())
+	fa.mu.Unlock()
 
-	if a.cycle <= 0 {
+	if fa.cycle <= 0 {
 		// rotating on demand
-		a.doRotate()
+		fa.doRotate()
 	}
 }
 
-func (a *Appender) doRotate() {
-	if a.rotate < 0 {
+func (fa *FileAppender) doRotate() {
+	if fa.rotate < 0 {
 		return
 	}
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
 
-	a.out.Rotate(a.rotate)
+	fa.out.Rotate(fa.rotate)
 }
 
-func (a *Appender) notifyReset() {
-	if a.waitExit != nil {
-		a.reset <- time.Now()
+func (fa *FileAppender) setFileOption(k string, v interface{}) (err error) {
+	var (
+		s   string
+		i64 int64
+	)
+	switch k {
+	case "filename": // DEPRECATED. See Open function's dsn argument
+		if s, err = cast.ToString(v); err == nil && len(s) >= 0 {
+			fa.out = NewRotateFile(s)
+		}
+	case "head":
+		if s, err = cast.ToString(v); err == nil {
+			fa.out.Header = s
+		}
+	case "foot":
+		if s, err = cast.ToString(v); err == nil {
+			fa.out.Footer = s
+		}
+	case "maxsize":
+		if i64, err = cast.ToInt64(v); err == nil {
+			fa.out.Maxsize = i64
+		}
+	case "maxlines", "maxrecords":
+		if i64, err := cast.ToInt64(v); err == nil {
+			fa.out.Maxlines = i64
+		}
+	default:
+		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
+	return
+}
+
+func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
+	var i64 int64
+
+	switch k {
+	case "cycle":
+		if i64, err = cast.ToSeconds(v); err == nil {
+			fa.cycle = i64
+		}
+	case "delay", "clock":
+		if i64, err = cast.ToSeconds(v); err == nil && i64 >= 0 {
+			fa.delay = i64
+		}
+	default:
+		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
+	}
+	if err == nil {
+		// send notify to reset channel
+		if fa.waitExit != nil {
+			fa.reset <- time.Now()
+		}
+	}
+	return
 }
 
 // SetOption sets option with:
@@ -256,78 +306,46 @@ func (a *Appender) notifyReset() {
 //  ...
 //
 // Return error
-func (a *Appender) SetOption(k string, v interface{}) (err error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
 
 	var (
-		s   string
-		i   int
-		i64 int64
-		ok  bool
+		n  int
+		ok bool
 	)
 
 	switch k {
 	case "level":
-		if _, ok = v.(int); ok {
-			a.level = v.(int)
-		} else if _, ok = v.(string); ok {
-			a.level = l4g.Level(0).Int(v.(string))
-		} else {
-			err = fmt.Errorf("can not set option name %s, value %#v of type %T", k, v, v)
+		if n, err = l4g.Level(l4g.INFO).IntE(v); err == nil {
+			fa.level = n
 		}
-	case "filename": // DEPRECATED. See Open function's dsn argument
-		if s, err = cast.ToString(v); err == nil && len(s) == 0 {
-			a.out = NewRotateFile(s)
-		}
-	case "head":
-		if s, err = cast.ToString(v); err == nil {
-			a.out.Header = s
-		}
-	case "foot":
-		if s, err = cast.ToString(v); err == nil {
-			a.out.Footer = s
-		}
-	case "maxsize":
-		if i64, err = cast.ToInt64(v); err == nil {
-			a.out.Maxsize = i64
-		}
-	case "maxlines", "maxrecords":
-		if i64, err := cast.ToInt64(v); err == nil {
-			a.out.Maxlines = i64
-		}
+	case "filename", "head", "foot", "maxsize", "maxlines", "maxrecords":
+		err = fa.setFileOption(k, v)
 	case "rotate", "maxbackup":
-		if i, err = cast.ToInt(v); err == nil {
-			a.rotate = i
+		if n, err = cast.ToInt(v); err == nil {
+			fa.rotate = n
 		} else if ok, err = cast.ToBool(v); err == nil {
 			if ok {
-				a.rotate = 1
+				fa.rotate = 1
 			} else {
-				a.rotate = -1
+				fa.rotate = -1
 			}
 		}
 	case "daily": // DEPRECATED. Replaced with cycle and delay
 		if ok, err = cast.ToBool(v); err == nil {
 			if ok {
-				a.cycle = dayToSecs
-				a.delay = 0
+				fa.cycle = dayToSecs
+				fa.delay = 0
 			} else {
-				a.cycle = 5
-				a.delay = 0
+				fa.cycle = 5
+				fa.delay = 0
 			}
 		}
-	case "cycle":
-		if i64, err = cast.ToSeconds(v); err == nil {
-			a.cycle = i64
-			a.notifyReset()
-		}
-	case "delay", "clock":
-		if i64, err = cast.ToSeconds(v); err == nil && i64 >= 0 {
-			a.delay = i64
-			a.notifyReset()
-		}
+	case "cycle", "delay", "clock":
+		err = fa.setCycleOption(k, v)
 	default:
-		return a.layout.SetOption(k, v)
+		return fa.layout.SetOption(k, v)
 	}
 	return
 }

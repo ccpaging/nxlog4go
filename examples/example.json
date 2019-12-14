@@ -1,5 +1,5 @@
 {
-    "version": "2.0.0",
+    "version": "",
     "filters": [
         {
             "enabled": "true",
@@ -48,32 +48,32 @@
             "enabled": "true",
             "tag": "file",
             "type": "file",
-            "dsn": "_test.log",
+            "dsn": "",
             "level": "FINEST",
             "properties": [
+                {
+                    "name": "filename",
+                    "value": "_test.log"
+                },
                 {
                     "name": "format",
                     "value": "[%D %T] [%L] (%S) %M"
                 },
                 {
                     "name": "rotate",
-                    "value": "-1"
+                    "value": "false"
                 },
                 {
                     "name": "maxsize",
-                    "value": "5k"
+                    "value": "0M"
                 },
                 {
                     "name": "maxlines",
                     "value": "0K"
                 },
                 {
-                    "name": "cycle",
-                    "value": "86400s"
-                },
-                {
-                    "name": "clock",
-                    "value": "0s"
+                    "name": "daily",
+                    "value": "true"
                 }
             ]
         },
@@ -81,12 +81,16 @@
             "enabled": "true",
             "tag": "xmlog",
             "type": "xml",
-            "dsn": "_trace.xml",
+            "dsn": "",
             "level": "TRACE",
             "properties": [
                 {
+                    "name": "filename",
+                    "value": "_trace.xml"
+                },
+                {
                     "name": "rotate",
-                    "value": "1"
+                    "value": "true"
                 },
                 {
                     "name": "maxsize",
@@ -97,12 +101,8 @@
                     "value": "6K"
                 },
                 {
-                    "name": "cycle",
-                    "value": "5s"
-                },
-                {
-                    "name": "clock",
-                    "value": "0s"
+                    "name": "daily",
+                    "value": "false"
                 }
             ]
         },
@@ -110,9 +110,18 @@
             "enabled": "false",
             "tag": "donotopen",
             "type": "socket",
-            "dsn": "udp://192.168.1.255:12124",
+            "dsn": "",
             "level": "FINEST",
-            "properties": null
+            "properties": [
+                {
+                    "name": "endpoint",
+                    "value": "192.168.1.255:12124"
+                },
+                {
+                    "name": "protocol",
+                    "value": "udp"
+                }
+            ]
         }
     ]
 }

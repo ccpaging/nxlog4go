@@ -48,6 +48,7 @@ func NewRotateFile(filename string) *RotateFile {
 	return rf
 }
 
+// Close active RotateFile.
 func (rf *RotateFile) Close() {
 	if rf.file != nil {
 		rf.file.Close()
