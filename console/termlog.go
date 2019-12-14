@@ -61,7 +61,6 @@ func NewAppender(w io.Writer, args ...interface{}) *Appender {
 	ca := &Appender{
 		rec: make(chan *l4g.Recorder, 32),
 
-		level:  l4g.INFO,
 		layout: l4g.NewPatternLayout(""),
 
 		out:   os.Stderr,

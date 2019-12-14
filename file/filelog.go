@@ -63,7 +63,6 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 	fa := &FileAppender{
 		rec: make(chan *l4g.Recorder, 32),
 
-		level:  l4g.INFO,
 		layout: l4g.NewPatternLayout(""),
 
 		out: NewRotateFile(filename),
@@ -96,7 +95,7 @@ func (fa *FileAppender) Set(args ...interface{}) l4g.Appender {
 
 // Enabled encodes log Recorder and output it.
 func (fa *FileAppender) Enabled(r *l4g.Recorder) bool {
-	if r.Level < fa.level {
+	if fa.level != 0 && r.Level < fa.level {
 		return false
 	}
 
