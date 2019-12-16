@@ -73,7 +73,7 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 		reset: make(chan time.Time, 8),
 	}
 
-	fa.Set(args...)
+	fa.SetOptions(args...)
 	return fa, nil
 }
 
@@ -83,12 +83,13 @@ func (*FileAppender) Open(filename string, args ...interface{}) (l4g.Appender, e
 	return NewFileAppender(filename, args...)
 }
 
-// Set options.
-// Return FileAppender interface.
-func (fa *FileAppender) Set(args ...interface{}) l4g.Appender {
+// SetOptions sets name-value pair options.
+//
+// Return Appender interface.
+func (fa *FileAppender) SetOptions(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		fa.SetOption(k, ops[k])
+		fa.Set(k, ops[k])
 	}
 	return fa
 }
@@ -286,7 +287,7 @@ func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
 	return
 }
 
-// SetOption sets option with:
+// Set sets name-value option with:
 //  level    - The output level
 //  head     - The header of log file. May includes %D (date) and %T (time).
 //  foot     - The trailer of log file.
@@ -306,7 +307,7 @@ func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
 //  ...
 //
 // Return error
-func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
+func (fa *FileAppender) Set(k string, v interface{}) (err error) {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
 
@@ -345,7 +346,7 @@ func (fa *FileAppender) SetOption(k string, v interface{}) (err error) {
 	case "cycle", "delay", "clock":
 		err = fa.setCycleOption(k, v)
 	default:
-		return fa.layout.SetOption(k, v)
+		return fa.layout.Set(k, v)
 	}
 	return
 }

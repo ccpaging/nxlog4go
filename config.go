@@ -37,7 +37,7 @@ func setLogger(l *Logger, level int, props []NameValue) (errs []error) {
 	l.Set("level", level)
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
-		if err := l.SetOption(prop.Name, v); err != nil {
+		if err := l.Set(prop.Name, v); err != nil {
 			errs = append(errs, fmt.Errorf("Warn: %s. %s: %s", err.Error(), prop.Name, v))
 		}
 	}
@@ -52,7 +52,7 @@ func loadFilter(level int, typ string, dsn string, props []NameValue) (filter *F
 
 	for _, prop := range props {
 		v := strings.Trim(prop.Value, " \r\n")
-		if err := app.SetOption(prop.Name, v); err != nil {
+		if err := app.Set(prop.Name, v); err != nil {
 			errs = append(errs, fmt.Errorf("Warn: Set [%s] as [%s=%s]. %s", typ, prop.Name, v, err.Error()))
 		}
 	}

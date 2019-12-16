@@ -143,17 +143,18 @@ func (l *Logger) SetPrefix(prefix string) *Logger {
 	return l
 }
 
-// Set option. chainable
-func (l *Logger) Set(args ...interface{}) *Logger {
+// SetOptions sets name-value pair options.
+// 
+// Return *Logger.
+func (l *Logger) SetOptions(args ...interface{}) *Logger {
 	ops, idx, _ := ArgsToMap(args)
 	for _, k := range idx {
-		l.SetOption(k, ops[k])
+		l.Set(k, ops[k])
 	}
 	return l
 }
 
-// SetOption sets options of logger.
-// Option names include:
+// Set sets name-value option with:
 //	prefix - The output prefix
 //	caller - Enable or disable the runtime caller function
 //	level  - The output level
@@ -161,7 +162,7 @@ func (l *Logger) Set(args ...interface{}) *Logger {
 // layout options...
 //
 // Return errors.
-func (l *Logger) SetOption(k string, v interface{}) (err error) {
+func (l *Logger) Set(k string, v interface{}) (err error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -185,7 +186,7 @@ func (l *Logger) SetOption(k string, v interface{}) (err error) {
 			l.level = n
 		}
 	default:
-		return l.layout.SetOption(k, v)
+		return l.layout.Set(k, v)
 	}
 
 	return

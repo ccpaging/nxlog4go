@@ -34,6 +34,6 @@ func (*XMLAppender) Open(filename string, args ...interface{}) (l4g.Appender, er
 	if err != nil {
 		return nil, err
 	}
-	a.Set("head", XMLHead, "format", XMLRecord, "foot", XMLFoot)
+	a.SetOptions("head", XMLHead, "format", XMLRecord, "foot", XMLFoot)
 	return &XMLAppender{a}, nil
 }

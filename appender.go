@@ -13,13 +13,10 @@ type Appender interface {
 	// Open opens and creates the appender.
 	Open(dsn string, args ...interface{}) (Appender, error)
 
-	// Set options about the appender. The options should be set as default.
-	// Chainable.
-	Set(args ...interface{}) Appender
-
-	// SetOption about the appender. The options should be set as default.
-	// Return error if option name or value is bad.
-	SetOption(k string, v interface{}) error
+	// Set sets name-value option.
+ 	//
+	// Return error.
+	Set(k string, v interface{}) error
 
 	// Enabled returns true if the given recorder should be encoded
 	// and written bytes by calling Write after.

@@ -97,8 +97,8 @@ func TestFileLog(t *testing.T) {
 
 func TestFileLogRotate(t *testing.T) {
 	// Enable internal logger
-	l4g.GetLogLog().Set("level", l4g.TRACE, "caller", true, "format", "[%D %T] [%L] (%S:%N) \t%M")
-	defer l4g.GetLogLog().Set("level", l4g.CRITICAL+1)
+	l4g.GetLogLog().SetOptions("level", l4g.TRACE, "caller", true, "format", "[%D %T] [%L] (%S:%N) \t%M")
+	defer l4g.GetLogLog().SetOptions("level", l4g.CRITICAL+1)
 
 	// Get a new logger instance
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
@@ -135,7 +135,7 @@ func TestFileLogRotate(t *testing.T) {
 }
 
 func BenchmarkCacheFileLog(b *testing.B) {
-	sl := l4g.NewLogger(l4g.INFO).Set("caller", false).SetOutput(nil)
+	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
@@ -150,7 +150,7 @@ func BenchmarkCacheFileLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileNotLogged(b *testing.B) {
-	sl := l4g.NewLogger(l4g.INFO).Set("caller", false).SetOutput(nil)
+	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
@@ -165,7 +165,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilLog(b *testing.B) {
-	sl := l4g.NewLogger(l4g.INFO).Set("caller", false).SetOutput(nil)
+	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
@@ -180,11 +180,11 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 }
 
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
-	sl := l4g.NewLogger(l4g.INFO).Set("caller", false).SetOutput(nil)
+	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
-	sl.Attach(l4g.NewFilter(l4g.INFO, nil, a))
+	sl.Attach(l4g.NewFilter(l4g.WARN, nil, a))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
@@ -195,8 +195,12 @@ func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 	os.Remove(benchLogFile)
 }
 
-// Benchmark results (darwin amd64 6g)
-// BenchmarkCacheFileLog-4                  1000000              1865 ns/op
-// BenchmarkCacheFileNotLogged-4           20000000               118 ns/op
-// BenchmarkCacheFileUtilLog-4              1000000              1791 ns/op
-// BenchmarkCacheFileUtilNotLog-4          10000000               120 ns/op
+/*
+goos: windows
+goarch: amd64
+pkg: github.com/ccpaging/nxlog4go/file
+BenchmarkCacheFileLog-4                   571123              1846 ns/op
+BenchmarkCacheFileNotLogged-4            5239846               225 ns/op
+BenchmarkCacheFileUtilLog-4               666751              1776 ns/op
+BenchmarkCacheFileUtilNotLog-4           2850147               431 ns/op
+*/

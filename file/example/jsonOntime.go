@@ -16,10 +16,10 @@ var removeFiles = "_test*.json"
 
 func main() {
 	// Enable internal logger
-	log.GetLogLog().Set("level", log.TRACE, "caller", true, "format", "[%D %T] [%L] (%S:%N) \t%M")
-	defer log.GetLogLog().Set("level", log.CRITICAL+1)
+	log.GetLogLog().SetOptions("level", log.TRACE, "caller", true, "format", "[%D %T] [%L] (%S:%N) \t%M")
+	defer log.GetLogLog().SetOptions("level", log.CRITICAL+1)
 
-	logger := log.GetLogger().Set("level", log.ERROR)
+	logger := log.GetLogger().SetOptions("level", log.ERROR)
 
 	a, err := log.Open("json", logFile,
 		"level", log.TRACE,

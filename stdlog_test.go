@@ -10,7 +10,7 @@ import (
 func TestStdLogger(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := GetLogger().SetOutput(buf).Set(
+	l := GetLogger().SetOutput(buf).SetOptions(
 		"level", WARN,
 		"format", "[%L] (%S) %M")
 	if l == nil {

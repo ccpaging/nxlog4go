@@ -42,7 +42,7 @@ func TestPatternLayout(t *testing.T) {
 		for format, want := range test.Formats {
 			layout := NewPatternLayout(format, "utc", true)
 			if args, ok := test.Args[format]; ok {
-				layout.Set(args...)
+				layout.SetOptions(args...)
 			}
 			layout.Encode(out, test.Record)
 			if got := out.String(); got != want {

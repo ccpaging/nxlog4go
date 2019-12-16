@@ -9,7 +9,7 @@ import (
 
 func TestEntryArgs(t *testing.T) {
 	buf := new(bytes.Buffer)
-	l := NewLogger(FINEST).Set("format", "%L %S %M.%F").SetOutput(buf)
+	l := NewLogger(FINEST).SetOptions("format", "%L %S %M.%F").SetOutput(buf)
 	e := NewEntry(l)
 	err := fmt.Errorf("kaboom at layer %d", 4711)
 	e.Info("message", "error", err, "k1", "v1", "k2", "v2")
@@ -27,7 +27,7 @@ func TestEntryFormatKeyValue(t *testing.T) {
 	errBoom := fmt.Errorf("boom time")
 
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOutput(buf).Set("format", "%L %S %M.%F", "fieldsEncoder", "quote")
+	l := NewLogger(INFO).SetOutput(buf).SetOptions("format", "%L %S %M.%F", "fieldsEncoder", "quote")
 	e := NewEntry(l)
 
 	e.With("err", errBoom, "k2", "v2", "k1", "v1").Log(1, ERROR, "kaboom")

@@ -96,7 +96,7 @@ func TestConsoleWriter(t *testing.T) {
 func TestLogger(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := NewLogger(WARN).SetOutput(buf).Set("format", "[%L] (%S) %M")
+	l := NewLogger(WARN).SetOutput(buf).SetOptions("format", "[%L] (%S) %M")
 
 	if l == nil {
 		t.Fatalf("New should never return nil")
@@ -422,21 +422,23 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 	b.StopTimer()
 }
 
-// go test -bench=.
-// goos: windows
-// goarch: amd64
-// pkg: github.com/ccpaging/nxlog4go
-// BenchmarkItoa-4                          7893973               151 ns/op
-// BenchmarkPrintln-4                       1528563               775 ns/op
-// BenchmarkPrintlnNoFlags-4                2003220               601 ns/op
-// BenchmarkPatternLayout-4                 1967077               616 ns/op
-// BenchmarkJson-4                           428580              2786 ns/op
-// BenchmarkJsonLayout-4                    1392028               863 ns/op
-// BenchmarkConsoleWithCallerWriter-4        571604              2030 ns/op
-// BenchmarkConsoleWriter-4                 1392031               851 ns/op
-// BenchmarkConsoleUtilWriter-4             1000000              1142 ns/op
-// BenchmarkConsoleUtilNotWriter-4         100000000               11.0 ns/op
-// BenchmarkFileWriter-4                     200022              6165 ns/op
-// BenchmarkFileUtilWriter-4                 184585              6702 ns/op
-// BenchmarkFileBufWriter-4                  999466              1410 ns/op
-// BenchmarkFileBufUtilWriter-4              799929              1516 ns/op
+/*
+go test -bench=.
+goos: windows
+goarch: amd64
+pkg: github.com/ccpaging/nxlog4go
+BenchmarkPatternLayout-4                 1840386               633 ns/op
+BenchmarkJson-4                           428559              2817 ns/op
+BenchmarkJsonLayout-4                    1411684               839 ns/op
+BenchmarkItoa-4                          7894060               151 ns/op
+BenchmarkPrintln-4                       1388799               860 ns/op
+BenchmarkPrintlnNoFlags-4                1782944               682 ns/op
+BenchmarkConsoleWithCallerWriter-4        571567              2028 ns/op
+BenchmarkConsoleWriter-4                 1583028               761 ns/op
+BenchmarkConsoleUtilWriter-4             1231963               962 ns/op
+BenchmarkConsoleUtilNotWriter-4         150177903                7.97 ns/op
+BenchmarkFileWriter-4                     222204              5405 ns/op
+BenchmarkFileUtilWriter-4                 181792              6348 ns/op
+BenchmarkFileBufWriter-4                 1000000              1013 ns/op
+BenchmarkFileBufUtilWriter-4              923005              1249 ns/op
+*/

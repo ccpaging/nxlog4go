@@ -24,7 +24,7 @@ func main() {
 	rfw := rolling.NewWriter(filename, 1024*5)
 	ww := io.MultiWriter(os.Stderr, rfw)
 	// Get a new logger instance
-	log := l4g.NewLogger(l4g.FINEST).SetOutput(ww).Set("format", "[%D %T] [%L] (%S) %M")
+	log := l4g.NewLogger(l4g.FINEST).SetOutput(ww).SetOptions("format", "[%D %T] [%L] (%S) %M")
 
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {

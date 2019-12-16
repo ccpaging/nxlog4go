@@ -12,11 +12,8 @@ import (
 
 // Layout is is an interface for formatting log record
 type Layout interface {
-	// Set sets options about the Layout. Chainable.
-	Set(args ...interface{}) Layout
-
 	// SetOption sets option about the Layout. Checkable.
-	SetOption(name string, v interface{}) error
+	Set(name string, v interface{}) error
 
 	// Encode will be called to encode a log recorder to bytes.
 	Encode(out *bytes.Buffer, r *Recorder) int
@@ -70,7 +67,7 @@ func formatToVerbs(format string) [][]byte {
 }
 
 // NewPatternLayout creates a new layout which encode log record to bytes.
-func NewPatternLayout(format string, args ...interface{}) Layout {
+func NewPatternLayout(format string, args ...interface{}) *PatternLayout {
 	lo := &PatternLayout{
 		verbs:   formatToVerbs(format),
 		lineEnd: DefaultLineEnd,
@@ -88,28 +85,33 @@ func NewPatternLayout(format string, args ...interface{}) Layout {
 		_encodeDate: NewDateEncoder("mdy"),
 		_encodeTime: NewTimeEncoder("hhmm"),
 	}
-	return lo.Set(args...)
+	lo.SetOptions(args...)
+	return lo
 }
 
 // NewJSONLayout creates a new layout which encode log record as JSON format.
 func NewJSONLayout(args ...interface{}) Layout {
 	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
 	lo := NewPatternLayout(jsonFormat, args...)
-	return lo.Set("timeEncoder", "rfc3339nano", "fieldsEncoder", "json")
+	lo.SetOptions("timeEncoder", "rfc3339nano", "fieldsEncoder", "json")
+	return lo
 }
 
 // NewCSVLayout creates a new layout which encode log record as CSV format.
 func NewCSVLayout(args ...interface{}) Layout {
 	csvFormat := "%D|%T|%L|%P|%S:%N|%M%F"
 	lo := NewPatternLayout(csvFormat, args...)
-	return lo.Set("fieldsEncoder", "csv")
+	lo.SetOptions("fieldsEncoder", "csv")
+	return lo
 }
 
-// Set options of layout. chainable
-func (lo *PatternLayout) Set(args ...interface{}) Layout {
+// SetOptions sets name-value pair options.
+// 
+// Return Layout interface.
+func (lo *PatternLayout) SetOptions(args ...interface{}) Layout {
 	ops, idx, _ := ArgsToMap(args)
 	for _, k := range idx {
-		lo.SetOption(k, ops[k])
+		lo.Set(k, ops[k])
 	}
 	return lo
 }
@@ -148,7 +150,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 	return
 }
 
-// SetOption set option with:
+// Set sets name-value option with:
 //  format  - Layout format string. Auto-detecting quote string.
 //  lineEnd - line end string. Auto-detecting quote string.
 //  utc     - Log record time zone: local or utc.
@@ -180,7 +182,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 //       Replacing with setting "timeEncoder" as "hhmm".
 //
 // Ignores other unknown format codes
-func (lo *PatternLayout) SetOption(k string, v interface{}) (err error) {
+func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 	var (
 		s  string
 		ok bool

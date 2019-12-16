@@ -12,7 +12,7 @@ import (
 	"github.com/ccpaging/nxlog4go/cast"
 )
 
-// SocketAppender is an SocketAppender that sends output to an UDP/TCP server
+// SocketAppender is an Appender that sends output to an UDP/TCP server
 type SocketAppender struct {
 	mu       sync.Mutex         // ensures atomic writes; protects the following fields
 	rec      chan *l4g.Recorder // entry channel
@@ -52,7 +52,7 @@ func NewSocketAppender(proto, hostport string) *SocketAppender {
 	}
 }
 
-// Open creates a socket SocketAppender with DSN.
+// Open creates an Appender with DSN.
 func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
 	proto, hostport := "udp", "127.0.0.1:12124"
 	if dsn != "" {
@@ -65,7 +65,7 @@ func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, erro
 			}
 		}
 	}
-	return NewSocketAppender(proto, hostport).Set(args...), nil
+	return NewSocketAppender(proto, hostport).SetOptions(args...), nil
 }
 
 // Enabled encodes log Recorder and output it.
@@ -165,17 +165,18 @@ func (sa *SocketAppender) output(r *l4g.Recorder) {
 	}
 }
 
-// Set options.
-// Return SocketAppender interface.
-func (sa *SocketAppender) Set(args ...interface{}) l4g.Appender {
+// SetOptions sets name-value pair options.
+// 
+// Return Appender interface.
+func (sa *SocketAppender) SetOptions(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		sa.SetOption(k, ops[k])
+		sa.Set(k, ops[k])
 	}
 	return sa
 }
 
-// SetOption sets option with:
+// Set sets name-value option with:
 //  level    - The output level
 //
 // Pattern layout options:
@@ -183,7 +184,7 @@ func (sa *SocketAppender) Set(args ...interface{}) l4g.Appender {
 //  ...
 //
 // Return error
-func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
+func (sa *SocketAppender) Set(k string, v interface{}) (err error) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
@@ -210,7 +211,7 @@ func (sa *SocketAppender) SetOption(k string, v interface{}) (err error) {
 			sa.hostport = s
 		}
 	default:
-		return sa.layout.SetOption(k, v)
+		return sa.layout.Set(k, v)
 	}
 	return
 }

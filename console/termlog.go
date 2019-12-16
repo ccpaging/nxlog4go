@@ -66,7 +66,7 @@ func NewAppender(w io.Writer, args ...interface{}) *Appender {
 		out:   os.Stderr,
 		color: false,
 	}
-	ca.Set(args...)
+	ca.SetOptions(args...)
 	return ca
 }
 
@@ -83,12 +83,13 @@ func (ca *Appender) SetOutput(w io.Writer) l4g.Appender {
 	return ca
 }
 
-// Set options.
+// SetOptions sets name-value pair options.
+//
 // Return Appender interface.
-func (ca *Appender) Set(args ...interface{}) l4g.Appender {
+func (ca *Appender) SetOptions(args ...interface{}) l4g.Appender {
 	ops, idx, _ := l4g.ArgsToMap(args)
 	for _, k := range idx {
-		ca.SetOption(k, ops[k])
+		ca.Set(k, ops[k])
 	}
 	return ca
 }
@@ -178,7 +179,7 @@ func (ca *Appender) output(r *l4g.Recorder) {
 	}
 }
 
-// SetOption sets option with:
+// Set sets name-value option with:
 //  level    - The output level
 //	color    - Force to color or not
 //
@@ -186,8 +187,8 @@ func (ca *Appender) output(r *l4g.Recorder) {
 //	format	 - Layout format string
 //  ...
 //
-// Return error
-func (ca *Appender) SetOption(k string, v interface{}) (err error) {
+// Return error.
+func (ca *Appender) Set(k string, v interface{}) (err error) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
@@ -203,7 +204,7 @@ func (ca *Appender) SetOption(k string, v interface{}) (err error) {
 			ca.color = color
 		}
 	default:
-		return ca.layout.SetOption(k, v)
+		return ca.layout.Set(k, v)
 	}
 
 	return
