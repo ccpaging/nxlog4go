@@ -11,6 +11,7 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 const testLogFile = "_logtest.log"
@@ -22,8 +23,8 @@ func init() {
 	os.Remove(testLogFile)
 }
 
-func newLogRecord(level int, src string, msg string) *l4g.Recorder {
-	return &l4g.Recorder{
+func newLogRecord(level int, src string, msg string) *driver.Recorder {
+	return &driver.Recorder{
 		Level:   level,
 		Source:  src,
 		Created: time.Now(),

@@ -3,7 +3,7 @@
 package filelog
 
 import (
-	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var (
@@ -25,11 +25,11 @@ type XMLAppender struct {
 }
 
 func init() {
-	l4g.Register("xml", &XMLAppender{})
+	driver.Register("xml", &XMLAppender{})
 }
 
 // Open creates a new file appender which XML format.
-func (*XMLAppender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
+func (*XMLAppender) Open(filename string, args ...interface{}) (driver.Appender, error) {
 	a, err := NewFileAppender(filename, args...)
 	if err != nil {
 		return nil, err

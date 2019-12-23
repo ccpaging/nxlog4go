@@ -13,6 +13,7 @@ import (
 
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var (
@@ -21,8 +22,8 @@ var (
 
 // FileAppender represents the log appender that sends output to a file
 type FileAppender struct {
-	mu       sync.Mutex         // ensures atomic writes; protects the following fields
-	rec      chan *l4g.Recorder // entry channel
+	mu       sync.Mutex            // ensures atomic writes; protects the following fields
+	rec      chan *driver.Recorder // entry channel
 	runOnce  sync.Once
 	waitExit *sync.WaitGroup
 
@@ -49,7 +50,7 @@ func init() {
 		},
 	}
 
-	l4g.Register("file", &FileAppender{})
+	driver.Register("file", &FileAppender{})
 }
 
 // NewFileAppender creates a new file appender which writes to the file
@@ -61,7 +62,7 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 	}
 
 	fa := &FileAppender{
-		rec: make(chan *l4g.Recorder, 32),
+		rec: make(chan *driver.Recorder, 32),
 
 		layout: l4g.NewPatternLayout(""),
 
@@ -79,15 +80,15 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 
 // Open creates a new appender which writes to the file
 // named '<exe full path base name>.log', and without rotating as default.
-func (*FileAppender) Open(filename string, args ...interface{}) (l4g.Appender, error) {
+func (*FileAppender) Open(filename string, args ...interface{}) (driver.Appender, error) {
 	return NewFileAppender(filename, args...)
 }
 
 // SetOptions sets name-value pair options.
 //
 // Return Appender interface.
-func (fa *FileAppender) SetOptions(args ...interface{}) l4g.Appender {
-	ops, idx, _ := l4g.ArgsToMap(args)
+func (fa *FileAppender) SetOptions(args ...interface{}) *FileAppender {
+	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		fa.Set(k, ops[k])
 	}
@@ -95,7 +96,7 @@ func (fa *FileAppender) SetOptions(args ...interface{}) l4g.Appender {
 }
 
 // Enabled encodes log Recorder and output it.
-func (fa *FileAppender) Enabled(r *l4g.Recorder) bool {
+func (fa *FileAppender) Enabled(r *driver.Recorder) bool {
 	// r.Level < fa.level
 	if fa.level != 0 && r.Level < fa.level {
 		return false
@@ -200,7 +201,7 @@ func (fa *FileAppender) Close() {
 	fa.out.Close()
 }
 
-func (fa *FileAppender) output(r *l4g.Recorder) {
+func (fa *FileAppender) output(r *driver.Recorder) {
 	if r == nil {
 		return
 	}

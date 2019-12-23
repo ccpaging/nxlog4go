@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // Layout is is an interface for formatting log record
@@ -16,7 +17,7 @@ type Layout interface {
 	Set(name string, v interface{}) error
 
 	// Encode will be called to encode a log recorder to bytes.
-	Encode(out *bytes.Buffer, r *Recorder) int
+	Encode(out *bytes.Buffer, r *driver.Recorder) int
 }
 
 var (
@@ -106,10 +107,10 @@ func NewCSVLayout(args ...interface{}) Layout {
 }
 
 // SetOptions sets name-value pair options.
-// 
+//
 // Return Layout interface.
 func (lo *PatternLayout) SetOptions(args ...interface{}) Layout {
-	ops, idx, _ := ArgsToMap(args)
+	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		lo.Set(k, ops[k])
 	}
@@ -215,7 +216,7 @@ func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 	return
 }
 
-func (lo *PatternLayout) encode(out *bytes.Buffer, r *Recorder) {
+func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 	t := r.Created
 	if lo.utc {
 		t = t.UTC()
@@ -272,7 +273,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *Recorder) {
 
 // Encode Entry to out buffer.
 // Return len.
-func (lo *PatternLayout) Encode(out *bytes.Buffer, r *Recorder) int {
+func (lo *PatternLayout) Encode(out *bytes.Buffer, r *driver.Recorder) int {
 	if r == nil {
 		out.Write([]byte("<nil>"))
 		return out.Len()

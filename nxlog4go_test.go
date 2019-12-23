@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ccpaging/nxlog4go/driver"
 	"github.com/ccpaging/nxlog4go/rolling"
 )
 
@@ -24,8 +25,8 @@ const benchLogFile = "_benchlog.log"
 
 var now = time.Unix(0, 1234567890123456789).In(time.UTC)
 
-func newRecorder(level int, prefix, src string, msg string) *Recorder {
-	return &Recorder{
+func newRecorder(level int, prefix, src string, msg string) *driver.Recorder {
+	return &driver.Recorder{
 		Level:   level,
 		Source:  src,
 		Prefix:  prefix,
@@ -53,12 +54,12 @@ func TestELog(t *testing.T) {
 
 var recorderWriteTests = []struct {
 	Test    string
-	Record  *Recorder
+	Record  *driver.Recorder
 	Console string
 }{
 	{
 		Test: "Normal message",
-		Record: &Recorder{
+		Record: &driver.Recorder{
 			Level:   CRITICAL,
 			Source:  "source",
 			Message: "message",

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"runtime"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // With adds key-value pairs to the log record, note that it doesn't log until you call
@@ -24,10 +26,10 @@ func (l *Logger) Log(calldepth int, level int, arg0 interface{}, args ...interfa
 		return
 	}
 
-	r := &Recorder{
+	r := &driver.Recorder{
 		Prefix:  l.prefix,
 		Level:   level,
-		Message: ArgsToString(arg0, args...),
+		Message: driver.ArgsToString(arg0, args...),
 		Created: time.Now(),
 	}
 
@@ -77,7 +79,7 @@ func (l *Logger) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See ArgsToString for further explanation of the arguments.
 func (l *Logger) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0, args...)
+	msg := driver.ArgsToString(arg0, args...)
 	l.Log(2, WARN, msg)
 	return errors.New(msg)
 }
@@ -86,7 +88,7 @@ func (l *Logger) Warn(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and ArgsToString for an explanation
 // of the parameters.
 func (l *Logger) Error(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0, args...)
+	msg := driver.ArgsToString(arg0, args...)
 	l.Log(2, ERROR, msg)
 	return errors.New(msg)
 }
@@ -95,7 +97,7 @@ func (l *Logger) Error(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and ArgsToString for an explanation
 // of the parameters.
 func (l *Logger) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0, args...)
+	msg := driver.ArgsToString(arg0, args...)
 	l.Log(2, CRITICAL, msg)
 	return errors.New(msg)
 }

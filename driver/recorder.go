@@ -1,4 +1,4 @@
-package nxlog4go
+package driver
 
 import (
 	"time"
@@ -20,7 +20,7 @@ type Recorder struct {
 	Index []string
 }
 
-// With adds key-value pairs to the log record.
+// With sets name-value pairs to the log record.
 func (r *Recorder) With(args ...interface{}) *Recorder {
 	r.Data, r.Index, _ = ArgsToMap(args)
 	return r

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/driver"
 	_ "github.com/ccpaging/nxlog4go/socket"
 )
 
@@ -28,7 +29,7 @@ func server(ready chan struct{}) {
 	checkError(err)
 	defer conn.Close()
 
-	var r l4g.Recorder
+	var r driver.Recorder
 	fmt.Printf("Listening on %v...\n", laddr)
 
 	close(ready)
@@ -58,7 +59,7 @@ func client() {
 
 	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").SetOptions("format", "%P "+l4g.FormatDefault)
 
-	sa, err := l4g.Open("socket", "udp://"+addr, "level", l4g.FINEST)
+	sa, err := driver.Open("socket", "udp://"+addr, "level", l4g.FINEST)
 	checkError(err)
 
 	f := l4g.NewFilter(0, nil, sa)

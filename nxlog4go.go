@@ -84,14 +84,15 @@ import (
 	"sync"
 
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // Version information
 const (
-	Version = "nxlog4go-v2.0.0"
+	Version = "nxlog4go-v2.0.1"
 	Major   = 2
 	Minor   = 0
-	Build   = 0
+	Build   = 1
 )
 
 /****** Logger ******/
@@ -144,10 +145,10 @@ func (l *Logger) SetPrefix(prefix string) *Logger {
 }
 
 // SetOptions sets name-value pair options.
-// 
+//
 // Return *Logger.
 func (l *Logger) SetOptions(args ...interface{}) *Logger {
-	ops, idx, _ := ArgsToMap(args)
+	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		l.Set(k, ops[k])
 	}

@@ -10,12 +10,13 @@ import (
 
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // SocketAppender is an Appender that sends output to an UDP/TCP server
 type SocketAppender struct {
-	mu       sync.Mutex         // ensures atomic writes; protects the following fields
-	rec      chan *l4g.Recorder // entry channel
+	mu       sync.Mutex            // ensures atomic writes; protects the following fields
+	rec      chan *driver.Recorder // entry channel
 	runOnce  sync.Once
 	waitExit *sync.WaitGroup
 
@@ -37,13 +38,13 @@ func init() {
 		},
 	}
 
-	l4g.Register("socket", &SocketAppender{})
+	driver.Register("socket", &SocketAppender{})
 }
 
 // NewSocketAppender creates a socket appender with proto and hostport.
 func NewSocketAppender(proto, hostport string) *SocketAppender {
 	return &SocketAppender{
-		rec: make(chan *l4g.Recorder, 32),
+		rec: make(chan *driver.Recorder, 32),
 
 		layout: l4g.NewJSONLayout(),
 
@@ -53,7 +54,7 @@ func NewSocketAppender(proto, hostport string) *SocketAppender {
 }
 
 // Open creates an Appender with DSN.
-func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+func (*SocketAppender) Open(dsn string, args ...interface{}) (driver.Appender, error) {
 	proto, hostport := "udp", "127.0.0.1:12124"
 	if dsn != "" {
 		if u, err := url.Parse(dsn); err == nil {
@@ -69,7 +70,7 @@ func (*SocketAppender) Open(dsn string, args ...interface{}) (l4g.Appender, erro
 }
 
 // Enabled encodes log Recorder and output it.
-func (sa *SocketAppender) Enabled(r *l4g.Recorder) bool {
+func (sa *SocketAppender) Enabled(r *driver.Recorder) bool {
 	// r.Level < fa.level
 	if !(r.Level >= sa.level) {
 		return false
@@ -138,7 +139,7 @@ func (sa *SocketAppender) Close() {
 }
 
 // Output a log recorder to a socket. Connecting to the server on demand.
-func (sa *SocketAppender) output(r *l4g.Recorder) {
+func (sa *SocketAppender) output(r *driver.Recorder) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
@@ -166,10 +167,10 @@ func (sa *SocketAppender) output(r *l4g.Recorder) {
 }
 
 // SetOptions sets name-value pair options.
-// 
+//
 // Return Appender interface.
-func (sa *SocketAppender) SetOptions(args ...interface{}) l4g.Appender {
-	ops, idx, _ := l4g.ArgsToMap(args)
+func (sa *SocketAppender) SetOptions(args ...interface{}) *SocketAppender {
+	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		sa.Set(k, ops[k])
 	}

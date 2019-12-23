@@ -10,6 +10,7 @@ import (
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/driver"
 	"github.com/ccpaging/nxlog4go/rolling"
 )
 
@@ -60,7 +61,7 @@ func (rf *RotateFile) writeHeadFoot(format string) {
 	buf := bytes.NewBuffer(make([]byte, 0, 64))
 
 	layout := l4g.NewPatternLayout(format)
-	layout.Encode(buf, &l4g.Recorder{Created: time.Now()})
+	layout.Encode(buf, &driver.Recorder{Created: time.Now()})
 	rf.file.Write(buf.Bytes())
 }
 

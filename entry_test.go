@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 func TestEntryArgs(t *testing.T) {
@@ -49,7 +51,7 @@ func TestEntryFormatJson(t *testing.T) {
 
 	r := e.r
 	b := buf.Bytes()
-	um := &Recorder{}
+	um := &driver.Recorder{}
 
 	if err := json.Unmarshal(b, &um); err != nil {
 		t.Errorf("   got %q", b)

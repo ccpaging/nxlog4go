@@ -7,6 +7,8 @@ import (
 	"errors"
 	"runtime"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // A Entry contains all of the pertinent information for each message
@@ -14,14 +16,14 @@ import (
 // the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
 // Info, Warn, Error, Fatal or Panic is called on it.
 type Entry struct {
-	r *Recorder
+	r *driver.Recorder
 	l *Logger
 }
 
 // NewEntry creates a new logging entry with a logger
 func NewEntry(l *Logger) *Entry {
 	return &Entry{
-		r: &Recorder{
+		r: &driver.Recorder{
 			Prefix: l.prefix,
 		},
 		l: l,
@@ -51,7 +53,7 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 		return
 	}
 	r.Level = level
-	r.Message = ArgsToString(arg0)
+	r.Message = driver.ArgsToString(arg0)
 	r.WithMore(args...)
 	r.Created = time.Now()
 
@@ -110,7 +112,7 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
 func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0)
+	msg := driver.ArgsToString(arg0)
 	e.Log(2, WARN, msg, args...)
 	return errors.New(msg)
 }
@@ -119,7 +121,7 @@ func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (e *Entry) Error(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0)
+	msg := driver.ArgsToString(arg0)
 	e.Log(2, ERROR, msg, args...)
 	return errors.New(msg)
 }
@@ -128,7 +130,7 @@ func (e *Entry) Error(arg0 interface{}, args ...interface{}) error {
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
 func (e *Entry) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0)
+	msg := driver.ArgsToString(arg0)
 	e.Log(2, CRITICAL, msg, args...)
 	return errors.New(msg)
 }

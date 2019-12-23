@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/ccpaging/nxlog4go"
+	"github.com/ccpaging/nxlog4go/driver"
 	_ "github.com/ccpaging/nxlog4go/file"
 )
 
@@ -21,7 +22,7 @@ func main() {
 
 	logger := log.GetLogger().SetOptions("level", log.ERROR)
 
-	a, err := log.Open("xml", logFile,
+	a, err := driver.Open("xml", logFile,
 		"level", log.FINE,
 		"rotate", 1,
 		"cycle", "-1s",

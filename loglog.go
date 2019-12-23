@@ -5,6 +5,8 @@ package nxlog4go
 import (
 	"errors"
 	"os"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var loglog *Logger
@@ -48,7 +50,7 @@ func LogLogInfo(arg0 interface{}, args ...interface{}) {
 
 // LogLogWarn logs a message at the warn log level.
 func LogLogWarn(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0, args...)
+	msg := driver.ArgsToString(arg0, args...)
 	if loglog != nil {
 		loglog.Log(2, WARN, msg)
 	}
@@ -57,7 +59,7 @@ func LogLogWarn(arg0 interface{}, args ...interface{}) error {
 
 // LogLogError logs a message at the error log level.
 func LogLogError(arg0 interface{}, args ...interface{}) error {
-	msg := ArgsToString(arg0, args...)
+	msg := driver.ArgsToString(arg0, args...)
 	if loglog != nil {
 		loglog.Log(2, ERROR, msg)
 	}

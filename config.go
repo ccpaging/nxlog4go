@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // NameValue stores every single option's name and value.
@@ -45,7 +46,7 @@ func setLogger(l *Logger, level int, props []NameValue) (errs []error) {
 }
 
 func loadFilter(level int, typ string, dsn string, props []NameValue) (filter *Filter, errs []error) {
-	app, err := Open(typ, dsn)
+	app, err := driver.Open(typ, dsn)
 	if app == nil {
 		return nil, append(errs, err)
 	}

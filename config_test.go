@@ -127,7 +127,7 @@ func TestXMLConfig(t *testing.T) {
 
 	// Make sure they're the right type
 	for i, filter := range filters {
-		if fmt.Sprintf("%T", filter.Dispatch) != "func(*nxlog4go.Recorder)" {
+		if fmt.Sprintf("%T", filter.Dispatch) != "func(*driver.Recorder)" {
 			t.Fatalf("XMLConfig: Expected [%d] filter Dispatch(*nxlog4go.Recorder), found %T", i, filter.Dispatch)
 		}
 	}

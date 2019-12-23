@@ -8,6 +8,7 @@ import (
 
 	log "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/console"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var isColor = (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") || os.Getenv("ConEmuANSI") == "ON"
@@ -18,7 +19,7 @@ func main() {
 	// Get global logger of logs
 	// disable default term output of logger
 	logger := log.GetLogger().SetOutput(ioutil.Discard)
-	a, _ := log.Open("console", "",
+	a, _ := driver.Open("console", "",
 		"level", "FINEST",
 		"color", true)
 

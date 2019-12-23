@@ -1,27 +1,21 @@
-// Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
-
-package nxlog4go
+package driver
 
 import (
 	"errors"
 )
-
-/****** Appender ******/
 
 // Appender is an interface for anything that should be able to write logs
 type Appender interface {
 	// Open opens and creates the appender.
 	Open(dsn string, args ...interface{}) (Appender, error)
 
-	// Set sets name-value option.
- 	//
-	// Return error.
-	Set(k string, v interface{}) error
+	// Set sets name-value option. Checkable
+	Set(name string, value interface{}) error
 
 	// Enabled returns true if the given recorder should be encoded
-	// and written bytes by calling Write after.
+	// and written bytes after.
 	//
-	// The recorder can be written with owner format now,
+	// Enabled can write the recorder directly with owner format,
 	// and then return false.
 	Enabled(*Recorder) bool
 
@@ -33,10 +27,20 @@ type Appender interface {
 	Close()
 }
 
+type NopAppender struct{}
+
+func (*NopAppender) Open(string, ...interface{}) (Appender, error) { return &NopAppender{}, nil }
+func (*NopAppender) Set(string, interface{}) error                 { return nil }
+func (*NopAppender) Enabled(*Recorder) bool                        { return false }
+func (*NopAppender) Write([]byte) (int, error)                     { return 0, errors.New("NOP") }
+func (*NopAppender) Close()                                        {}
+
+/** Register **/
+
 var registered = make(map[string]Appender)
 
 // Register is called by 3rd appender's init() function
-// to register appender interface.
+// to register the new appender interface.
 func Register(name string, app Appender) {
 	if name == "" {
 		return
@@ -49,6 +53,7 @@ func Register(name string, app Appender) {
 }
 
 // Open opens and creates the named appender.
+//
 // Return new appender and error
 func Open(name string, dsn string, args ...interface{}) (Appender, error) {
 	if app, ok := registered[name]; ok {

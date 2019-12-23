@@ -4,18 +4,20 @@ package nxlog4go
 
 import (
 	"bytes"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // A Filter contains an int level, a Layout and multi appenders.
 type Filter struct {
 	level   int
 	encoder Layout
-	apps    []Appender
+	apps    []driver.Appender
 }
 
 // NewFilter creates a new filter with an int level, a layout
 // and appenders.
-func NewFilter(level int, enco Layout, apps ...Appender) *Filter {
+func NewFilter(level int, enco Layout, apps ...driver.Appender) *Filter {
 	return &Filter{level: level, encoder: enco, apps: apps}
 }
 
@@ -33,7 +35,7 @@ func (f *Filter) Close() {
 }
 
 // Dispatch encodes a log recorder to bytes and writes it to all appenders.
-func (f *Filter) Dispatch(r *Recorder) {
+func (f *Filter) Dispatch(r *driver.Recorder) {
 	if r.Level < f.level {
 		return
 	}
@@ -41,7 +43,7 @@ func (f *Filter) Dispatch(r *Recorder) {
 	out := new(bytes.Buffer)
 	enco := false
 	for _, a := range f.apps {
-		if !a.Enabled(r) {
+		if a != nil && !a.Enabled(r) {
 			continue
 		}
 		if f.encoder == nil {
@@ -105,7 +107,7 @@ func (l *Logger) Detach(filters ...*Filter) {
 }
 
 // Dispatch encodes a log recorder to bytes and writes it.
-func (l *Logger) Dispatch(r *Recorder) {
+func (l *Logger) Dispatch(r *driver.Recorder) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 

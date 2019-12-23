@@ -7,17 +7,19 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var formatTests = []struct {
 	Test    string
-	Record  *Recorder
+	Record  *driver.Recorder
 	Formats map[string]string
 	Args    map[string][]interface{}
 }{
 	{
 		Test: "Standard formats",
-		Record: &Recorder{
+		Record: &driver.Recorder{
 			Level:   ERROR,
 			Source:  "source",
 			Message: "message",
@@ -57,7 +59,7 @@ func TestPatternLayout(t *testing.T) {
 
 func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
-	r := &Recorder{
+	r := &driver.Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -75,7 +77,7 @@ func BenchmarkPatternLayout(b *testing.B) {
 
 func BenchmarkJson(b *testing.B) {
 	const updateEvery = 1
-	r := &Recorder{
+	r := &driver.Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",
@@ -90,7 +92,7 @@ func BenchmarkJson(b *testing.B) {
 
 func BenchmarkJsonLayout(b *testing.B) {
 	const updateEvery = 1
-	r := &Recorder{
+	r := &driver.Recorder{
 		Level:   CRITICAL,
 		Created: now,
 		Prefix:  "prefix",

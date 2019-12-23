@@ -10,6 +10,7 @@ import (
 
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 // ColorBytes represents ANSI code to set different color of levels
@@ -31,8 +32,8 @@ var ColorReset = []byte("\x1b[0m")
 // Appender is an Appender with ANSI color that prints to stderr.
 // Support ANSI term includes ConEmu for windows.
 type Appender struct {
-	mu       sync.Mutex         // ensures atomic writes; protects the following fields
-	rec      chan *l4g.Recorder // entry channel
+	mu       sync.Mutex            // ensures atomic writes; protects the following fields
+	rec      chan *driver.Recorder // entry channel
 	runOnce  sync.Once
 	waitExit *sync.WaitGroup
 
@@ -53,13 +54,13 @@ func init() {
 		},
 	}
 
-	l4g.Register("console", &Appender{})
+	driver.Register("console", &Appender{})
 }
 
 // NewAppender creates the appender output to os.Stderr.
 func NewAppender(w io.Writer, args ...interface{}) *Appender {
 	ca := &Appender{
-		rec: make(chan *l4g.Recorder, 32),
+		rec: make(chan *driver.Recorder, 32),
 
 		layout: l4g.NewPatternLayout(""),
 
@@ -71,12 +72,12 @@ func NewAppender(w io.Writer, args ...interface{}) *Appender {
 }
 
 // Open creates a new appender which writes to stderr.
-func (*Appender) Open(dsn string, args ...interface{}) (l4g.Appender, error) {
+func (*Appender) Open(dsn string, args ...interface{}) (driver.Appender, error) {
 	return NewAppender(os.Stderr, args...), nil
 }
 
 // SetOutput sets the output destination for Appender.
-func (ca *Appender) SetOutput(w io.Writer) l4g.Appender {
+func (ca *Appender) SetOutput(w io.Writer) *Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 	ca.out = w
@@ -86,8 +87,8 @@ func (ca *Appender) SetOutput(w io.Writer) l4g.Appender {
 // SetOptions sets name-value pair options.
 //
 // Return Appender interface.
-func (ca *Appender) SetOptions(args ...interface{}) l4g.Appender {
-	ops, idx, _ := l4g.ArgsToMap(args)
+func (ca *Appender) SetOptions(args ...interface{}) *Appender {
+	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		ca.Set(k, ops[k])
 	}
@@ -95,7 +96,7 @@ func (ca *Appender) SetOptions(args ...interface{}) l4g.Appender {
 }
 
 // Enabled encodes log Recorder and output it.
-func (ca *Appender) Enabled(r *l4g.Recorder) bool {
+func (ca *Appender) Enabled(r *driver.Recorder) bool {
 	if r.Level < ca.level {
 		return false
 	}
@@ -155,7 +156,7 @@ func (ca *Appender) Close() {
 	ca.closeChannel()
 }
 
-func (ca *Appender) output(r *l4g.Recorder) {
+func (ca *Appender) output(r *driver.Recorder) {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 

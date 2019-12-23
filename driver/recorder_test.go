@@ -1,4 +1,4 @@
-package nxlog4go
+package driver
 
 import (
 	"fmt"
