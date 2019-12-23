@@ -27,13 +27,15 @@ type Appender interface {
 	Close()
 }
 
-type NopAppender struct{}
+type nopAppender struct{}
 
-func (*NopAppender) Open(string, ...interface{}) (Appender, error) { return &NopAppender{}, nil }
-func (*NopAppender) Set(string, interface{}) error                 { return nil }
-func (*NopAppender) Enabled(*Recorder) bool                        { return false }
-func (*NopAppender) Write([]byte) (int, error)                     { return 0, errors.New("NOP") }
-func (*NopAppender) Close()                                        {}
+// NewNopAppender returns a no-op Layout.
+func NewNopAppender() Appender                                     { return &nopAppender{} }
+func (*nopAppender) Open(string, ...interface{}) (Appender, error) { return &nopAppender{}, nil }
+func (*nopAppender) Set(string, interface{}) error                 { return nil }
+func (*nopAppender) Enabled(*Recorder) bool                        { return false }
+func (*nopAppender) Write([]byte) (int, error)                     { return 0, errors.New("NOP") }
+func (*nopAppender) Close()                                        {}
 
 /** Register **/
 

@@ -13,7 +13,9 @@ type Layout interface {
 	Encode(out *bytes.Buffer, r *Recorder) int
 }
 
-type NopLayout struct{}
+type nopLayout struct{}
 
-func (*NopLayout) Set(string, interface{}) error { return nil }
-func (*NopLayout) Encode(string, interface{})    {}
+// NewNopLayoutwN returns a no-op Layout.
+func NewNopLayout() Layout                             { return &nopLayout{} }
+func (*nopLayout) Set(string, interface{}) error       { return nil }
+func (*nopLayout) Encode(*bytes.Buffer, *Recorder) int { return 0 }
