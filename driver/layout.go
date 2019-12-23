@@ -15,7 +15,7 @@ type Layout interface {
 
 type nopLayout struct{}
 
-// NewNopLayoutwN returns a no-op Layout.
+// NewNopLayout returns a no-op Layout.
 func NewNopLayout() Layout                             { return &nopLayout{} }
 func (*nopLayout) Set(string, interface{}) error       { return nil }
 func (*nopLayout) Encode(*bytes.Buffer, *Recorder) int { return 0 }

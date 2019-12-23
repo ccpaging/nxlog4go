@@ -21,7 +21,7 @@ func NewAcceptAll() Enabler { return &acceptAll{} }
 // which accepts logging recorder's level at or above the value of the n level.
 func NewAtAboveLevel(n int) Enabler { return &atAboveLevel{n} }
 
-// NewAtAboveLevel return a very simple Enabler
+// NewMatachLevel return a very simple Enabler
 // which accepts logging recorder's level equals the value of the n level.
 func NewMatachLevel(n int) Enabler { return &matchLevel{n} }
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// AgrsToString builds a format string by the arguments
+// ArgsToString builds a format string by the arguments
 // Return a format string which depends on the first argument:
 //
 // - arg[0] is a string
