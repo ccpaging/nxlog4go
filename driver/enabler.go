@@ -29,8 +29,8 @@ func MatchLevel(n int) Enabler { return &matchLevel{n} }
 // which accepts logging recorder's level match the range.
 func RangeLevel(min, max int) Enabler { return &rangeLevel{} }
 
-func (e *denyAll) Enabled(r *Recorder) bool      { return false }
-func (e *acceptAll) Enabled(r *Recorder) bool    { return true }
-func (e *atAbove) Enabled(r *Recorder) bool { return (r.Level >= e.atAbove) }
-func (e *matchLevel) Enabled(r *Recorder) bool   { return (r.Level == e.match) }
-func (e *rangeLevel) Enabled(r *Recorder) bool   { return (r.Level >= e.min && r.Level <= e.max) }
+func (e *denyAll) Enabled(r *Recorder) bool    { return false }
+func (e *acceptAll) Enabled(r *Recorder) bool  { return true }
+func (e *atAbove) Enabled(r *Recorder) bool    { return (r.Level >= e.atAbove) }
+func (e *matchLevel) Enabled(r *Recorder) bool { return (r.Level == e.match) }
+func (e *rangeLevel) Enabled(r *Recorder) bool { return (r.Level >= e.min && r.Level <= e.max) }

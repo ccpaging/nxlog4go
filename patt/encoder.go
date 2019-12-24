@@ -506,6 +506,7 @@ type encoders struct {
 	Fields FieldsEncoder
 }
 
+// Encoders is global encoders for external packages extending.
 var Encoders encoders = encoders{
 	Level:  NewNopLevelEncoder(),
 	Time:   NewTimeEncoder(),
