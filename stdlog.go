@@ -4,21 +4,13 @@ package nxlog4go
 
 import (
 	"errors"
-	"io"
 
 	"github.com/ccpaging/nxlog4go/driver"
 )
 
-var std = NewLogger(INFO)
-
 // GetLogger returns the default logger.
 func GetLogger() *Logger {
 	return std
-}
-
-// SetOutput sets the output destination for the standard logger.
-func SetOutput(w io.Writer) *Logger {
-	return std.SetOutput(w)
 }
 
 // Finest is a wrapper for (*Logger).Finest

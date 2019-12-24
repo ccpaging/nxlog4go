@@ -7,9 +7,13 @@ import (
 	"os"
 
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 var loglog *Logger
+
+// FormatLogLog is format for internal log
+var FormatLogLog = "%T %P %L %M"
 
 // GetLogLog creates internal logger if not existed, and returns it.
 // This logger used to output log statements from within the package.
@@ -21,7 +25,7 @@ func GetLogLog() *Logger {
 			level:  DEBUG,
 			caller: true,
 			prefix: "logg",
-			layout: NewPatternLayout(FormatLogLog),
+			layout: patt.NewLayout(FormatLogLog),
 		}
 	}
 	return loglog

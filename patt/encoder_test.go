@@ -1,37 +1,12 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package nxlog4go
+package patt
 
 import (
 	"bytes"
 	"testing"
 	"time"
 )
-
-func TestLevelEncoder(t *testing.T) {
-	tests := []struct {
-		name  string
-		level int
-		want  string
-	}{
-		{"", DEBUG, "DEBG"},
-		{"upper", TRACE, "TRACE"},
-		{"upperColor", INFO, "\x1b[37mINFO\x1b[0m"},
-		{"lower", WARN, "warn"},
-		{"lowerColor", CRITICAL, "\x1b[31;1mcritical\x1b[0m"},
-		{"std", CRITICAL + 1, "Level(8)"},
-	}
-
-	var out bytes.Buffer
-	for _, tt := range tests {
-		enc := NewLevelEncoder(tt.name)
-		enc(&out, tt.level)
-		if got := string(out.Bytes()); got != tt.want {
-			t.Errorf("Incorrect level format of [%s]: %q should be %q", tt.name, got, tt.want)
-		}
-		out.Reset()
-	}
-}
 
 func TestCallerEncoder(t *testing.T) {
 	filename := "/home/jack/src/github.com/foo/foo.go"
@@ -47,9 +22,8 @@ func TestCallerEncoder(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	var enc CallerEncoder
 	for _, tt := range tests {
-		enc = NewCallerEncoder(tt.name)
+		enc := Encoders.Caller.Encoding(tt.name)
 		enc(&out, filename)
 		if got := string(out.Bytes()); got != tt.want {
 			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
@@ -76,7 +50,7 @@ func TestDateEncoder(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		now = now.AddDate(0, 0, i)
 		for _, tt := range tests {
-			enc := NewDateEncoder(tt.name)
+			enc := Encoders.Time.DateEncoding(tt.name)
 			enc(&out, &now)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
@@ -105,7 +79,7 @@ func TestTimeEncoder(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		now = now.Add(1 * time.Second)
 		for _, tt := range tests {
-			enc := NewTimeEncoder(tt.name)
+			enc := Encoders.Time.TimeEncoding(tt.name)
 			enc(&out, &now)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
@@ -129,12 +103,26 @@ func TestFieldsEncoder(t *testing.T) {
 	}
 
 	out := new(bytes.Buffer)
-	enc := NewFieldsEncoder("std")
+	enc := Encoders.Fields.Encoding("std")
 	enc(out, data, index)
 
 	want := " int=3 short=abcdefghijk long=0123456789abcdefg"
 	if got := out.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
+	}
+}
+
+func BenchmarkItoa(b *testing.B) {
+	dst := make([]byte, 0, 64)
+	for i := 0; i < b.N; i++ {
+		dst = dst[0:0]
+		itoa(&dst, 2015, 4)   // year
+		itoa(&dst, 1, 2)      // month
+		itoa(&dst, 30, 2)     // day
+		itoa(&dst, 12, 2)     // hour
+		itoa(&dst, 56, 2)     // minute
+		itoa(&dst, 0, 2)      // second
+		itoa(&dst, 987654, 6) // microsecond
 	}
 }

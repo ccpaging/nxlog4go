@@ -11,6 +11,7 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // SocketAppender is an Appender that sends output to an UDP/TCP server
@@ -21,7 +22,7 @@ type SocketAppender struct {
 	waitExit *sync.WaitGroup
 
 	level  int
-	layout l4g.Layout // format entry for output
+	layout driver.Layout // format entry for output
 
 	proto    string
 	hostport string
@@ -46,7 +47,7 @@ func NewSocketAppender(proto, hostport string) *SocketAppender {
 	return &SocketAppender{
 		rec: make(chan *driver.Recorder, 32),
 
-		layout: l4g.NewJSONLayout(),
+		layout: patt.NewJSONLayout(),
 
 		proto:    proto,
 		hostport: hostport,

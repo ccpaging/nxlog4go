@@ -9,6 +9,7 @@ import (
 
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 	_ "github.com/ccpaging/nxlog4go/socket"
 )
 
@@ -57,7 +58,7 @@ func client() {
 	// Enable internal log
 	l4g.GetLogLog().Set("level", l4g.WARN)
 
-	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").SetOptions("format", "%P "+l4g.FormatDefault)
+	log := l4g.NewLogger(l4g.DEBUG).SetPrefix("client").SetOptions("format", "%P "+patt.FormatDefault)
 
 	sa, err := driver.Open("socket", "udp://"+addr, "level", l4g.FINEST)
 	checkError(err)

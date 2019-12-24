@@ -20,8 +20,8 @@ type Filter struct {
 
 // NewFilter creates a new filter with an enabler, a layout
 // and appenders.
-func NewFilter(enb driver.Enabler, lo driver.Layout, apps ...driver.Appender) *Filter {
-	return &Filter{enb, lo, apps}
+func NewFilter(level int, lo driver.Layout, apps ...driver.Appender) *Filter {
+	return &Filter{driver.AtAbove(level), lo, apps}
 }
 
 // Dispatch filters, encodes a log recorder to bytes, and writes it to all appenders.

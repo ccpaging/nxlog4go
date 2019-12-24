@@ -1,6 +1,6 @@
 // Copyright (C) 2010, Kyle Lemons <kyle@kylelemons.net>.  All rights reserved.
 
-package nxlog4go
+package patt
 
 import (
 	"bytes"
@@ -8,8 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/logger/driver"
 )
+
+var created = time.Unix(0, 1234567890123456789).In(time.UTC)
 
 var formatTests = []struct {
 	Test    string
@@ -20,16 +22,16 @@ var formatTests = []struct {
 	{
 		Test: "Standard formats",
 		Record: &driver.Recorder{
-			Level:   ERROR,
+			Level:   0,
 			Source:  "source",
 			Message: "message",
-			Created: now,
+			Created: created,
 		},
 		Formats: map[string]string{
 			// TODO(kevlar): How can I do this so it'll work outside of PST?
-			FormatDefault: "[2009/02/13 23:31:30 UTC] [EROR] (source:0) message\n",
-			FormatShort:   "[23:31 13/02/09] [EROR] message\n",
-			FormatAbbrev:  "[EROR] message\n",
+			FormatDefault: "[2009/02/13 23:31:30 UTC] [] (source:0) message\n",
+			FormatShort:   "[23:31 13/02/09] [] message\n",
+			FormatAbbrev:  "[] message\n",
 		},
 		Args: map[string][]interface{}{
 			FormatShort: []interface{}{"timeEncoder", "hhmm", "dateEncoder", "dmy"},
@@ -42,7 +44,7 @@ func TestPatternLayout(t *testing.T) {
 	for _, test := range formatTests {
 		name := test.Test
 		for format, want := range test.Formats {
-			layout := NewPatternLayout(format, "utc", true)
+			layout := NewLayout(format, "utc", true)
 			if args, ok := test.Args[format]; ok {
 				layout.SetOptions(args...)
 			}
@@ -60,13 +62,13 @@ func TestPatternLayout(t *testing.T) {
 func BenchmarkPatternLayout(b *testing.B) {
 	const updateEvery = 1
 	r := &driver.Recorder{
-		Level:   CRITICAL,
-		Created: now,
+		Level:   0,
+		Created: created,
 		Prefix:  "prefix",
 		Source:  "source",
 		Message: "message",
 	}
-	layout := NewPatternLayout(testFormat)
+	layout := NewLayout("[%D %T %Z] [%L] (%S:%N) %M")
 	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
 		r.Created = r.Created.Add(1 * time.Second / updateEvery)
@@ -78,8 +80,8 @@ func BenchmarkPatternLayout(b *testing.B) {
 func BenchmarkJson(b *testing.B) {
 	const updateEvery = 1
 	r := &driver.Recorder{
-		Level:   CRITICAL,
-		Created: now,
+		Level:   0,
+		Created: created,
 		Prefix:  "prefix",
 		Source:  "source",
 		Message: "message",
@@ -93,13 +95,13 @@ func BenchmarkJson(b *testing.B) {
 func BenchmarkJsonLayout(b *testing.B) {
 	const updateEvery = 1
 	r := &driver.Recorder{
-		Level:   CRITICAL,
-		Created: now,
+		Level:   0,
+		Created: created,
 		Prefix:  "prefix",
 		Source:  "source",
 		Message: "message",
 	}
-	layout := NewJSONLayout()
+	layout := NewJSONLayout(nil)
 	out := new(bytes.Buffer)
 	for i := 0; i < b.N; i++ {
 		r.Created = r.Created.Add(1 * time.Second / updateEvery)

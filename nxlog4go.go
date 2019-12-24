@@ -86,14 +86,15 @@ import (
 
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // Version information
 const (
-	Version = "nxlog4go-v2.0.1"
+	Version = "nxlog4go-v2.0.2"
 	Major   = 2
 	Minor   = 0
-	Build   = 1
+	Build   = 2
 )
 
 /****** Logger ******/
@@ -110,9 +111,9 @@ type Logger struct {
 	flag   int    // properties compatible with go std log
 	caller bool   // runtime caller skip
 
-	level  int       // The log level
-	layout Layout    // Encode record to []byte for output
-	out    io.Writer // destination for output
+	level  int           // The log level
+	layout driver.Layout // Encode record to []byte for output
+	out    io.Writer     // destination for output
 
 	filters []*Filter // a collection of Filter
 }
@@ -125,23 +126,8 @@ func NewLogger(level int) *Logger {
 		level:  level,
 		caller: true,
 		prefix: "",
-		layout: NewPatternLayout(FormatDefault),
+		layout: patt.NewLayout(""),
 	}
-	return l
-}
-
-// Prefix returns the output prefix for the logger.
-func (l *Logger) Prefix() string {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	return l.prefix
-}
-
-// SetPrefix sets the output prefix for the logger.
-func (l *Logger) SetPrefix(prefix string) *Logger {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.prefix = prefix
 	return l
 }
 
@@ -194,23 +180,15 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 	return
 }
 
-// SetOutput sets the output destination for the logger.
-func (l *Logger) SetOutput(w io.Writer) *Logger {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.out = w
-	return l
-}
-
 // Layout returns the output layout for the logger.
-func (l *Logger) Layout() Layout {
+func (l *Logger) Layout() driver.Layout {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.layout
 }
 
 // SetLayout sets the output layout for the logger.
-func (l *Logger) SetLayout(layout Layout) *Logger {
+func (l *Logger) SetLayout(layout driver.Layout) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.layout = layout

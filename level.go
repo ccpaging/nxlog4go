@@ -3,10 +3,12 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
-	"github.com/ccpaging/nxlog4go/ansicolor"
+	color "github.com/ccpaging/nxlog4go/ansicolor"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // logging levels used by the logger
@@ -21,40 +23,21 @@ const (
 	CRITICAL
 )
 
-// Logging level strings
-var levelStrings = map[int]string{
-	FINEST:   "FNST",
-	FINE:     "FINE",
-	DEBUG:    "DEBG",
-	TRACE:    "TRAC",
-	INFO:     "INFO",
-	WARN:     "WARN",
-	ERROR:    "EROR",
-	CRITICAL: "CRIT",
+type levelString struct {
+	short string
+	lower string
+	color color.Color
 }
 
-// Logging level color
-var levelColors = map[int]color.Color{
-	FINEST:   color.Gray,
-	FINE:     color.Green,
-	DEBUG:    color.Magenta,
-	TRACE:    color.Cyan,
-	INFO:     color.White,
-	WARN:     color.LightYellow,
-	ERROR:    color.Red,
-	CRITICAL: color.LightRed,
-}
-
-// Logging level lowercase strings
-var levelLowerStrings = map[int]string{
-	FINEST:   "finest",
-	FINE:     "fine",
-	DEBUG:    "debug",
-	TRACE:    "trace",
-	INFO:     "info",
-	WARN:     "warn",
-	ERROR:    "error",
-	CRITICAL: "critical",
+var levelMap = map[int]*levelString{
+	FINEST:   &levelString{"FNST", "finest", color.Gray},
+	FINE:     &levelString{"FINE", "fine", color.Green},
+	DEBUG:    &levelString{"DEBG", "debug", color.Magenta},
+	TRACE:    &levelString{"TRAC", "trace", color.Cyan},
+	INFO:     &levelString{"INFO", "info", color.White},
+	WARN:     &levelString{"WARN", "warn", color.LightYellow},
+	ERROR:    &levelString{"EROR", "error", color.Red},
+	CRITICAL: &levelString{"CRIT", "critical", color.LightRed},
 }
 
 // Level is the integer logging levels
@@ -62,52 +45,21 @@ type Level int
 
 // String return the string of integer Level
 func (l Level) String() string {
-	s, ok := levelStrings[int(l)]
+	ls, ok := levelMap[int(l)]
 	if ok {
-		return s
+		return ls.short
 	}
-	return l.unknown()
-}
-
-// Unknown return unknown level string
-func (l Level) unknown() string {
 	return fmt.Sprintf("Level(%d)", l)
-}
-
-// ColorBytes return the ANSI color bytes by level
-func (l Level) ColorBytes() []byte {
-	c, ok := levelColors[int(l)]
-	if ok {
-		return c.Bytes()
-	}
-	return color.Red.Bytes()
-}
-
-// ColorReset return the reset ANSI color bytes
-func (l Level) ColorReset() []byte {
-	return color.Reset.Bytes()
-}
-
-// Colorize return the ANSI color wrap bytes by level
-func (l Level) Colorize(s string) []byte {
-	c, ok := levelColors[int(l)]
-	if ok {
-		return c.Wrap([]byte(s))
-	}
-	return color.Red.Wrap([]byte(s))
 }
 
 func (l Level) string2int(s string) int {
 	s = strings.ToLower(s)
-	for i := 0; (i < len(levelStrings)) || (i < len(levelStrings)); i++ {
-		if i < len(levelStrings) && s == levelStrings[i] {
-			return i
-		}
-		if i < len(levelLowerStrings) && s == levelLowerStrings[i] {
+	for i, ls := range levelMap {
+		if s == strings.ToLower(ls.short) || s == ls.lower {
 			return i
 		}
 	}
-	if s == "WARNING" {
+	if s == "warning" {
 		return WARN
 	}
 	return int(l)
@@ -132,4 +84,99 @@ func (l Level) IntE(v interface{}) (int, error) {
 func (l Level) Int(v interface{}) int {
 	n, _ := l.IntE(v)
 	return n
+}
+
+// ColorBytes return the ANSI color bytes by level
+func (l Level) colorBytes(n int) []byte {
+	ls, ok := levelMap[int(n)]
+	if ok {
+		return ls.color.Bytes()
+	}
+	return color.Red.Bytes()
+}
+
+// Colorize return the ANSI color wrap bytes by level
+func (l Level) colorize(s string) []byte {
+	ls, ok := levelMap[int(l)]
+	if ok {
+		return ls.color.Wrap([]byte(s))
+	}
+	return color.Red.Wrap([]byte(s))
+}
+
+/** Cached Level Encoder ***/
+
+type cacheLevel struct {
+	cache map[int][]byte
+
+	color bool
+	upper bool
+	short bool
+}
+
+func setLevelEncoder() {
+	patt.Encoders.Level = &cacheLevel{}
+}
+
+func (e *cacheLevel) enco(out *bytes.Buffer, n int) {
+	if e.cache == nil {
+		e.cache = make(map[int][]byte, len(levelMap))
+		for i, ls := range levelMap {
+			s := ls.lower
+			if e.short {
+				s = ls.short
+			} else if e.upper {
+				s = strings.ToUpper(s)
+			}
+
+			if e.color {
+				e.cache[i] = Level(i).colorize(s)
+			} else {
+				e.cache[i] = []byte(s)
+			}
+		}
+	}
+
+	if b, ok := e.cache[n]; ok {
+		out.Write(b)
+	} else {
+		s := Level(n).String()
+		if e.color {
+			out.Write(Level(n).colorize(s))
+		} else {
+			out.Write([]byte(s))
+		}
+	}
+}
+
+// Open creates cached level encoding by name.
+// Name includes(case sensitive): upper, upperColor, lower, lowerColor, std.
+//
+// Default: std.
+func (*cacheLevel) Encoding(s string) patt.LevelEncoding {
+	// make a new one
+	e := new(cacheLevel)
+	switch s {
+	case "upper":
+		e.upper = true
+	case "upperColor":
+		e.upper = true
+		e.color = true
+	case "lower":
+	case "lowerColor":
+		e.color = true
+	case "std":
+		fallthrough
+	default:
+		e.short = true
+	}
+	return e.enco
+}
+
+func (*cacheLevel) Begin(n int) []byte {
+	return Level(n).colorBytes(n)
+}
+
+func (*cacheLevel) End(n int) []byte {
+	return color.Reset.Bytes()
 }

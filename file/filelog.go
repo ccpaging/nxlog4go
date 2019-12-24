@@ -14,6 +14,7 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 var (
@@ -28,7 +29,7 @@ type FileAppender struct {
 	waitExit *sync.WaitGroup
 
 	level  int
-	layout l4g.Layout // format entry for output
+	layout driver.Layout // format entry for output
 
 	out    *RotateFile
 	rotate int // rolling number. -1, no rotate; 0, no backup; 1 ... n, backup n log files
@@ -64,7 +65,7 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 	fa := &FileAppender{
 		rec: make(chan *driver.Recorder, 32),
 
-		layout: l4g.NewPatternLayout(""),
+		layout: patt.NewLayout(""),
 
 		out: NewRotateFile(filename),
 

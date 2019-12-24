@@ -11,6 +11,7 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // ColorBytes represents ANSI code to set different color of levels
@@ -38,7 +39,7 @@ type Appender struct {
 	waitExit *sync.WaitGroup
 
 	level  int
-	layout l4g.Layout // format entry for output
+	layout driver.Layout // format entry for output
 
 	out   io.Writer // destination for output
 	color bool
@@ -62,7 +63,7 @@ func NewAppender(w io.Writer, args ...interface{}) *Appender {
 	ca := &Appender{
 		rec: make(chan *driver.Recorder, 32),
 
-		layout: l4g.NewPatternLayout(""),
+		layout: patt.NewLayout(""),
 
 		out:   os.Stderr,
 		color: false,

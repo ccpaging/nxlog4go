@@ -1,7 +1,7 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 // Copyright (c) 2016 Uber Technologies, Inc.
 
-package nxlog4go
+package patt
 
 import (
 	"bytes"
@@ -28,7 +28,39 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-/* Date Cache Encoder */
+/** Level Encoder **/
+
+// LevelEncoding serializes a Level to a bytes buffer.
+type LevelEncoding func(out *bytes.Buffer, n int)
+
+// LevelEncoder defines level encoder interface for external packages extending.
+type LevelEncoder interface {
+	Encoding(string) LevelEncoding
+	Begin(int) []byte
+	End(int) []byte
+}
+
+type nopLevelEnc struct{}
+
+// NewNopLevelEncoder creates no-op level encoder.
+func NewNopLevelEncoder() LevelEncoder                 { return &nopLevelEnc{} }
+func (e *nopLevelEnc) Encoding(s string) LevelEncoding { return e.enco }
+func (*nopLevelEnc) enco(out *bytes.Buffer, n int)     {}
+func (*nopLevelEnc) Begin(n int) []byte                { return nil }
+func (*nopLevelEnc) End(n int) []byte                  { return nil }
+
+/** Time Encoder **/
+
+// TimeEncoding serializes date, time, or zone to bytes buffer.
+type TimeEncoding func(buf *bytes.Buffer, t *time.Time)
+
+// TimeEncoder defines date encoder interface for external packages extending.
+type TimeEncoder interface {
+	DateEncoding(string) TimeEncoding
+	TimeEncoding(string) TimeEncoding
+	ZoneEncoding(string) TimeEncoding
+}
+
 type cacheTime struct {
 	y, mm, d  int
 	dateCache []byte
@@ -46,6 +78,11 @@ type cacheTime struct {
 	zfmt      string
 }
 
+// NewTimeEncoder creates the default time encoder.
+func NewTimeEncoder() TimeEncoder { return &cacheTime{} }
+
+/** Date Encoding **/
+
 func (e *cacheTime) writeCacheDate(buf *bytes.Buffer, t *time.Time) bool {
 	y, m, d := t.Date()
 	if y == e.y && int(m) == e.mm && d == e.d && e.dateCache != nil {
@@ -56,7 +93,7 @@ func (e *cacheTime) writeCacheDate(buf *bytes.Buffer, t *time.Time) bool {
 	return false
 }
 
-func (e *cacheTime) writeDate(buf *bytes.Buffer, t *time.Time) {
+func (e *cacheTime) encoDate(buf *bytes.Buffer, t *time.Time) {
 	if e.writeCacheDate(buf, t) {
 		return
 	}
@@ -91,7 +128,7 @@ func (e *cacheTime) writeDate(buf *bytes.Buffer, t *time.Time) {
 	buf.Write(e.dateCache)
 }
 
-func (e *cacheTime) writeCYMD(buf *bytes.Buffer, t *time.Time) {
+func (e *cacheTime) encoCYMD(buf *bytes.Buffer, t *time.Time) {
 	if e.writeCacheDate(buf, t) {
 		return
 	}
@@ -117,22 +154,20 @@ func (e *cacheTime) writeCYMD(buf *bytes.Buffer, t *time.Time) {
 	buf.Write(e.dateCache)
 }
 
-// DateEncoder serializes a date to a []byte type.
-type DateEncoder func(buf *bytes.Buffer, t *time.Time)
-
-// NewDateEncoder creates cached date encoding by name.
+// DateEncoding creates cached date encoding by name.
 // Name includes(case sensitive): dmy, mdy, cymdDash, cymdDot, cymdSlash.
+//
 // Default: cymdSlash.
-func NewDateEncoder(s string) DateEncoder {
+func (*cacheTime) DateEncoding(s string) TimeEncoding {
 	e := new(cacheTime)
 	switch s {
 	case "dmy":
 		e.dayFirst = true
 		e.sep = '/'
-		return e.writeDate
+		return e.encoDate
 	case "mdy":
 		e.sep = '/'
-		return e.writeDate
+		return e.encoDate
 	case "cymdDash":
 		e.sep = '-'
 	case "cymdDot":
@@ -142,10 +177,11 @@ func NewDateEncoder(s string) DateEncoder {
 	default:
 		e.sep = '/'
 	}
-	return e.writeCYMD
+	return e.encoCYMD
 }
 
-/* Time Cache Encoder */
+/** Time Encoding **/
+
 func (e *cacheTime) writeCacheTime(buf *bytes.Buffer, t *time.Time) bool {
 	h, m, s := t.Clock()
 	if s == e.s && m == e.m && h == e.h && e.timeCache != nil {
@@ -156,7 +192,7 @@ func (e *cacheTime) writeCacheTime(buf *bytes.Buffer, t *time.Time) bool {
 	return false
 }
 
-func (e *cacheTime) writeHMS(buf *bytes.Buffer, t *time.Time) {
+func (e *cacheTime) encoHMS(buf *bytes.Buffer, t *time.Time) {
 	if e.writeCacheTime(buf, t) {
 		return
 	}
@@ -193,11 +229,11 @@ func (e *cacheTime) writeHMS(buf *bytes.Buffer, t *time.Time) {
 
 func (e *cacheTime) rfc3339Nano(buf *bytes.Buffer, t *time.Time) {
 	// 2006-01-02T15:04:05.000000Z07:00
-	e.writeCYMD(buf, t)
+	e.encoCYMD(buf, t)
 
 	buf.WriteByte('T')
 
-	e.writeHMS(buf, t)
+	e.encoHMS(buf, t)
 
 	var b []byte
 	itoa(&b, t.Nanosecond(), 9)
@@ -213,16 +249,16 @@ func (e *cacheTime) rfc3339Nano(buf *bytes.Buffer, t *time.Time) {
 		buf.Write(b[:n])
 	}
 
-	e.writeZone(buf, t)
+	e.encoZone(buf, t)
 }
 
 func (e *cacheTime) iso8601(buf *bytes.Buffer, t *time.Time) {
 	// 2006-01-02T15:04:05.000Z0700
-	e.writeCYMD(buf, t)
+	e.encoCYMD(buf, t)
 
 	buf.WriteByte('T')
 
-	e.writeHMS(buf, t)
+	e.encoHMS(buf, t)
 
 	buf.WriteByte('.')
 
@@ -230,16 +266,14 @@ func (e *cacheTime) iso8601(buf *bytes.Buffer, t *time.Time) {
 	itoa(&b, t.Nanosecond()/1e6, 3)
 	buf.Write(b)
 
-	e.writeZone(buf, t)
+	e.encoZone(buf, t)
 }
 
-// TimeEncoder serializes a time to a []byte type.
-type TimeEncoder func(buf *bytes.Buffer, t *time.Time)
-
-// NewTimeEncoder creates cached time encoding by name.
+// TimeEncoding creates cached time encoding by name.
 // Name includes(case sensitive): hhmm, hms.us, iso88601, rfc3339nano, hms.
+//
 // Default: hms.
-func NewTimeEncoder(s string) TimeEncoder {
+func (*cacheTime) TimeEncoding(s string) TimeEncoding {
 	e := new(cacheTime)
 	switch s {
 	case "iso8601":
@@ -260,12 +294,12 @@ func NewTimeEncoder(s string) TimeEncoder {
 		fallthrough
 	default:
 	}
-	return e.writeHMS
+	return e.encoHMS
 }
 
 /* Zone Encoder */
 
-func (e *cacheTime) writeZone(buf *bytes.Buffer, t *time.Time) {
+func (e *cacheTime) encoZone(buf *bytes.Buffer, t *time.Time) {
 	loc := t.Location()
 	if e.loc != loc || e.zoneCache == nil {
 		e.zoneCache = []byte(t.Format(e.zfmt))
@@ -274,13 +308,11 @@ func (e *cacheTime) writeZone(buf *bytes.Buffer, t *time.Time) {
 	buf.Write(e.zoneCache)
 }
 
-// ZoneEncoder serializes a time zone to a []byte type.
-type ZoneEncoder func(buf *bytes.Buffer, t *time.Time)
-
-// NewZoneEncoder creates cached time zone encoding by name.
+// ZoneEncoding creates cached time zone encoding by name.
 // Name includes(case sensitive): rfc3339, iso88601, mst.
+//
 // Default: mst.
-func NewZoneEncoder(s string) ZoneEncoder {
+func (*cacheTime) ZoneEncoding(s string) TimeEncoding {
 	e := new(cacheTime)
 	switch s {
 	case "iso8601":
@@ -292,25 +324,38 @@ func NewZoneEncoder(s string) ZoneEncoder {
 	default:
 		e.zfmt = "MST"
 	}
-	return e.writeZone
+	return e.encoZone
 }
 
 /* Caller Encoder */
 
-type callerEncoMode int
+// CallerEncoding function serializes a caller information to a bytes buffer.
+type CallerEncoding func(buf *bytes.Buffer, s string)
+
+// CallerEncoder defines caller encoder interface for external packages extending.
+type CallerEncoder interface {
+	Encoding(string) CallerEncoding
+}
+
+type callerEnc struct {
+	mode int
+}
 
 const (
-	fullPath callerEncoMode = iota
+	fullPath int = iota
 	shortPath
 	noPath
 )
 
-func (m callerEncoMode) write(buf *bytes.Buffer, s string) {
+// NewCallerEncoder creates the default caller information encoder.
+func NewCallerEncoder() CallerEncoder { return &callerEnc{} }
+
+func (e *callerEnc) enco(buf *bytes.Buffer, s string) {
 	if len(s) <= 0 {
 		return
 	}
 
-	if m == fullPath {
+	if e.mode == fullPath {
 		buf.WriteString(s)
 		return
 	}
@@ -334,7 +379,7 @@ func (m callerEncoMode) write(buf *bytes.Buffer, s string) {
 		return
 	}
 
-	if m != noPath {
+	if e.mode != noPath {
 		// Find the penultimate separator.
 		idx = strings.LastIndexByte(s[:idx], '/')
 		if idx == -1 {
@@ -345,36 +390,45 @@ func (m callerEncoMode) write(buf *bytes.Buffer, s string) {
 	buf.WriteString(s[idx+1:])
 }
 
-// CallerEncoder function serializes a caller information to a []byte type.
-type CallerEncoder func(buf *bytes.Buffer, s string)
-
-// NewCallerEncoder creates caller encoder by name.
+// Encoding creates caller encoding by name.
 // Name includes(case sensitive): nopath, fullpath, shortpath.
+//
 // Default: shortpath.
-func NewCallerEncoder(s string) CallerEncoder {
-	var e CallerEncoder
+func (*callerEnc) Encoding(s string) CallerEncoding {
+	e := new(callerEnc)
 	switch s {
 	case "nopath":
-		e = noPath.write
+		e.mode = noPath
 	case "fullpath":
-		e = fullPath.write
+		e.mode = fullPath
 	case "shortpath":
 		fallthrough
 	default:
-		e = shortPath.write
+		e.mode = shortPath
 	}
-	return e
+	return e.enco
 }
 
 /* Fields Encoder */
 
-type fieldsEncoMode struct {
+// FieldsEncoding serializes data fields to a bytes buffer.
+type FieldsEncoding func(out *bytes.Buffer, data map[string]interface{}, index []string)
+
+// FieldsEncoder defines data fields encoder interface for external packages extending.
+type FieldsEncoder interface {
+	Encoding(string) FieldsEncoding
+}
+
+type fieldsEnc struct {
 	sep   string
 	deli  string
 	quote bool
 }
 
-func (e *fieldsEncoMode) writeKeyValue(out *bytes.Buffer, k string, v interface{}) {
+// NewFieldsEncoder creates the default data fields encoder.
+func NewFieldsEncoder() FieldsEncoder { return &fieldsEnc{} }
+
+func (e *fieldsEnc) encoKeyValue(out *bytes.Buffer, k string, v interface{}) {
 	out.WriteString(k + e.deli)
 	var s string
 	if e.quote {
@@ -389,7 +443,7 @@ func (e *fieldsEncoMode) writeKeyValue(out *bytes.Buffer, k string, v interface{
 	out.WriteString(s)
 }
 
-func (e *fieldsEncoMode) write(out *bytes.Buffer, data map[string]interface{}, index []string) {
+func (e *fieldsEnc) enco(out *bytes.Buffer, data map[string]interface{}, index []string) {
 	if len(data) <= 0 {
 		return
 	}
@@ -397,18 +451,18 @@ func (e *fieldsEncoMode) write(out *bytes.Buffer, data map[string]interface{}, i
 	if len(index) > 1 {
 		for _, k := range index {
 			out.WriteString(e.sep)
-			e.writeKeyValue(out, k, data[k])
+			e.encoKeyValue(out, k, data[k])
 		}
 		return
 	}
 
 	for k, v := range data {
 		out.WriteString(e.sep)
-		e.writeKeyValue(out, k, v)
+		e.encoKeyValue(out, k, v)
 	}
 }
 
-func (e *fieldsEncoMode) writeJSON(out *bytes.Buffer, data map[string]interface{}, index []string) {
+func (e *fieldsEnc) encoJSON(out *bytes.Buffer, data map[string]interface{}, index []string) {
 	if len(data) <= 0 {
 		return
 	}
@@ -418,17 +472,15 @@ func (e *fieldsEncoMode) writeJSON(out *bytes.Buffer, data map[string]interface{
 	encoder.Encode(data)
 }
 
-// FieldsEncoder serializes data fields to a []byte type.
-type FieldsEncoder func(out *bytes.Buffer, data map[string]interface{}, index []string)
-
-// NewFieldsEncoder creates fields encoder by name.
+// Encoding creates a data fields encoder by name.
 // Name includes(case sensitive): csv, json, quote, std.
+//
 // Default: std.
-func NewFieldsEncoder(s string) FieldsEncoder {
-	e := new(fieldsEncoMode)
+func (*fieldsEnc) Encoding(s string) FieldsEncoding {
+	e := new(fieldsEnc)
 	switch s {
 	case "json":
-		return e.writeJSON
+		return e.encoJSON
 	case "csv":
 		e.sep = "|"
 		e.deli = "="
@@ -442,5 +494,21 @@ func NewFieldsEncoder(s string) FieldsEncoder {
 		e.sep = " "
 		e.deli = "="
 	}
-	return e.write
+	return e.enco
+}
+
+/** Global Encoders ***/
+
+type encoders struct {
+	Level  LevelEncoder
+	Time   TimeEncoder
+	Caller CallerEncoder
+	Fields FieldsEncoder
+}
+
+var Encoders encoders = encoders{
+	Level:  NewNopLevelEncoder(),
+	Time:   NewTimeEncoder(),
+	Caller: NewCallerEncoder(),
+	Fields: NewFieldsEncoder(),
 }

@@ -3,8 +3,8 @@
 package filelog
 
 import (
-	l4g "github.com/ccpaging/nxlog4go"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // JSONAppender represents the log appender that sends JSON format records to a file
@@ -22,6 +22,6 @@ func (*JSONAppender) Open(filename string, args ...interface{}) (driver.Appender
 	if err != nil {
 		return nil, err
 	}
-	a.layout = l4g.NewJSONLayout(args...)
+	a.layout = patt.NewJSONLayout(args...)
 	return &JSONAppender{a}, nil
 }

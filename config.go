@@ -8,6 +8,7 @@ import (
 
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // NameValue stores every single option's name and value.
@@ -59,8 +60,8 @@ func loadFilter(level int, typ string, dsn string, props []NameValue) (filter *F
 	}
 
 	filter = &Filter{
-		Enabler: driver.NewAtAboveLevel(level),
-		Layout:  NewPatternLayout(FormatDefault),
+		Enabler: driver.AtAbove(level),
+		Layout:  patt.NewLayout(""),
 		Apps:    []driver.Appender{app},
 	}
 	return

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 )
 
 func TestEntryArgs(t *testing.T) {
@@ -44,7 +45,7 @@ func TestEntryFormatJson(t *testing.T) {
 	errBoom := fmt.Errorf("boom time")
 
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOutput(buf).SetLayout(NewJSONLayout("callerEncoder", "fullpath"))
+	l := NewLogger(INFO).SetOutput(buf).SetLayout(patt.NewJSONLayout("callerEncoder", "fullpath"))
 	e := NewEntry(l)
 
 	e.With("error", errBoom).Log(1, ERROR, "kaboom")

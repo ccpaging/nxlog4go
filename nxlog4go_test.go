@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ccpaging/nxlog4go/driver"
+	"github.com/ccpaging/nxlog4go/patt"
 	"github.com/ccpaging/nxlog4go/rolling"
 )
 
@@ -74,7 +75,7 @@ func TestConsoleWriter(t *testing.T) {
 
 	buf := make([]byte, 1024)
 
-	layout := NewPatternLayout(testFormat, "utc", true)
+	layout := patt.NewLayout(testFormat, "utc", true)
 	for _, test := range recorderWriteTests {
 		name := test.Test
 
@@ -172,7 +173,7 @@ func TestFileWriter(t *testing.T) {
 		out:    ww,
 		level:  FINEST,
 		caller: true,
-		layout: NewPatternLayout("[%L] %M"),
+		layout: patt.NewLayout("[%L] %M"),
 	}
 
 	defer os.Remove(testLogFile)
@@ -246,7 +247,7 @@ func TestCountMallocs(t *testing.T) {
 		out:    new(bytes.Buffer),
 		level:  INFO,
 		caller: true,
-		layout: NewPatternLayout(testFormat),
+		layout: patt.NewLayout(testFormat),
 	}
 
 	mallocs := 0 - getMallocs()
@@ -269,7 +270,7 @@ func TestCountMallocs(t *testing.T) {
 		out:    os.Stderr,
 		level:  INFO,
 		caller: true,
-		layout: NewPatternLayout(testFormat),
+		layout: patt.NewLayout(testFormat),
 	}
 	mallocs = 0 - getMallocs()
 	for i := 0; i < N; i++ {
@@ -292,7 +293,7 @@ func BenchmarkConsoleWithCallerWriter(b *testing.B) {
 		out:    ioutil.Discard,
 		level:  INFO,
 		caller: true,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Log(1, WARN, "This is a log message")
@@ -304,7 +305,7 @@ func BenchmarkConsoleWriter(b *testing.B) {
 		out:    ioutil.Discard,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Log(1, WARN, "This is a log message")
@@ -316,7 +317,7 @@ func BenchmarkConsoleUtilWriter(b *testing.B) {
 		out:    ioutil.Discard,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -328,7 +329,7 @@ func BenchmarkConsoleUtilNotWriter(b *testing.B) {
 		out:    ioutil.Discard,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
@@ -349,7 +350,7 @@ func BenchmarkFileWriter(b *testing.B) {
 		out:    w,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 
 	b.StartTimer()
@@ -374,7 +375,7 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 		out:    w,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -394,7 +395,7 @@ func BenchmarkFileBufWriter(b *testing.B) {
 		out:    w,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -414,7 +415,7 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 		out:    w,
 		level:  INFO,
 		caller: false,
-		layout: NewPatternLayout(testBenchFormat),
+		layout: patt.NewLayout(testBenchFormat),
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
