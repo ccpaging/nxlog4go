@@ -26,7 +26,7 @@ var (
 	FormatAbbrev = "[%L] %M%F"
 )
 
-// PatternLayout formats log record
+// PatternLayout formats log Recorder.
 type PatternLayout struct {
 	verbs   [][]byte // Split the format string into pieces by % signs
 	lineEnd []byte
@@ -57,7 +57,7 @@ func formatToVerbs(format string) [][]byte {
 	return bytes.Split([]byte(format), []byte{'%'})
 }
 
-// NewLayout creates a new layout which encode log record to bytes.
+// NewLayout creates a new layout encoding log Recorder.
 func NewLayout(format string, args ...interface{}) *PatternLayout {
 	lo := &PatternLayout{
 		verbs:   formatToVerbs(format),
@@ -80,7 +80,7 @@ func NewLayout(format string, args ...interface{}) *PatternLayout {
 	return lo
 }
 
-// NewJSONLayout creates a new layout which encode log record as JSON format.
+// NewJSONLayout creates a new layout encoding log Recorder as JSON format.
 func NewJSONLayout(args ...interface{}) *PatternLayout {
 	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
 	lo := NewLayout(jsonFormat, args...)
@@ -88,7 +88,7 @@ func NewJSONLayout(args ...interface{}) *PatternLayout {
 	return lo
 }
 
-// NewCSVLayout creates a new layout which encode log record as CSV format.
+// NewCSVLayout creates a new layout encoding log Recorder as CSV format.
 func NewCSVLayout(args ...interface{}) *PatternLayout {
 	csvFormat := "%D|%T|%L|%P|%S:%N|%M%F"
 	lo := NewLayout(csvFormat, args...)
@@ -167,10 +167,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 //  %F - Data fields in "key=value" format
 //
 // DEPRECATED:
-//  %d - Date (01/02/06). Note: Do not using with %D in a layout
-//       Replacing with setting "dateEncoder" as "mdy".
-//  %t - Time (15:04). Note: Do not using with %T in a layout
-//       Replacing with setting "timeEncoder" as "hhmm".
+//  %d - Date (01/02/06). Replacing with setting "dateEncoder" as "mdy".
+//  %t - Time (15:04). Replacing with setting "timeEncoder" as "hhmm".
 //
 // Ignores other unknown format codes
 func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
@@ -261,8 +259,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 	}
 }
 
-// Encode Entry to out buffer.
-// Return len.
+// Encode log Recorder to bytes buffer.
 func (lo *PatternLayout) Encode(out *bytes.Buffer, r *driver.Recorder) int {
 	if r == nil {
 		out.Write([]byte("<nil>"))
