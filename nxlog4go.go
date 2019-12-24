@@ -79,6 +79,7 @@
 package nxlog4go
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"sync"
@@ -223,6 +224,24 @@ func (l *Logger) Filters() []*Filter {
 	return l.filters
 }
 
+// Dispatch encodes a log recorder to bytes and writes it.
+func (l *Logger) Dispatch(r *driver.Recorder) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.out != nil && r.Level >= l.level {
+		buf := new(bytes.Buffer)
+		l.layout.Encode(buf, r)
+		l.out.Write(buf.Bytes())
+	}
+
+	for _, f := range l.filters {
+		if f != nil {
+			f.Dispatch(r)
+		}
+	}
+}
+
 // Close closes all log filters in preparation for exiting the program.
 // Calling this is not really imperative, unless you want to
 // guarantee that all log messages are written.  Close() removes
@@ -231,7 +250,11 @@ func (l *Logger) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	closeFilters(l.filters)
+	for _, f := range l.filters {
+		if f != nil {
+			f.Close()
+		}
+	}
 	l.filters = nil
 }
 

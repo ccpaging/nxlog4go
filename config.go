@@ -58,7 +58,11 @@ func loadFilter(level int, typ string, dsn string, props []NameValue) (filter *F
 		}
 	}
 
-	filter = NewFilter(level, nil, app)
+	filter = &Filter{
+		Enabler: driver.NewAtAboveLevel(level),
+		Layout:  NewPatternLayout(FormatDefault),
+		Apps:    []driver.Appender{app},
+	}
 	return
 }
 
