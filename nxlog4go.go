@@ -79,14 +79,10 @@
 package nxlog4go
 
 import (
-	"bytes"
-	"io"
-	"os"
 	"sync"
 
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
-	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // Version information
@@ -108,26 +104,26 @@ type Logger struct {
 	mu sync.Mutex // ensures atomic writes; protects the following fields
 
 	prefix string // prefix to write at beginning of each line
-	flag   int    // properties compatible with go std log
 	caller bool   // runtime caller skip
 
-	level  int           // The log level
-	layout driver.Layout // Encode record to []byte for output
-	out    io.Writer     // destination for output
+	*stdf
 
-	filters []*Filter // a collection of Filter
+	filters map[string]*driver.Filter // a collection of Filter
 }
+
+const (
+	stdfName string = "stdout"
+)
 
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above level to standard output.
 func NewLogger(level int) *Logger {
 	l := &Logger{
-		out:    os.Stderr,
-		level:  level,
-		caller: true,
-		prefix: "",
-		layout: patt.NewLayout(""),
+		caller:  true,
+		filters: make(map[string]*driver.Filter),
 	}
+	l.stdf = newStdf(level)
+	l.filters[stdfName] = l.stdf.Filter
 	return l
 }
 
@@ -171,10 +167,10 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 		}
 	case "level":
 		if n, err = Level(INFO).IntE(v); err == nil {
-			l.level = n
+			l.stdf.setLevel(n)
 		}
 	default:
-		return l.layout.Set(k, v)
+		return l.stdf.Layout.Set(k, v)
 	}
 
 	return
@@ -184,19 +180,28 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 func (l *Logger) Layout() driver.Layout {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.layout
+	return l.stdf.Layout
 }
 
 // SetLayout sets the output layout for the logger.
 func (l *Logger) SetLayout(layout driver.Layout) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.layout = layout
+	l.stdf.Layout = layout
+	return l
+}
+
+// Enable sets the standard filter's Enabler to deny all,
+// or restores the default at/above level enabler.
+func (l *Logger) Enable(enb bool) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.stdf.enable(enb)
 	return l
 }
 
 // Filters returns the output filters for the logger.
-func (l *Logger) Filters() []*Filter {
+func (l *Logger) Filters() map[string]*driver.Filter {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.filters
@@ -207,12 +212,6 @@ func (l *Logger) Dispatch(r *driver.Recorder) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if l.out != nil && r.Level >= l.level {
-		buf := new(bytes.Buffer)
-		l.layout.Encode(buf, r)
-		l.out.Write(buf.Bytes())
-	}
-
 	for _, f := range l.filters {
 		if f != nil {
 			f.Dispatch(r)
@@ -222,18 +221,23 @@ func (l *Logger) Dispatch(r *driver.Recorder) {
 
 // Close closes all log filters in preparation for exiting the program.
 // Calling this is not really imperative, unless you want to
-// guarantee that all log messages are written.  Close() removes
-// all filters (and thus all appenders) from the logger.
+// guarantee that all log messages are written.
+//
+// Notice: Close() removes all filters (and thus all appenders) except "stdout"
+// from the logger.
 func (l *Logger) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	for _, f := range l.filters {
+	for name, f := range l.filters {
+		if name == stdfName {
+			continue
+		}
 		if f != nil {
 			f.Close()
 		}
+		delete(l.filters, name)
 	}
-	l.filters = nil
 }
 
 func (l *Logger) enabled(level int) bool {

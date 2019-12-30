@@ -2,7 +2,7 @@
     "version": "",
     "filters": [
         {
-            "enabled": "true",
+            "enabled": "false",
             "tag": "stdout",
             "type": "stdout",
             "dsn": "",
@@ -27,7 +27,7 @@
             "properties": [
                 {
                     "name": "format",
-                    "value": "[%D %T] [%L] (%S) %M"
+                    "value": "\"[%D %T] [%L] [%P] (%S) \\t%M\""
                 }
             ]
         },

@@ -16,7 +16,7 @@ var (
 	fname = flag.String("conf", "example.json", "config file")
 )
 
-var log = l4g.GetLogger().SetOptions("caller", false, "format", "[%T] [%L] (%S) %M\n")
+var log = l4g.GetLogger().SetOptions("caller", true, "format", "[%T] [%P] [%L] (%S) %M\n")
 
 func main() {
 	flag.Parse()

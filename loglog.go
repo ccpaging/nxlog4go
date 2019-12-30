@@ -4,10 +4,8 @@ package nxlog4go
 
 import (
 	"errors"
-	"os"
 
 	"github.com/ccpaging/nxlog4go/driver"
-	"github.com/ccpaging/nxlog4go/patt"
 )
 
 var loglog *Logger
@@ -20,13 +18,9 @@ var FormatLogLog = "%T %P %L %M"
 // Do not set any filters.
 func GetLogLog() *Logger {
 	if loglog == nil {
-		loglog = &Logger{
-			out:    os.Stderr,
-			level:  DEBUG,
-			caller: true,
-			prefix: "logg",
-			layout: patt.NewLayout(FormatLogLog),
-		}
+		loglog = NewLogger(DEBUG).SetOptions(
+			"prefix", "logg",
+			"format", FormatLogLog)
 	}
 	return loglog
 }

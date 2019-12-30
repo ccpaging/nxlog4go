@@ -8,7 +8,6 @@ import (
 
 	"github.com/ccpaging/nxlog4go/cast"
 	"github.com/ccpaging/nxlog4go/driver"
-	"github.com/ccpaging/nxlog4go/patt"
 )
 
 // NameValue stores every single option's name and value.
@@ -35,35 +34,39 @@ type LoggerConfig struct {
 	Filters []*FilterConfig `xml:"filter" json:"filters"`
 }
 
-func setLogger(l *Logger, level int, props []NameValue) (errs []error) {
-	l.Set("level", level)
-	for _, prop := range props {
+func setLogger(l *Logger, enb bool, fc *FilterConfig) (errs []error) {
+	l.Set("level", Level(INFO).Int(fc.Level))
+	for _, prop := range fc.Properties {
 		v := strings.Trim(prop.Value, " \r\n")
 		if err := l.Set(prop.Name, v); err != nil {
 			errs = append(errs, fmt.Errorf("Warn: %s. %s: %s", err.Error(), prop.Name, v))
 		}
 	}
+	l.Enable(enb)
 	return
 }
 
-func loadFilter(level int, typ string, dsn string, props []NameValue) (filter *Filter, errs []error) {
-	app, err := driver.Open(typ, dsn)
+func loadFilter(fc *FilterConfig) (filter *driver.Filter, errs []error) {
+	app, err := driver.Open(fc.Type, fc.Dsn)
 	if app == nil {
 		return nil, append(errs, err)
 	}
 
-	for _, prop := range props {
+	for _, prop := range fc.Properties {
 		v := strings.Trim(prop.Value, " \r\n")
 		if err := app.Set(prop.Name, v); err != nil {
-			errs = append(errs, fmt.Errorf("Warn: Set [%s] as [%s=%s]. %s", typ, prop.Name, v, err.Error()))
+			errs = append(errs, fmt.Errorf("Warn: Set [%s] as [%s=%s]. %s", fc.Type, prop.Name, v, err.Error()))
 		}
 	}
 
-	filter = &Filter{
-		Enabler: driver.AtAbove(level),
-		Layout:  patt.NewLayout(""),
+	filter = &driver.Filter{
+		Name:    fc.Tag,
+		Enabler: driver.AtAbove(Level(INFO).Int(fc.Level)),
+		Layout:  nil,
 		Apps:    []driver.Appender{app},
 	}
+
+	errs = append(errs, fmt.Errorf("Trace: Succeeded loading tag [%s], type [%s], dsn [%s]", fc.Tag, fc.Type, fc.Dsn))
 	return
 }
 
@@ -73,7 +76,7 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 		return append(errs, fmt.Errorf("Warn: Logger configuration is NIL"))
 	}
 
-	var filters []*Filter
+	var filters []*driver.Filter
 	for i, fc := range lc.Filters {
 		if fc.Type == "" {
 			errs = append(errs, fmt.Errorf("Warn: The type of Filter [%d] is not defined", i))
@@ -84,28 +87,28 @@ func (l *Logger) LoadConfiguration(lc *LoggerConfig) (errs []error) {
 
 		}
 
-		if enabled, err := cast.ToBool(fc.Enabled); !enabled {
+		enabled, err := cast.ToBool(fc.Enabled)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("Trace: Disable filter [%s]. Error: %v", fc.Tag, err))
-			continue
+		} else if !enabled {
+			errs = append(errs, fmt.Errorf("Trace: Disable filter [%s]", fc.Tag))
 		}
 
-		level := Level(INFO).Int(fc.Level)
-
-		switch fc.Type {
-		case "loglog":
-			multiErr := setLogger(GetLogLog(), level, fc.Properties)
-			errs = append(errs, multiErr...)
-		case "stdout":
-			multiErr := setLogger(l, level, fc.Properties)
-			errs = append(errs, multiErr...)
-		default:
-			filter, multiErr := loadFilter(level, fc.Type, fc.Dsn, fc.Properties)
-			errs = append(errs, multiErr...)
+		var e []error
+		if fc.Type == "loglog" {
+			e = setLogger(GetLogLog(), enabled, fc)
+		} else if fc.Type == stdfName {
+			e = setLogger(l, enabled, fc)
+		} else if enabled {
+			var filter *driver.Filter
+			filter, e = loadFilter(fc)
 			if filter != nil {
-				errs = append(errs, fmt.Errorf("Trace: Succeeded loading tag [%s], type [%s], dsn [%s]", fc.Tag, fc.Type, fc.Dsn))
 				filters = append(filters, filter)
 			}
+		} else {
+			// disabled
 		}
+		errs = append(errs, e...)
 	}
 
 	l.Attach(filters...)

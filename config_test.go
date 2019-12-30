@@ -16,7 +16,7 @@ import (
 )
 
 var xmlBuf = `<logging>
-  <filter enabled="true">
+  <filter enabled="false">
     <tag>stdout</tag>
     <type>stdout</type>
     <level>DEBUG</level>
@@ -27,7 +27,7 @@ var xmlBuf = `<logging>
     <tag>loglog</tag>
     <type>loglog</type>
     <level>DEBUG</level>
-    <property name="format">[%D %T] [%L] (%S) %M</property>
+    <property name="format">"[%D %T] [%L] [%P] (%S) \t%M"</property>
   </filter>
   <filter enabled="true">
     <tag>console</tag>
@@ -118,17 +118,17 @@ func TestXMLConfig(t *testing.T) {
 
 	// Make sure we got all loggers
 	if filters == nil {
-		t.Fatalf("XMLConfig: Expected 3 filters, found %d", len(filters))
+		t.Fatalf("XMLConfig: Expected 4 filters, found %d", len(filters))
 	}
 
-	if len(filters) != 3 {
-		t.Fatalf("XMLConfig: Expected 3 filters, found %d", len(filters))
+	if len(filters) != 4 {
+		t.Fatalf("XMLConfig: Expected 4 filters, found %d", len(filters))
 	}
 
 	// Make sure they're the right type
-	for i, filter := range filters {
+	for name, filter := range filters {
 		if fmt.Sprintf("%T", filter.Dispatch) != "func(*driver.Recorder)" {
-			t.Fatalf("XMLConfig: Expected [%d] filter Dispatch(*nxlog4go.Recorder), found %T", i, filter.Dispatch)
+			t.Fatalf("XMLConfig: Expected [%s] filter Dispatch(*nxlog4go.Recorder), found %T", name, filter.Dispatch)
 		}
 	}
 

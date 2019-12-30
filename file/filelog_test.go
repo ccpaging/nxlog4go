@@ -32,6 +32,15 @@ func newLogRecord(level int, src string, msg string) *driver.Recorder {
 	}
 }
 
+func newFilter(level int, a driver.Appender) *driver.Filter {
+	return &driver.Filter{
+		Name:    "file",
+		Enabler: driver.AtAbove(level),
+		Layout:  nil,
+		Apps:    []driver.Appender{a},
+	}
+}
+
 func removeFile(t *testing.T, filename string) {
 	err := os.Remove(filename)
 	if err != nil && t != nil {
@@ -82,7 +91,7 @@ func TestFileLog(t *testing.T) {
 
 	// Create a default logger that is logging messages of FINE or higher
 	a, _ := NewFileAppender(testLogFile, "rotate", 0)
-	f := l4g.NewFilter(l4g.FINE, nil, a)
+	f := newFilter(l4g.FINE, a)
 	log.Attach(f)
 	writeSomethingToLogFile(log)
 	log.Detach(f)
@@ -112,7 +121,7 @@ func TestFileLogRotate(t *testing.T) {
 		"cycle", 5,
 		"maxsize", "5k")
 
-	log.Attach(l4g.NewFilter(l4g.FINE, nil, a))
+	log.Attach(newFilter(l4g.FINE, a))
 	// Log some experimental messages
 	for j := 0; j < 15; j++ {
 		for i := 0; i < 200/(j+1); i++ {
@@ -140,7 +149,7 @@ func BenchmarkCacheFileLog(b *testing.B) {
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
-	sl.Attach(l4g.NewFilter(l4g.INFO, nil, a))
+	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Warn("This is a log message")
@@ -155,7 +164,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
-	sl.Attach(l4g.NewFilter(l4g.INFO, nil, a))
+	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("This is a log message")
@@ -170,7 +179,7 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
-	sl.Attach(l4g.NewFilter(l4g.INFO, nil, a))
+	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -185,7 +194,7 @@ func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 	b.StopTimer()
 	a, _ := NewFileAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
-	sl.Attach(l4g.NewFilter(l4g.WARN, nil, a))
+	sl.Attach(newFilter(l4g.WARN, a))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")

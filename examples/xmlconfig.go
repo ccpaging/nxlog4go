@@ -58,10 +58,10 @@ func main() {
 	log.Trace("Oh no!  %d + %d = %d!", 2, 2, 2+2)
 	log.Info("About that time, eh chaps?")
 
-	// Unload filters
-	log.Detach(filters...)
 	// Do not forget close all filters
 	for _, f := range filters {
+		// Unload filters
+		log.Detach(f)
 		if f != nil {
 			f.Close()
 		}

@@ -2,17 +2,26 @@
 
 package nxlog4go
 
-func find(filters []*Filter, filter *Filter) int {
-	for i, f := range filters {
-		if f == filter {
-			return i
-		}
+import (
+	"github.com/ccpaging/nxlog4go/driver"
+)
+
+// AddFilter adds the named appenders to the Logger which will only log messages at
+// or above level. This function should not be called from multiple goroutines.
+//
+// Returns the logger for chaining.
+func (l *Logger) AddFilter(name string, level int, apps ...driver.Appender) *Logger {
+	f := &driver.Filter{
+		Name:    name,
+		Enabler: driver.AtAbove(level),
+		Layout:  nil,
+		Apps:    apps,
 	}
-	return -1
+	return l.Attach(f)
 }
 
 // Attach adds the filters to logger.
-func (l *Logger) Attach(filters ...*Filter) {
+func (l *Logger) Attach(filters ...*driver.Filter) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -20,16 +29,18 @@ func (l *Logger) Attach(filters ...*Filter) {
 		if f == nil {
 			continue
 		}
-		if i := find(l.filters, f); i >= 0 {
+		if _, ok := l.filters[f.Name]; ok {
 			// Existed
 			continue
 		}
-		l.filters = append(l.filters, f)
+		l.filters[f.Name] = f
 	}
+
+	return l
 }
 
 // Detach removes the filters from logger.
-func (l *Logger) Detach(filters ...*Filter) {
+func (l *Logger) Detach(filters ...*driver.Filter) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -37,9 +48,11 @@ func (l *Logger) Detach(filters ...*Filter) {
 		if f == nil {
 			continue
 		}
-		if i := find(l.filters, f); i >= 0 {
+		if _, ok := l.filters[f.Name]; ok {
 			// Existed
-			l.filters = append(l.filters[:i], l.filters[i+1:]...)
+			delete(l.filters, f.Name)
 		}
 	}
+
+	return l
 }

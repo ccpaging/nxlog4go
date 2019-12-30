@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	logger.Attach(log.NewFilter(log.TRACE, nil, a))
+	logger.AddFilter("json", log.TRACE, a)
 
 	for i := 0; i < 25; i++ {
 		for j := 0; j < 5; j++ {
@@ -60,6 +60,8 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+
+	fmt.Println("rotate = 0. Only one log file.")
 
 	// contains a list of all files in the current directory
 	files, _ := filepath.Glob(removeFiles)

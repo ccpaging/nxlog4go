@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	logger.Attach(log.NewFilter(log.FINE, nil, a))
+	logger.AddFilter("xml", log.FINE, a)
 
 	for i := 0; i < 125; i++ {
 		log.Info("%d: The time is now: %s", i+1, time.Now().Format("15:04:05 MST 2006/01/02"))
@@ -45,6 +45,8 @@ func main() {
 	} else {
 		fmt.Println(err)
 	}
+
+	fmt.Println("rotate = 1. There are two log files.")
 
 	// contains a list of all files in the current directory
 	files, _ := filepath.Glob(removeFiles)

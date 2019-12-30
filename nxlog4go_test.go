@@ -169,12 +169,7 @@ func TestFileWriter(t *testing.T) {
 		t.Error(err)
 	}
 	ww := io.MultiWriter(buf, fw)
-	l := &Logger{
-		out:    ww,
-		level:  FINEST,
-		caller: true,
-		layout: patt.NewLayout("[%L] %M"),
-	}
+	l := NewLogger(FINEST).SetOutput(ww).SetOptions("format", "[%L] %M")
 
 	defer os.Remove(testLogFile)
 
@@ -243,12 +238,7 @@ func TestCountMallocs(t *testing.T) {
 	}
 
 	// Console logger
-	sl := &Logger{
-		out:    new(bytes.Buffer),
-		level:  INFO,
-		caller: true,
-		layout: patt.NewLayout(testFormat),
-	}
+	sl := NewLogger(INFO).SetOutput(new(bytes.Buffer)).SetOptions("format", testFormat)
 
 	mallocs := 0 - getMallocs()
 	for i := 0; i < N; i++ {
@@ -266,12 +256,8 @@ func TestCountMallocs(t *testing.T) {
 	fmt.Printf("mallocs per sl.Warn(WARN, \"%%s is a log message with level %%d\", \"This\", WARN): %d\n", mallocs/N)
 
 	// Console logger (not logged)
-	sl = &Logger{
-		out:    os.Stderr,
-		level:  INFO,
-		caller: true,
-		layout: patt.NewLayout(testFormat),
-	}
+	sl = NewLogger(INFO).SetOutput(os.Stderr).SetOptions("format", testFormat)
+
 	mallocs = 0 - getMallocs()
 	for i := 0; i < N; i++ {
 		sl.Debug("This is a DEBUG log message")
@@ -289,48 +275,32 @@ func TestCountMallocs(t *testing.T) {
 }
 
 func BenchmarkConsoleWithCallerWriter(b *testing.B) {
-	sl := &Logger{
-		out:    ioutil.Discard,
-		level:  INFO,
-		caller: true,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+	sl := NewLogger(INFO).SetOutput(ioutil.Discard).SetOptions("format", testBenchFormat)
+
 	for i := 0; i < b.N; i++ {
 		sl.Log(1, WARN, "This is a log message")
 	}
 }
 
 func BenchmarkConsoleWriter(b *testing.B) {
-	sl := &Logger{
-		out:    ioutil.Discard,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+	sl := NewLogger(INFO).SetOutput(ioutil.Discard).SetOptions("format", testBenchFormat, "caller", false)
+
 	for i := 0; i < b.N; i++ {
 		sl.Log(1, WARN, "This is a log message")
 	}
 }
 
 func BenchmarkConsoleUtilWriter(b *testing.B) {
-	sl := &Logger{
-		out:    ioutil.Discard,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+	sl := NewLogger(INFO).SetOutput(ioutil.Discard).SetOptions("format", testBenchFormat, "caller", false)
+
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
 	}
 }
 
 func BenchmarkConsoleUtilNotWriter(b *testing.B) {
-	sl := &Logger{
-		out:    ioutil.Discard,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+	sl := NewLogger(INFO).SetOutput(ioutil.Discard).SetOptions("format", testBenchFormat, "caller", false)
+
 	for i := 0; i < b.N; i++ {
 		sl.Debug("%s is a log message", "This")
 	}
@@ -346,12 +316,8 @@ func BenchmarkFileWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := &Logger{
-		out:    w,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+
+	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -371,12 +337,9 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 	}()
 	defer w.Close()
 	b.StopTimer()
-	sl := &Logger{
-		out:    w,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+
+	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")
@@ -391,12 +354,9 @@ func BenchmarkFileBufWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := &Logger{
-		out:    w,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+
+	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Log(1, WARN, "This is a log message")
@@ -411,12 +371,9 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 		os.Remove(benchLogFile)
 	}()
 	b.StopTimer()
-	sl := &Logger{
-		out:    w,
-		level:  INFO,
-		caller: false,
-		layout: patt.NewLayout(testBenchFormat),
-	}
+
+	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		sl.Info("%s is a log message", "This")

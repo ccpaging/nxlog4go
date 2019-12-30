@@ -63,11 +63,9 @@ func client() {
 	sa, err := driver.Open("socket", "udp://"+addr, "level", l4g.FINEST)
 	checkError(err)
 
-	f := l4g.NewFilter(0, nil, sa)
-	log.Attach(f)
+	log.AddFilter("socket", 0, sa)
 	defer func() {
-		log.Detach(f)
-		f.Close()
+		log.Close()
 	}()
 
 	// Run `nc -u -l -p 12124` or similar before you run this to see the following message
