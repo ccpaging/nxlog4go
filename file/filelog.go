@@ -85,9 +85,24 @@ func (*FileAppender) Open(filename string, args ...interface{}) (driver.Appender
 	return NewFileAppender(filename, args...)
 }
 
+// Layout returns the output layout for the appender.
+func (fa *FileAppender) Layout() driver.Layout {
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
+	return fa.layout
+}
+
+// SetLayout sets the output layout for the appender.
+func (fa *FileAppender) SetLayout(layout driver.Layout) *FileAppender {
+	fa.mu.Lock()
+	defer fa.mu.Unlock()
+	fa.layout = layout
+	return fa
+}
+
 // SetOptions sets name-value pair options.
 //
-// Return Appender interface.
+// Return the appender.
 func (fa *FileAppender) SetOptions(args ...interface{}) *FileAppender {
 	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
@@ -305,7 +320,7 @@ func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
 //  delay    - Rotating seconds since midnight
 //
 // Pattern layout options:
-//	format	 - Layout format string
+//	pattern	 - Layout format string
 //  ...
 //
 // Return error

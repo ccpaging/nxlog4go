@@ -16,7 +16,7 @@ func TestStdLogger(t *testing.T) {
 	if l == nil {
 		t.Fatalf("New should never return nil")
 	}
-	if l.level != WARN {
+	if l.stdf.level != WARN {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 

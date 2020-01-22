@@ -87,10 +87,10 @@ import (
 
 // Version information
 const (
-	Version = "nxlog4go-v2.0.2"
+	Version = "nxlog4go-v2.0.3"
 	Major   = 2
 	Minor   = 0
-	Build   = 2
+	Build   = 3
 )
 
 /****** Logger ******/
@@ -101,13 +101,10 @@ const (
 // the Writer's Write method. A Logger can be used simultaneously from
 // multiple goroutines; it guarantees to serialize access to the Writer.
 type Logger struct {
-	mu sync.Mutex // ensures atomic writes; protects the following fields
-
-	prefix string // prefix to write at beginning of each line
-	caller bool   // runtime caller skip
-
-	*stdf
-
+	mu      *sync.Mutex // ensures atomic writes; protects the following fields
+	prefix  string      // prefix to write at beginning of each line
+	caller  bool        // runtime caller skip
+	stdf    *stdFilter
 	filters map[string]*driver.Filter // a collection of Filter
 }
 
@@ -118,13 +115,26 @@ const (
 // NewLogger creates a new logger with a "stderr" writer to send
 // formatted log messages at or above level to standard output.
 func NewLogger(level int) *Logger {
-	l := &Logger{
+	return &Logger{
+		mu:      new(sync.Mutex),
 		caller:  true,
+		stdf:    newStdFilter(level),
 		filters: make(map[string]*driver.Filter),
 	}
-	l.stdf = newStdf(level)
-	l.filters[stdfName] = l.stdf.Filter
-	return l
+}
+
+// Clone creates a new clone logger.
+//  New logger can be used in different module.
+//	Using owner prefix and runtime caller switch.
+//  Running in the parallel go routines and packages is safe.
+func (l *Logger) Clone() *Logger {
+	return &Logger{
+		mu:      l.mu,
+		prefix:  l.prefix,
+		caller:  l.caller,
+		stdf:    l.stdf,
+		filters: l.filters,
+	}
 }
 
 // SetOptions sets name-value pair options.
@@ -167,10 +177,10 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 		}
 	case "level":
 		if n, err = Level(INFO).IntE(v); err == nil {
-			l.stdf.setLevel(n)
+			l.stdf.level = n
 		}
 	default:
-		return l.stdf.Layout.Set(k, v)
+		return l.stdf.lo.Set(k, v)
 	}
 
 	return
@@ -180,23 +190,22 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 func (l *Logger) Layout() driver.Layout {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.stdf.Layout
+	return l.stdf.lo
 }
 
 // SetLayout sets the output layout for the logger.
 func (l *Logger) SetLayout(layout driver.Layout) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.stdf.Layout = layout
+	l.stdf.lo = layout
 	return l
 }
 
-// Enable sets the standard filter's Enabler to deny all,
-// or restores the default at/above level enabler.
-func (l *Logger) Enable(enb bool) *Logger {
+// SetFilters sets the output filters for the logger.
+func (l *Logger) SetFilters(filters map[string]*driver.Filter) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.stdf.enable(enb)
+	l.filters = filters
 	return l
 }
 
@@ -207,10 +216,35 @@ func (l *Logger) Filters() map[string]*driver.Filter {
 	return l.filters
 }
 
+// Enable sets the standard filter's Enabler to deny all,
+// or restores the default at/above level enabler.
+func (l *Logger) Enable(enable bool) *Logger {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.stdf.enb = enable
+	return l
+}
+
+func (l *Logger) enabled(level int) bool {
+	if l.stdf.enabled(level) {
+		return true
+	}
+
+	if len(l.filters) > 0 {
+		return true
+	}
+
+	return false
+}
+
 // Dispatch encodes a log recorder to bytes and writes it.
 func (l *Logger) Dispatch(r *driver.Recorder) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	if l.stdf.enabled(r.Level) {
+		l.stdf.dispatch(r)
+	}
 
 	for _, f := range l.filters {
 		if f != nil {
@@ -238,18 +272,4 @@ func (l *Logger) Close() {
 		}
 		delete(l.filters, name)
 	}
-}
-
-func (l *Logger) enabled(level int) bool {
-	if l.out != nil && level >= l.level {
-		return true
-	}
-
-	if l.filters != nil {
-		return true
-	}
-
-	// l.out == nil and l.filters == nil
-	// or level < l.Level
-	return false
 }

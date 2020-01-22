@@ -101,10 +101,14 @@ func TestLogger(t *testing.T) {
 	l := NewLogger(WARN).SetOutput(buf).SetOptions("format", "[%L] (%S) %M")
 
 	if l == nil {
-		t.Fatalf("New should never return nil")
+		t.Fatalf("NewLogger should never return nil")
 	}
-	if l.level != WARN {
-		t.Fatalf("New produced invalid logger (incorrect level)")
+	if l.stdf.level != WARN {
+		t.Fatalf("NewLogger produced invalid logger (incorrect level)")
+	}
+
+	if l.enabled(DEBUG) {
+		t.Fatalf("NewLogger produced invalid enabled()")
 	}
 
 	//func (l *Logger) Warn(args ...interface{}) error {}
@@ -386,10 +390,6 @@ go test -bench=.
 goos: windows
 goarch: amd64
 pkg: github.com/ccpaging/nxlog4go
-BenchmarkPatternLayout-4                 1840386               633 ns/op
-BenchmarkJson-4                           428559              2817 ns/op
-BenchmarkJsonLayout-4                    1411684               839 ns/op
-BenchmarkItoa-4                          7894060               151 ns/op
 BenchmarkPrintln-4                       1388799               860 ns/op
 BenchmarkPrintlnNoFlags-4                1782944               682 ns/op
 BenchmarkConsoleWithCallerWriter-4        571567              2028 ns/op

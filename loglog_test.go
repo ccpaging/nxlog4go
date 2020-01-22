@@ -16,7 +16,7 @@ func TestLogLogger(t *testing.T) {
 	if l == nil {
 		t.Fatalf("GetLogLog should never return nil")
 	}
-	if l.level != TRACE {
+	if l.stdf.level != TRACE {
 		t.Fatalf("New produced invalid logger (incorrect level)")
 	}
 

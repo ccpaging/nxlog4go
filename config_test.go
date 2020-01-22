@@ -117,12 +117,8 @@ func TestXMLConfig(t *testing.T) {
 	}()
 
 	// Make sure we got all loggers
-	if filters == nil {
-		t.Fatalf("XMLConfig: Expected 4 filters, found %d", len(filters))
-	}
-
-	if len(filters) != 4 {
-		t.Fatalf("XMLConfig: Expected 4 filters, found %d", len(filters))
+	if len(filters) != 3 {
+		t.Fatalf("XMLConfig: Expected 3 filters, found %d", len(filters))
 	}
 
 	// Make sure they're the right type

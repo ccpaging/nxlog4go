@@ -44,7 +44,7 @@ func New(out io.Writer, prefix string, flag int) *Logger {
 func (l *Logger) SetOutput(w io.Writer) *Logger {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.stdf.setWriter(w)
+	l.stdf.out = w
 	return l
 }
 
@@ -140,7 +140,7 @@ func (l *Logger) Panicln(v ...interface{}) {
 func (l *Logger) Flags() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.flag
+	return l.stdf.flag
 }
 
 // SetFlags sets the output flags for the logger.
@@ -149,7 +149,7 @@ func (l *Logger) SetFlags(flag int) *Logger {
 	defer l.mu.Unlock()
 
 	l.stdf.setFlags(flag)
-	l.caller = l.stdf.getCaller()
+	l.caller = (flag&(Lshortfile|Llongfile) != 0)
 	return l
 }
 
@@ -177,9 +177,7 @@ func (l *Logger) Writer() io.Writer {
 
 // SetOutput sets the output destination for the standard logger.
 func SetOutput(w io.Writer) {
-	std.mu.Lock()
-	defer std.mu.Unlock()
-	std.out = w
+	std.SetOutput(w)
 }
 
 // Flags returns the output flags for the standard logger.
@@ -204,7 +202,7 @@ func SetPrefix(prefix string) {
 
 // Writer returns the output destination for the standard logger.
 func Writer() io.Writer {
-	return std.Writer()
+	return std.stdf.out
 }
 
 // These functions write to the standard logger.

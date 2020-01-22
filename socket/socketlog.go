@@ -70,6 +70,32 @@ func (*SocketAppender) Open(dsn string, args ...interface{}) (driver.Appender, e
 	return NewSocketAppender(proto, hostport).SetOptions(args...), nil
 }
 
+// Layout returns the output layout for the appender.
+func (sa *SocketAppender) Layout() driver.Layout {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+	return sa.layout
+}
+
+// SetLayout sets the output layout for the appender.
+func (sa *SocketAppender) SetLayout(layout driver.Layout) *SocketAppender {
+	sa.mu.Lock()
+	defer sa.mu.Unlock()
+	sa.layout = layout
+	return sa
+}
+
+// SetOptions sets name-value pair options.
+//
+// Return the appender.
+func (sa *SocketAppender) SetOptions(args ...interface{}) *SocketAppender {
+	ops, idx, _ := driver.ArgsToMap(args)
+	for _, k := range idx {
+		sa.Set(k, ops[k])
+	}
+	return sa
+}
+
 // Enabled encodes log Recorder and output it.
 func (sa *SocketAppender) Enabled(r *driver.Recorder) bool {
 	// r.Level < fa.level
@@ -167,22 +193,11 @@ func (sa *SocketAppender) output(r *driver.Recorder) {
 	}
 }
 
-// SetOptions sets name-value pair options.
-//
-// Return Appender interface.
-func (sa *SocketAppender) SetOptions(args ...interface{}) *SocketAppender {
-	ops, idx, _ := driver.ArgsToMap(args)
-	for _, k := range idx {
-		sa.Set(k, ops[k])
-	}
-	return sa
-}
-
 // Set sets name-value option with:
 //  level    - The output level
 //
 // Pattern layout options:
-//	fromat	 - Layout format pattern
+//	pattern	 - Layout format pattern
 //  ...
 //
 // Return error

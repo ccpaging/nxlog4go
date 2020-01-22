@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ccpaging/logger/driver"
+	"github.com/ccpaging/nxlog4go/driver"
 )
 
 var created = time.Unix(0, 1234567890123456789).In(time.UTC)
@@ -109,3 +109,14 @@ func BenchmarkJsonLayout(b *testing.B) {
 		out.Reset()
 	}
 }
+
+/*
+go test -bench=.
+goos: windows
+goarch: amd64
+pkg: github.com/ccpaging/nxlog4go
+BenchmarkItoa-4                          7894060               151 ns/op
+BenchmarkPatternLayout-4                 1840386               633 ns/op
+BenchmarkJson-4                           428559              2817 ns/op
+BenchmarkJsonLayout-4                    1411684               839 ns/op
+*/

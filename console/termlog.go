@@ -77,7 +77,14 @@ func (*Appender) Open(dsn string, args ...interface{}) (driver.Appender, error) 
 	return NewAppender(os.Stderr, args...), nil
 }
 
-// SetOutput sets the output destination for Appender.
+// Writer returns the output destination for the appender.
+func (ca *Appender) Writer() io.Writer {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	return ca.out
+}
+
+// SetOutput sets the output destination for the appender.
 func (ca *Appender) SetOutput(w io.Writer) *Appender {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
@@ -85,9 +92,24 @@ func (ca *Appender) SetOutput(w io.Writer) *Appender {
 	return ca
 }
 
+// Layout returns the output layout for the appender.
+func (ca *Appender) Layout() driver.Layout {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	return ca.layout
+}
+
+// SetLayout sets the output layout for the appender.
+func (ca *Appender) SetLayout(layout driver.Layout) *Appender {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	ca.layout = layout
+	return ca
+}
+
 // SetOptions sets name-value pair options.
 //
-// Return Appender interface.
+// Return the appender.
 func (ca *Appender) SetOptions(args ...interface{}) *Appender {
 	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
@@ -186,7 +208,7 @@ func (ca *Appender) output(r *driver.Recorder) {
 //	color    - Force to color or not
 //
 // Pattern layout options (The default is JSON):
-//	format	 - Layout format string
+//	pattern	 - Layout format string
 //  ...
 //
 // Return error.
