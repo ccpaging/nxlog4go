@@ -80,22 +80,6 @@ func NewLayout(format string, args ...interface{}) *PatternLayout {
 	return lo
 }
 
-// NewJSONLayout creates a new layout encoding log Recorder as JSON format.
-func NewJSONLayout(args ...interface{}) *PatternLayout {
-	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
-	lo := NewLayout(jsonFormat, args...)
-	lo.SetOptions("timeEncoder", "rfc3339nano", "fieldsEncoder", "json")
-	return lo
-}
-
-// NewCSVLayout creates a new layout encoding log Recorder as CSV format.
-func NewCSVLayout(args ...interface{}) *PatternLayout {
-	csvFormat := "%D|%T|%L|%P|%S:%N|%M%F"
-	lo := NewLayout(csvFormat, args...)
-	lo.SetOptions("fieldsEncoder", "csv")
-	return lo
-}
-
 // SetOptions sets name-value pair options.
 //
 // Return Layout interface.

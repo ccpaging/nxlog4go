@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package filelog
+package file
 
 import (
 	"bytes"
@@ -21,8 +21,8 @@ var (
 	dayToSecs int64 = 86400
 )
 
-// FileAppender represents the log appender that sends output to a file
-type FileAppender struct {
+// Appender represents the log appender that sends output to a file
+type Appender struct {
 	mu       sync.Mutex            // ensures atomic writes; protects the following fields
 	rec      chan *driver.Recorder // entry channel
 	runOnce  sync.Once
@@ -51,18 +51,18 @@ func init() {
 		},
 	}
 
-	driver.Register("file", &FileAppender{})
+	driver.Register("file", &Appender{})
 }
 
-// NewFileAppender creates a new file appender which writes to the file
+// NewAppender creates a new file appender which writes to the file
 // named '<exe full path base name>.log'., and without rotating as default.
-func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error) {
+func NewAppender(filename string, args ...interface{}) (*Appender, error) {
 	if filename == "" {
 		base := filepath.Base(os.Args[0])
 		filename = strings.TrimSuffix(base, filepath.Ext(base)) + ".log"
 	}
 
-	fa := &FileAppender{
+	fa := &Appender{
 		rec: make(chan *driver.Recorder, 32),
 
 		layout: patt.NewLayout(""),
@@ -81,19 +81,19 @@ func NewFileAppender(filename string, args ...interface{}) (*FileAppender, error
 
 // Open creates a new appender which writes to the file
 // named '<exe full path base name>.log', and without rotating as default.
-func (*FileAppender) Open(filename string, args ...interface{}) (driver.Appender, error) {
-	return NewFileAppender(filename, args...)
+func (*Appender) Open(filename string, args ...interface{}) (driver.Appender, error) {
+	return NewAppender(filename, args...)
 }
 
 // Layout returns the output layout for the appender.
-func (fa *FileAppender) Layout() driver.Layout {
+func (fa *Appender) Layout() driver.Layout {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
 	return fa.layout
 }
 
 // SetLayout sets the output layout for the appender.
-func (fa *FileAppender) SetLayout(layout driver.Layout) *FileAppender {
+func (fa *Appender) SetLayout(layout driver.Layout) *Appender {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
 	fa.layout = layout
@@ -103,7 +103,7 @@ func (fa *FileAppender) SetLayout(layout driver.Layout) *FileAppender {
 // SetOptions sets name-value pair options.
 //
 // Return the appender.
-func (fa *FileAppender) SetOptions(args ...interface{}) *FileAppender {
+func (fa *Appender) SetOptions(args ...interface{}) *Appender {
 	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		fa.Set(k, ops[k])
@@ -112,7 +112,7 @@ func (fa *FileAppender) SetOptions(args ...interface{}) *FileAppender {
 }
 
 // Enabled encodes log Recorder and output it.
-func (fa *FileAppender) Enabled(r *driver.Recorder) bool {
+func (fa *Appender) Enabled(r *driver.Recorder) bool {
 	// r.Level < fa.level
 	if fa.level != 0 && r.Level < fa.level {
 		return false
@@ -136,7 +136,7 @@ func (fa *FileAppender) Enabled(r *driver.Recorder) bool {
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (fa *FileAppender) Write(b []byte) (int, error) {
+func (fa *Appender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
@@ -162,7 +162,7 @@ func newRotateTimer(cycle int64, delay int64) *time.Timer {
 	return time.NewTimer(d)
 }
 
-func (fa *FileAppender) run(waitExit *sync.WaitGroup) {
+func (fa *Appender) run(waitExit *sync.WaitGroup) {
 	l4g.LogLogTrace("cycle %v", time.Duration(fa.cycle)*time.Second)
 	fa.doRotate()
 
@@ -191,7 +191,7 @@ func (fa *FileAppender) run(waitExit *sync.WaitGroup) {
 	}
 }
 
-func (fa *FileAppender) closeChannel() {
+func (fa *Appender) closeChannel() {
 	// notify closing. See run()
 	close(fa.rec)
 	// waiting for running channel closed
@@ -204,7 +204,7 @@ func (fa *FileAppender) closeChannel() {
 }
 
 // Close is nothing to do here.
-func (fa *FileAppender) Close() {
+func (fa *Appender) Close() {
 	if fa.waitExit == nil {
 		return
 	}
@@ -217,7 +217,7 @@ func (fa *FileAppender) Close() {
 	fa.out.Close()
 }
 
-func (fa *FileAppender) output(r *driver.Recorder) {
+func (fa *Appender) output(r *driver.Recorder) {
 	if r == nil {
 		return
 	}
@@ -237,7 +237,7 @@ func (fa *FileAppender) output(r *driver.Recorder) {
 	}
 }
 
-func (fa *FileAppender) doRotate() {
+func (fa *Appender) doRotate() {
 	if fa.rotate < 0 {
 		return
 	}
@@ -248,7 +248,7 @@ func (fa *FileAppender) doRotate() {
 	fa.out.Rotate(fa.rotate)
 }
 
-func (fa *FileAppender) setFileOption(k string, v interface{}) (err error) {
+func (fa *Appender) setFileOption(k string, v interface{}) (err error) {
 	var (
 		s   string
 		i64 int64
@@ -280,7 +280,7 @@ func (fa *FileAppender) setFileOption(k string, v interface{}) (err error) {
 	return
 }
 
-func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
+func (fa *Appender) setCycleOption(k string, v interface{}) (err error) {
 	var i64 int64
 
 	switch k {
@@ -324,7 +324,7 @@ func (fa *FileAppender) setCycleOption(k string, v interface{}) (err error) {
 //  ...
 //
 // Return error
-func (fa *FileAppender) Set(k string, v interface{}) (err error) {
+func (fa *Appender) Set(k string, v interface{}) (err error) {
 	fa.mu.Lock()
 	defer fa.mu.Unlock()
 

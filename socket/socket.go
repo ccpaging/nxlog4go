@@ -14,8 +14,8 @@ import (
 	"github.com/ccpaging/nxlog4go/patt"
 )
 
-// SocketAppender is an Appender that sends output to an UDP/TCP server
-type SocketAppender struct {
+// Appender is an Appender that sends output to an UDP/TCP server
+type Appender struct {
 	mu       sync.Mutex            // ensures atomic writes; protects the following fields
 	rec      chan *driver.Recorder // entry channel
 	runOnce  sync.Once
@@ -39,12 +39,12 @@ func init() {
 		},
 	}
 
-	driver.Register("socket", &SocketAppender{})
+	driver.Register("socket", &Appender{})
 }
 
-// NewSocketAppender creates a socket appender with proto and hostport.
-func NewSocketAppender(proto, hostport string) *SocketAppender {
-	return &SocketAppender{
+// NewAppender creates a socket appender with proto and hostport.
+func NewAppender(proto, hostport string) *Appender {
+	return &Appender{
 		rec: make(chan *driver.Recorder, 32),
 
 		layout: patt.NewJSONLayout(),
@@ -55,7 +55,7 @@ func NewSocketAppender(proto, hostport string) *SocketAppender {
 }
 
 // Open creates an Appender with DSN.
-func (*SocketAppender) Open(dsn string, args ...interface{}) (driver.Appender, error) {
+func (*Appender) Open(dsn string, args ...interface{}) (driver.Appender, error) {
 	proto, hostport := "udp", "127.0.0.1:12124"
 	if dsn != "" {
 		if u, err := url.Parse(dsn); err == nil {
@@ -67,18 +67,18 @@ func (*SocketAppender) Open(dsn string, args ...interface{}) (driver.Appender, e
 			}
 		}
 	}
-	return NewSocketAppender(proto, hostport).SetOptions(args...), nil
+	return NewAppender(proto, hostport).SetOptions(args...), nil
 }
 
 // Layout returns the output layout for the appender.
-func (sa *SocketAppender) Layout() driver.Layout {
+func (sa *Appender) Layout() driver.Layout {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 	return sa.layout
 }
 
 // SetLayout sets the output layout for the appender.
-func (sa *SocketAppender) SetLayout(layout driver.Layout) *SocketAppender {
+func (sa *Appender) SetLayout(layout driver.Layout) *Appender {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 	sa.layout = layout
@@ -88,7 +88,7 @@ func (sa *SocketAppender) SetLayout(layout driver.Layout) *SocketAppender {
 // SetOptions sets name-value pair options.
 //
 // Return the appender.
-func (sa *SocketAppender) SetOptions(args ...interface{}) *SocketAppender {
+func (sa *Appender) SetOptions(args ...interface{}) *Appender {
 	ops, idx, _ := driver.ArgsToMap(args)
 	for _, k := range idx {
 		sa.Set(k, ops[k])
@@ -97,7 +97,7 @@ func (sa *SocketAppender) SetOptions(args ...interface{}) *SocketAppender {
 }
 
 // Enabled encodes log Recorder and output it.
-func (sa *SocketAppender) Enabled(r *driver.Recorder) bool {
+func (sa *Appender) Enabled(r *driver.Recorder) bool {
 	// r.Level < fa.level
 	if !(r.Level >= sa.level) {
 		return false
@@ -121,11 +121,11 @@ func (sa *SocketAppender) Enabled(r *driver.Recorder) bool {
 
 // Write is the filter's output method. This will block if the output
 // buffer is full.
-func (sa *SocketAppender) Write(b []byte) (int, error) {
+func (sa *Appender) Write(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (sa *SocketAppender) run(waitExit *sync.WaitGroup) {
+func (sa *Appender) run(waitExit *sync.WaitGroup) {
 	for {
 		select {
 		case r, ok := <-sa.rec:
@@ -138,7 +138,7 @@ func (sa *SocketAppender) run(waitExit *sync.WaitGroup) {
 	}
 }
 
-func (sa *SocketAppender) closeChannel() {
+func (sa *Appender) closeChannel() {
 	// notify closing. See run()
 	close(sa.rec)
 	// waiting for running channel closed
@@ -151,7 +151,7 @@ func (sa *SocketAppender) closeChannel() {
 }
 
 // Close the socket if it opened.
-func (sa *SocketAppender) Close() {
+func (sa *Appender) Close() {
 	if sa.waitExit == nil {
 		return
 	}
@@ -166,7 +166,7 @@ func (sa *SocketAppender) Close() {
 }
 
 // Output a log recorder to a socket. Connecting to the server on demand.
-func (sa *SocketAppender) output(r *driver.Recorder) {
+func (sa *Appender) output(r *driver.Recorder) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
@@ -201,7 +201,7 @@ func (sa *SocketAppender) output(r *driver.Recorder) {
 //  ...
 //
 // Return error
-func (sa *SocketAppender) Set(k string, v interface{}) (err error) {
+func (sa *Appender) Set(k string, v interface{}) (err error) {
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 

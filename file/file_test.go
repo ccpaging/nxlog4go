@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package filelog
+package file
 
 import (
 	"fmt"
@@ -49,7 +49,7 @@ func removeFile(t *testing.T, filename string) {
 }
 
 func TestFileAppender(t *testing.T) {
-	w, _ := NewFileAppender(testLogFile)
+	w, _ := NewAppender(testLogFile)
 	if w == nil {
 		t.Fatalf("Invalid return: w should not be nil")
 	}
@@ -66,7 +66,7 @@ func TestFileAppender(t *testing.T) {
 }
 
 func TestFileAppenderNotLogged(t *testing.T) {
-	w, _ := NewFileAppender(testLogFile, "level", l4g.INFO)
+	w, _ := NewAppender(testLogFile, "level", l4g.INFO)
 	if w == nil {
 		t.Fatalf("Invalid return: w should not be nil")
 	}
@@ -90,7 +90,7 @@ func TestFileLog(t *testing.T) {
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
 
 	// Create a default logger that is logging messages of FINE or higher
-	a, _ := NewFileAppender(testLogFile, "rotate", 0)
+	a, _ := NewAppender(testLogFile, "rotate", 0)
 	f := newFilter(l4g.FINE, a)
 	log.Attach(f)
 	writeSomethingToLogFile(log)
@@ -100,7 +100,7 @@ func TestFileLog(t *testing.T) {
 
 	if contents, err := ioutil.ReadFile(testLogFile); err != nil {
 		t.Errorf("read(%q): %s", testLogFile, err)
-	} else if len(contents) != 178 {
+	} else if len(contents) != 172 {
 		t.Errorf("malformed FileLog: %q (%d bytes)", string(contents), len(contents))
 	}
 }
@@ -114,7 +114,7 @@ func TestFileLogRotate(t *testing.T) {
 	log := l4g.NewLogger(l4g.FINE).SetOutput(nil)
 
 	// Can also specify manually via the following: (these are the defaults)
-	a, _ := NewFileAppender(testLogFile,
+	a, _ := NewAppender(testLogFile,
 		"level", l4g.FINE,
 		"format", "[%D %T] [%L] (%S:%N) %M",
 		"rotate", 10,
@@ -147,7 +147,7 @@ func TestFileLogRotate(t *testing.T) {
 func BenchmarkCacheFileLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
-	a, _ := NewFileAppender(benchLogFile,
+	a, _ := NewAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
 	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
@@ -162,7 +162,7 @@ func BenchmarkCacheFileLog(b *testing.B) {
 func BenchmarkCacheFileNotLogged(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
-	a, _ := NewFileAppender(benchLogFile,
+	a, _ := NewAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
 	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
@@ -177,7 +177,7 @@ func BenchmarkCacheFileNotLogged(b *testing.B) {
 func BenchmarkCacheFileUtilLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
-	a, _ := NewFileAppender(benchLogFile,
+	a, _ := NewAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
 	sl.Attach(newFilter(l4g.INFO, a))
 	b.StartTimer()
@@ -192,7 +192,7 @@ func BenchmarkCacheFileUtilLog(b *testing.B) {
 func BenchmarkCacheFileUtilNotLog(b *testing.B) {
 	sl := l4g.NewLogger(l4g.INFO).SetOptions("caller", false).SetOutput(nil)
 	b.StopTimer()
-	a, _ := NewFileAppender(benchLogFile,
+	a, _ := NewAppender(benchLogFile,
 		"level", l4g.INFO, "rotate", 0)
 	sl.Attach(newFilter(l4g.WARN, a))
 	b.StartTimer()

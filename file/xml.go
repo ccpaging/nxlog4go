@@ -1,6 +1,6 @@
 // Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
 
-package filelog
+package file
 
 import (
 	"github.com/ccpaging/nxlog4go/driver"
@@ -21,19 +21,24 @@ var (
 
 // XMLAppender represents the log appender that sends XML format records to a file
 type XMLAppender struct {
-	*FileAppender
+	*Appender
 }
 
 func init() {
 	driver.Register("xml", &XMLAppender{})
 }
 
-// Open creates a new file appender which XML format.
-func (*XMLAppender) Open(filename string, args ...interface{}) (driver.Appender, error) {
-	a, err := NewFileAppender(filename, args...)
+// NewXMLAppender creates a new file appender with recorder XML format.
+func NewXMLAppender(filename string, args ...interface{}) (*XMLAppender, error) {
+	a, err := NewAppender(filename, args...)
 	if err != nil {
 		return nil, err
 	}
 	a.SetOptions("head", XMLHead, "format", XMLRecord, "foot", XMLFoot)
 	return &XMLAppender{a}, nil
+}
+
+// Open creates a new file appender which XML format.
+func (*XMLAppender) Open(filename string, args ...interface{}) (driver.Appender, error) {
+	return NewXMLAppender(filename, args...)
 }

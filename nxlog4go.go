@@ -137,6 +137,13 @@ func (l *Logger) Clone() *Logger {
 	}
 }
 
+// Copy copies a logger except prefix and caller switch.
+func (l *Logger) Copy(src *Logger) {
+	l.mu = src.mu
+	l.stdf = src.stdf
+	l.filters = src.filters
+}
+
 // SetOptions sets name-value pair options.
 //
 // Return *Logger.

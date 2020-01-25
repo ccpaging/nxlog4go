@@ -14,10 +14,10 @@ func TestStdLogger(t *testing.T) {
 		"level", WARN,
 		"format", "[%L] (%S) %M")
 	if l == nil {
-		t.Fatalf("New should never return nil")
+		t.Fatalf("GetLogger() should never return nil")
 	}
 	if l.stdf.level != WARN {
-		t.Fatalf("New produced invalid logger (incorrect level)")
+		t.Fatalf("GetLogger() produced invalid logger (incorrect level)")
 	}
 
 	//func (l *Logger) Warn(args ...interface{}) error {}
