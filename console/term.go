@@ -17,14 +17,14 @@ import (
 // ColorBytes represents ANSI code to set different color of levels
 // 0, Black; 1, Red; 2, Green; 3, Yellow; 4, Blue; 5, Purple; 6, Cyan; 7, White
 var ColorBytes = [...][]byte{
-	[]byte("\x1b[0;34m"),     // FINEST, Blue
-	[]byte("\x1b[0;36m"),     // FINE, Cyan
-	[]byte("\x1b[0;32m"),     // DEBUG, Green
-	[]byte("\x1b[0;35m"),     // TRACE, Purple
-	nil,                      // INFO, Default
-	[]byte("\x1b[1;33m"),     // WARN, Yellow
-	[]byte("\x1b[0;31m"),     // ERROR, Red
-	[]byte("\x1b[0;31m;47m"), // CRITICAL, Red - White
+	[]byte("\033[30;1m"), // FINEST, Gray
+	[]byte("\033[32m"),   // FINE, Green
+	[]byte("\033[35m"),   // DEBUG, Magenta
+	[]byte("\033[36m"),   // TRACE, Cyan
+	nil,                  // INFO, Default
+	[]byte("\033[33;1m"), // WARN, LightYellow
+	[]byte("\033[31m"),   // ERROR, Red
+	[]byte("\033[31;1m"), // CRITICAL, LightRed
 }
 
 // ColorReset represents ANSI code to reset color

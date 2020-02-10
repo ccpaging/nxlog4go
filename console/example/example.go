@@ -30,5 +30,7 @@ func main() {
 	log.Trace("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Info("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	log.Warn("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
+	log.Error("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
+	log.Critical("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	logger.Close()
 }
