@@ -496,20 +496,3 @@ func (*fieldsEnc) Encoding(s string) FieldsEncoding {
 	}
 	return e.enco
 }
-
-/** Global Encoders ***/
-
-type encoders struct {
-	Level  LevelEncoder
-	Time   TimeEncoder
-	Caller CallerEncoder
-	Fields FieldsEncoder
-}
-
-// Encoders is global encoders for external packages extending.
-var Encoders encoders = encoders{
-	Level:  NewNopLevelEncoder(),
-	Time:   NewTimeEncoder(),
-	Caller: NewCallerEncoder(),
-	Fields: NewFieldsEncoder(),
-}

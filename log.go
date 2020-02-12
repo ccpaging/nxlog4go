@@ -51,7 +51,6 @@ func (l *Logger) SetOutput(w io.Writer) *Logger {
 var std *Logger
 
 func init() {
-	setLevelEncoder()
 	std = New(os.Stderr, "", LstdFlags)
 }
 

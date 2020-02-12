@@ -65,16 +65,16 @@ func NewLayout(format string, args ...interface{}) *PatternLayout {
 
 		utc: false,
 
-		LevelEncoding:  Encoders.Level.Encoding(""),
-		CallerEncoding: Encoders.Caller.Encoding("shortpath"),
-		DateEncoding:   Encoders.Time.DateEncoding("cymdSlash"),
-		TimeEncoding:   Encoders.Time.TimeEncoding("hms"),
-		ZoneEncoding:   Encoders.Time.ZoneEncoding("mst"),
-		FieldsEncoding: Encoders.Fields.Encoding("std"),
+		LevelEncoding:  stde.Level.Encoding(""),
+		CallerEncoding: stde.Caller.Encoding("shortpath"),
+		DateEncoding:   stde.Time.DateEncoding("cymdSlash"),
+		TimeEncoding:   stde.Time.TimeEncoding("hms"),
+		ZoneEncoding:   stde.Time.ZoneEncoding("mst"),
+		FieldsEncoding: stde.Fields.Encoding("std"),
 
 		// DEPRECATED. Compatible with log4go
-		_encodeDate: Encoders.Time.DateEncoding("mdy"),
-		_encodeTime: Encoders.Time.TimeEncoding("hhmm"),
+		_encodeDate: stde.Time.DateEncoding("mdy"),
+		_encodeTime: stde.Time.TimeEncoding("hhmm"),
 	}
 	lo.SetOptions(args...)
 	return lo
@@ -96,27 +96,27 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 	switch k {
 	case "levelEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.LevelEncoding = Encoders.Level.Encoding(s)
+			lo.LevelEncoding = stde.Level.Encoding(s)
 		}
 	case "callerEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.CallerEncoding = Encoders.Caller.Encoding(s)
+			lo.CallerEncoding = stde.Caller.Encoding(s)
 		}
 	case "dateEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.DateEncoding = Encoders.Time.DateEncoding(s)
+			lo.DateEncoding = stde.Time.DateEncoding(s)
 		}
 	case "timeEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.TimeEncoding = Encoders.Time.TimeEncoding(s)
+			lo.TimeEncoding = stde.Time.TimeEncoding(s)
 		}
 	case "zoneEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.ZoneEncoding = Encoders.Time.ZoneEncoding(s)
+			lo.ZoneEncoding = stde.Time.ZoneEncoding(s)
 		}
 	case "fieldsEncoder":
 		if s, err = cast.ToString(v); err == nil {
-			lo.FieldsEncoding = Encoders.Fields.Encoding(s)
+			lo.FieldsEncoding = stde.Fields.Encoding(s)
 		}
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
@@ -253,7 +253,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, r *driver.Recorder) int {
 	}
 
 	if lo.color {
-		out.Write(Encoders.Level.Begin(r.Level))
+		out.Write(stde.Level.Begin(r.Level))
 	}
 
 	lo.encode(out, r)
@@ -261,7 +261,7 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, r *driver.Recorder) int {
 	out.Write(lo.lineEnd)
 
 	if lo.color {
-		out.Write(Encoders.Level.End(r.Level))
+		out.Write(stde.Level.End(r.Level))
 	}
 	return out.Len()
 }

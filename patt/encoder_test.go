@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+var testEncoders = &Encoders {
+	Level:  NewNopLevelEncoder(),
+	Time:   NewTimeEncoder(),
+	Caller: NewCallerEncoder(),
+	Fields: NewFieldsEncoder(),
+}
+
 func TestCallerEncoder(t *testing.T) {
 	filename := "/home/jack/src/github.com/foo/foo.go"
 
@@ -23,7 +30,7 @@ func TestCallerEncoder(t *testing.T) {
 
 	var out bytes.Buffer
 	for _, tt := range tests {
-		enc := Encoders.Caller.Encoding(tt.name)
+		enc := testEncoders.Caller.Encoding(tt.name)
 		enc(&out, filename)
 		if got := string(out.Bytes()); got != tt.want {
 			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
@@ -50,7 +57,7 @@ func TestDateEncoder(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		now = now.AddDate(0, 0, i)
 		for _, tt := range tests {
-			enc := Encoders.Time.DateEncoding(tt.name)
+			enc := testEncoders.Time.DateEncoding(tt.name)
 			enc(&out, &now)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
@@ -79,7 +86,7 @@ func TestTimeEncoder(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		now = now.Add(1 * time.Second)
 		for _, tt := range tests {
-			enc := Encoders.Time.TimeEncoding(tt.name)
+			enc := testEncoders.Time.TimeEncoding(tt.name)
 			enc(&out, &now)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
@@ -103,7 +110,7 @@ func TestFieldsEncoder(t *testing.T) {
 	}
 
 	out := new(bytes.Buffer)
-	enc := Encoders.Fields.Encoding("std")
+	enc := testEncoders.Fields.Encoding("std")
 	enc(out, data, index)
 
 	want := " int=3 short=abcdefghijk long=0123456789abcdefg"
