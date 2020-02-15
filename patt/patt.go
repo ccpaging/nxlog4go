@@ -63,7 +63,8 @@ func NewLayout(format string, args ...interface{}) *PatternLayout {
 		verbs:   formatToVerbs(format),
 		lineEnd: DefaultLineEnd,
 
-		utc: false,
+		utc:   false,
+		color: false,
 
 		LevelEncoding:  stde.Level.Encoding(""),
 		CallerEncoding: stde.Caller.Encoding("shortpath"),

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/ccpaging/nxlog4go/driver"
 	"github.com/ccpaging/nxlog4go/patt"
@@ -13,14 +15,12 @@ import (
 func TestEntryArgs(t *testing.T) {
 	buf := new(bytes.Buffer)
 	l := NewLogger(FINEST).SetOptions("format", "%L %S %M.%F").SetOutput(buf)
-	e := NewEntry(l)
-	err := fmt.Errorf("kaboom at layer %d", 4711)
-	e.Info("message", "error", err, "k1", "v1", "k2", "v2")
-	want := 3
-	if got := len(e.r.Data); got != want {
+	e := NewEntry(l).With("k1", "v1", "k2", "v2")
+	want := 2
+	if got := len(e.rec.Data); got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
-	} else if got = len(e.r.Index); got != want {
+	} else if got = len(e.rec.Index); got != want {
 		t.Errorf("   got index %d", got)
 		t.Errorf("  want index %d", want)
 	}
@@ -42,15 +42,15 @@ func TestEntryFormatKeyValue(t *testing.T) {
 }
 
 func TestEntryFormatJson(t *testing.T) {
-	errBoom := fmt.Errorf("boom time")
-
 	buf := new(bytes.Buffer)
 	l := NewLogger(INFO).SetOutput(buf).SetLayout(patt.NewJSONLayout("callerEncoder", "fullpath"))
-	e := NewEntry(l)
+	e := NewEntry(l).SetPrefix("test").With("source", "TestEntryFormatJson")
 
-	e.With("error", errBoom).Log(1, ERROR, "kaboom")
+	now := time.Now()
+	errBoom := fmt.Errorf("boom time")
+	e.Log(1, ERROR, "kaboom", "error", errBoom)
 
-	r := e.r
+	r := e.rec
 	b := buf.Bytes()
 	um := &driver.Recorder{}
 
@@ -59,32 +59,32 @@ func TestEntryFormatJson(t *testing.T) {
 		t.Errorf(" error %v", err)
 	}
 
-	if got, want := um.Level, r.Level; got != want {
+	if got, want := um.Level, ERROR; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Created, r.Created; got.Unix() != want.Unix() {
+	if got, want := um.Created, now; got.Unix() < want.Unix() {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Prefix, r.Prefix; got != want {
+	if got, want := um.Prefix, "test"; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Source, r.Source; got != want {
+	if got, want := um.Source, "entry_test.go"; strings.HasSuffix(got, want) == false {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Line, r.Line; got != want {
+	if got, want := um.Line, 51; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
 
-	if got, want := um.Message, r.Message; got != want {
+	if got, want := um.Message, "kaboom"; got != want {
 		t.Errorf("   got %v", got)
 		t.Errorf("  want %v", want)
 	}
@@ -92,11 +92,11 @@ func TestEntryFormatJson(t *testing.T) {
 	if len(um.Data) < 1 {
 		t.Errorf("   got %s", b)
 		t.Errorf("Missing Data %v", um.Data)
-	} else if want, ok := r.Data["error"]; !ok {
+	} else if want, ok := r.Data["source"]; !ok {
 		t.Errorf("Missing want field %q", "error")
 	} else if wantStr, ok := want.(string); !ok {
 		t.Errorf("Missing want type [%T]", want)
-	} else if got, ok := um.Data["error"]; !ok {
+	} else if got, ok := um.Data["source"]; !ok {
 		t.Errorf("Missing got field %q", "error")
 	} else if gotStr, ok := got.(string); !ok {
 		t.Errorf("Missing got type [%T]", got)

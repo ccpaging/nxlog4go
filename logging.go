@@ -10,12 +10,6 @@ import (
 	"github.com/ccpaging/nxlog4go/driver"
 )
 
-// With adds key-value pairs to the log record, note that it doesn't log until you call
-// Debug, Print, Info, Warn, Error, Fatal or Panic. It only creates a log record.
-func (l *Logger) With(args ...interface{}) *Entry {
-	return NewEntry(l).With(args...)
-}
-
 // Log sends a log message with level and message.
 // Call depth:
 //  2 - Where calling the wrapper of logger.Log(...)

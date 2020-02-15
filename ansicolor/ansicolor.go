@@ -3,6 +3,10 @@
 
 package color
 
+import (
+	"os"
+)
+
 // Color represents a text color.
 type Color uint8
 
@@ -46,6 +50,10 @@ var colorBytes = map[Color][]byte{
 	LightCyan:    []byte("\033[36;1m"),
 	LightWhite:   []byte("\033[37;1m"),
 	Reset:        []byte("\033[0m"),
+}
+
+func IsTermianl() bool {
+	return (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") || os.Getenv("ConEmuANSI") == "ON"
 }
 
 // Wrap the coloring to the given bytes and return.

@@ -223,6 +223,12 @@ func (l *Logger) Filters() map[string]*driver.Filter {
 	return l.filters
 }
 
+// With creates a child logger and adds structured context to it. Args added
+// to the child don't affect the parent, and vice versa.
+func (l *Logger) With(args ...interface{}) *Entry {
+	return NewEntry(l).With(args...)
+}
+
 // Enable sets the standard filter's Enabler to deny all,
 // or restores the default at/above level enabler.
 func (l *Logger) Enable(enable bool) *Logger {

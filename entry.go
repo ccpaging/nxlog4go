@@ -4,7 +4,6 @@
 package nxlog4go
 
 import (
-	"errors"
 	"runtime"
 	"time"
 
@@ -13,32 +12,39 @@ import (
 
 // A Entry contains all of the pertinent information for each message
 // It is the final or intermediate logging entry also. It contains all
-// the fields passed with WithField{,s}. It's finally logged when Trace, Debug,
-// Info, Warn, Error, Fatal or Panic is called on it.
+// the fields passed with prefix and With(key, value ...). It's finally
+// logged when Trace, Debug, Info, Warn, Error, Critical called on it.
 type Entry struct {
-	r *driver.Recorder
-	l *Logger
+	rec *driver.Recorder
+	log *Logger
 }
 
 // NewEntry creates a new logging entry with a logger
 func NewEntry(l *Logger) *Entry {
 	return &Entry{
-		r: &driver.Recorder{
+		rec: &driver.Recorder{
 			Prefix: l.prefix,
 		},
-		l: l,
+		log: l,
 	}
 }
 
-// With adds key-value pairs to the log record.
+// SetPrefix sets the output prefix for the entry.
+func (e *Entry) SetPrefix(prefix string) *Entry {
+	e.rec.Prefix = prefix
+	return e
+}
+
+// With creates a child logger and adds structured context to it. Fields added
+// to the child don't affect the parent, and vice versa.
 func (e *Entry) With(args ...interface{}) *Entry {
-	e.r.With(args...)
+	e.rec.With(args...)
 	return e
 }
 
 // WithMore appends name-value pairs to the log entry.
 func (e *Entry) WithMore(args ...interface{}) *Entry {
-	e.r.WithMore(args...)
+	e.rec.WithMore(args...)
 	return e
 }
 
@@ -48,14 +54,22 @@ func (e *Entry) WithMore(args ...interface{}) *Entry {
 //  1 - Where calling entry.Log(...)
 //  0 - Where internal calling entry.flush()
 func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interface{}) {
-	r, l := e.r, e.l
+	l := e.log
 	if !l.enabled(level) {
 		return
 	}
-	r.Level = level
-	r.Message = driver.ArgsToString(arg0)
+	r := &driver.Recorder{
+		Prefix:  e.rec.Prefix,
+		Level:   level,
+		Message: driver.ArgsToString(arg0),
+		Created: time.Now(),
+		Data:    make(map[string]interface{}, len(e.rec.Data)+len(args)/2),
+	}
+	for k, v := range e.rec.Data {
+		r.Data[k] = v
+	}
+	r.Index = append(r.Index, e.rec.Index...)
 	r.WithMore(args...)
-	r.Created = time.Now()
 
 	if l.caller {
 		// Determine caller func - it's expensive.
@@ -111,26 +125,20 @@ func (e *Entry) Info(arg0 interface{}, args ...interface{}) {
 // message is not actually logged, because all formats are processed and all
 // closures are executed to format the error message.
 // See Debug for further explanation of the arguments.
-func (e *Entry) Warn(arg0 interface{}, args ...interface{}) error {
-	msg := driver.ArgsToString(arg0)
-	e.Log(2, WARN, msg, args...)
-	return errors.New(msg)
+func (e *Entry) Warn(arg0 interface{}, args ...interface{}) {
+	e.Log(2, WARN, arg0, args...)
 }
 
 // Error logs a message at the error log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
-func (e *Entry) Error(arg0 interface{}, args ...interface{}) error {
-	msg := driver.ArgsToString(arg0)
-	e.Log(2, ERROR, msg, args...)
-	return errors.New(msg)
+func (e *Entry) Error(arg0 interface{}, args ...interface{}) {
+	e.Log(2, ERROR, arg0, args...)
 }
 
 // Critical logs a message at the critical log level and returns the formatted error,
 // See Warn for an explanation of the performance and Debug for an explanation
 // of the parameters.
-func (e *Entry) Critical(arg0 interface{}, args ...interface{}) error {
-	msg := driver.ArgsToString(arg0)
-	e.Log(2, CRITICAL, msg, args...)
-	return errors.New(msg)
+func (e *Entry) Critical(arg0 interface{}, args ...interface{}) {
+	e.Log(2, CRITICAL, arg0, args...)
 }

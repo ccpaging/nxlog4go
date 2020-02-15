@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var testEncoders = &Encoders {
+var testEncoders = &Encoders{
 	Level:  NewNopLevelEncoder(),
 	Time:   NewTimeEncoder(),
 	Caller: NewCallerEncoder(),
