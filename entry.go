@@ -17,6 +17,8 @@ import (
 type Entry struct {
 	rec *driver.Recorder
 	log *Logger
+
+	addSkip int
 }
 
 // NewEntry creates a new logging entry with a logger
@@ -32,6 +34,14 @@ func NewEntry(l *Logger) *Entry {
 // SetPrefix sets the output prefix for the entry.
 func (e *Entry) SetPrefix(prefix string) *Entry {
 	e.rec.Prefix = prefix
+	return e
+}
+
+// AddCallerSkip increases the number of callers skipped by caller annotation.
+// When building wrappers around the logger Entry, supplying this function
+// to reporting the caller's caller information of the wrapper code.
+func (e *Entry) AddCallerSkip(addSkip int) *Entry {
+	e.addSkip = addSkip
 	return e
 }
 
@@ -73,7 +83,7 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 
 	if l.caller {
 		// Determine caller func - it's expensive.
-		_, r.Source, r.Line, _ = runtime.Caller(calldepth)
+		_, r.Source, r.Line, _ = runtime.Caller(calldepth + e.addSkip)
 	} else {
 		r.Source, r.Line = "", 0
 	}

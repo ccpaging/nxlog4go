@@ -1,54 +1,80 @@
-// Copyright (C) 2017, ccpaging <ccpaging@gmail.com>.  All rights reserved.
-
 package nxlog4go
 
 import (
 	"bytes"
+	"log"
 	"testing"
 )
 
-func TestStdLogger(t *testing.T) {
+func TestNewStdLog(t *testing.T) {
 	buf := new(bytes.Buffer)
 
-	l := GetLogger().SetOutput(buf).SetOptions(
-		"level", WARN,
-		"format", "[%L] (%S) %M")
-	if l == nil {
-		t.Fatalf("GetLogger() should never return nil")
-	}
-	if l.stdf.level != WARN {
-		t.Fatalf("GetLogger() produced invalid logger (incorrect level)")
-	}
+	logger := New(buf, "redirected", Lshortfile).SetOptions(
+		"level", FINEST,
+		"format", "[%L] [%P] (%S) %M%F")
+	elog := logger.With("source", "testing")
+	elog.Info("redirected.")
 
-	//func (l *Logger) Warn(args ...interface{}) error {}
-	if err := Warn("%s %d %#v", "Warn:", 1, []int{}); err.Error() != "Warn: 1 []int{}" {
-		t.Errorf("Warn returned invalid error: %s", err)
-	}
-	want := "[WARN] (stdlog_test.go) Warn: 1 []int{}\n"
+	want := "[INFO] [redirected] (stdlog_test.go) redirected. source=testing\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
 	}
 	buf.Reset()
 
-	//func (l *Logger) Error(args ...interface{}) error {}
-	if err := Error("%s %d %#v", "Error:", 10, []string{}); err.Error() != "Error: 10 []string{}" {
-		t.Errorf("Error returned invalid error: %s", err)
-	}
-	want = "[EROR] (stdlog_test.go) Error: 10 []string{}\n"
+	log := NewStdLog(elog.AddCallerSkip(3))
+	log.Println("This is stdlog's println.")
+	want = "[INFO] [redirected] (stdlog_test.go) This is stdlog's println. source=testing\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
 	}
 	buf.Reset()
 
-	//func (l *Logger) Critical(args ...interface{}) error {}
-	if err := Critical("%s %d %#v", "Critical:", 100, []int64{}); err.Error() != "Critical: 100 []int64{}" {
-		t.Errorf("Critical returned invalid error: %s", err)
+	levels := []int{FINEST, DEBUG, TRACE, INFO, WARN, ERROR}
+	for _, level := range levels {
+		log := NewStdLogAt(elog.AddCallerSkip(3), level)
+		log.Println("redirected.")
+
+		want := "[" + Level(level).String() + "] [redirected] (stdlog_test.go) redirected. source=testing\n"
+		if got := buf.String(); got != want {
+			t.Errorf("   got %q", got)
+			t.Errorf("  want %q", want)
+		}
+		buf.Reset()
 	}
-	want = "[CRIT] (stdlog_test.go) Critical: 100 []int64{}\n"
+}
+
+func TestRedirectStdLog(t *testing.T) {
+	buf := new(bytes.Buffer)
+	log.SetFlags(log.Lshortfile)
+	log.SetOutput(buf)
+
+	testStdlog := func() {
+		log.Println("redirected")
+		want := "stdlog_test.go:54: redirected\n"
+		if got := buf.String(); got != want {
+			t.Errorf("   got %q", got)
+			t.Errorf("  want %q", want)
+		}
+		buf.Reset()
+	}
+	testStdlog()
+
+	logger := New(buf, "redirected", Lshortfile).SetOptions(
+		"level", FINEST,
+		"format", "[%L] [%P] (%S) %M%F")
+	elog := logger.With("source", "testing")
+
+	restore := RedirectStdLogAt(elog, "debug")
+	log.Println("redirected.")
+	want := "[DEBG] [redirected] (stdlog_test.go) redirected. source=testing\n"
 	if got := buf.String(); got != want {
 		t.Errorf("   got %q", got)
 		t.Errorf("  want %q", want)
 	}
+	buf.Reset()
+
+	restore()
+	testStdlog()
 }

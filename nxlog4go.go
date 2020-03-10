@@ -103,7 +103,7 @@ const (
 type Logger struct {
 	mu      *sync.Mutex // ensures atomic writes; protects the following fields
 	prefix  string      // prefix to write at beginning of each line
-	caller  bool        // runtime caller skip
+	caller  bool        // enable or disable calling runtime.Caller(...)
 	stdf    *stdFilter
 	filters map[string]*driver.Filter // a collection of Filter
 }

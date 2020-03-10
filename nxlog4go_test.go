@@ -319,7 +319,6 @@ func BenchmarkFileWriter(b *testing.B) {
 		w.Close()
 		os.Remove(benchLogFile)
 	}()
-	b.StopTimer()
 
 	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
 
@@ -339,8 +338,6 @@ func BenchmarkFileUtilWriter(b *testing.B) {
 		w.Close()
 		os.Remove(benchLogFile)
 	}()
-	defer w.Close()
-	b.StopTimer()
 
 	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
 
@@ -357,7 +354,6 @@ func BenchmarkFileBufWriter(b *testing.B) {
 		w.Close()
 		os.Remove(benchLogFile)
 	}()
-	b.StopTimer()
 
 	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
 
