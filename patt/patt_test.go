@@ -77,7 +77,7 @@ func BenchmarkPatternLayout(b *testing.B) {
 	}
 }
 
-func BenchmarkJson(b *testing.B) {
+func BenchmarkJsonStdlib(b *testing.B) {
 	const updateEvery = 1
 	r := &driver.Recorder{
 		Level:   0,

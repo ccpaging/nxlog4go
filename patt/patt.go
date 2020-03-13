@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/ccpaging/nxlog4go/cast"
+	"github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/driver"
 )
 
@@ -128,7 +129,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
 
 // Set sets name-value option with:
 //  format  - Layout format string. Auto-detecting quote string.
-//  lineEnd - line end string. Auto-detecting quote string.
+//  lineEnd - Line end string. Auto-detecting quote string.
+//	color   - Set ansi color true or false, "auto".
 //  utc     - Log record time zone: local or utc.
 //
 // Known encoder types are (The option's name and value are case-sensitive):
@@ -177,6 +179,8 @@ func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 	case "color":
 		if ok, err = cast.ToBool(v); err == nil {
 			lo.color = ok
+		} else {
+			lo.color = color.IsTermianl()
 		}
 	case "utc":
 		if ok, err = cast.ToBool(v); err == nil {

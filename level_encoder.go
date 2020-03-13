@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"strings"
 
-	color "github.com/ccpaging/nxlog4go/ansicolor"
+	"github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/patt"
 )
 

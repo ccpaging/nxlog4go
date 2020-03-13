@@ -356,6 +356,8 @@ func BenchmarkFileBufWriter(b *testing.B) {
 	}()
 
 	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
+	// create file before benchmark testing
+	sl.Log(1, WARN, "This is a log message")
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -373,6 +375,8 @@ func BenchmarkFileBufUtilWriter(b *testing.B) {
 	b.StopTimer()
 
 	sl := NewLogger(INFO).SetOutput(w).SetOptions("format", testBenchFormat, "caller", false)
+	// create file before benchmark testing
+	sl.Info("%s is a log message", "This")
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -386,14 +390,14 @@ go test -bench=.
 goos: windows
 goarch: amd64
 pkg: github.com/ccpaging/nxlog4go
-BenchmarkPrintln-4                       1388799               860 ns/op
-BenchmarkPrintlnNoFlags-4                1782944               682 ns/op
-BenchmarkConsoleWithCallerWriter-4        571567              2028 ns/op
-BenchmarkConsoleWriter-4                 1583028               761 ns/op
-BenchmarkConsoleUtilWriter-4             1231963               962 ns/op
-BenchmarkConsoleUtilNotWriter-4         150177903                7.97 ns/op
-BenchmarkFileWriter-4                     222204              5405 ns/op
-BenchmarkFileUtilWriter-4                 181792              6348 ns/op
-BenchmarkFileBufWriter-4                 1000000              1013 ns/op
-BenchmarkFileBufUtilWriter-4              923005              1249 ns/op
+BenchmarkPrintln-4                       1339130               883 ns/op
+BenchmarkPrintlnNoFlags-4                1719094               696 ns/op
+BenchmarkConsoleWithCallerWriter-4        600030              1985 ns/op
+BenchmarkConsoleWriter-4                 1520822               780 ns/op
+BenchmarkConsoleUtilWriter-4             1246032               971 ns/op
+BenchmarkConsoleUtilNotWriter-4         141834582                8.43 ns/op
+BenchmarkFileWriter-4                     199998              5560 ns/op
+BenchmarkFileUtilWriter-4                 181804              6397 ns/op
+BenchmarkFileBufWriter-4                 1000000              1042 ns/op
+BenchmarkFileBufUtilWriter-4              999883              1309 ns/op
 */
