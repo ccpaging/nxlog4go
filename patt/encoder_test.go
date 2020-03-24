@@ -6,38 +6,9 @@ import (
 	"bytes"
 	"testing"
 	"time"
+
+	"github.com/ccpaging/nxlog4go/driver"
 )
-
-var testEncoders = &Encoders{
-	Level:  NewNopLevelEncoder(),
-	Time:   NewTimeEncoder(),
-	Caller: NewCallerEncoder(),
-	Fields: NewFieldsEncoder(),
-}
-
-func TestCallerEncoder(t *testing.T) {
-	filename := "/home/jack/src/github.com/foo/foo.go"
-
-	tests := []struct {
-		name string
-		want string
-	}{
-		{"", "foo/foo.go"},
-		{"nopath", "foo.go"},
-		{"fullpath", filename},
-		{"shortpath", "foo/foo.go"},
-	}
-
-	var out bytes.Buffer
-	for _, tt := range tests {
-		enc := testEncoders.Caller.Encoding(tt.name)
-		enc(&out, filename)
-		if got := string(out.Bytes()); got != tt.want {
-			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
-		}
-		out.Reset()
-	}
-}
 
 func TestDateEncoder(t *testing.T) {
 	now := time.Now()
@@ -56,9 +27,10 @@ func TestDateEncoder(t *testing.T) {
 	var out bytes.Buffer
 	for i := 0; i < 2; i++ {
 		now = now.AddDate(0, 0, i)
+		r := &driver.Recorder{Created: now}
 		for _, tt := range tests {
-			enc := testEncoders.Time.DateEncoding(tt.name)
-			enc(&out, &now)
+			e := NewDateEncoder(tt.name)
+			e.Encode(&out, r)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
 				t.Errorf("Incorrect time format of [%s]: %q should be %q", tt.name, got, want)
@@ -85,9 +57,10 @@ func TestTimeEncoder(t *testing.T) {
 	var out bytes.Buffer
 	for i := 0; i < 2; i++ {
 		now = now.Add(1 * time.Second)
+		r := &driver.Recorder{Created: now}
 		for _, tt := range tests {
-			enc := testEncoders.Time.TimeEncoding(tt.name)
-			enc(&out, &now)
+			e := NewTimeEncoder(tt.name)
+			e.Encode(&out, r)
 			want := now.Format(tt.format)
 			if got := string(out.Bytes()); got != want {
 				t.Errorf("Incorrect time format of [%s]: %q should be %q", tt.name, got, want)
@@ -97,21 +70,49 @@ func TestTimeEncoder(t *testing.T) {
 	}
 }
 
-func TestFieldsEncoder(t *testing.T) {
-	data := map[string]interface{}{
-		"int":   3,
-		"short": "abcdefghijk",
-		"long":  "0123456789abcdefg",
+func TestCallerEncoder(t *testing.T) {
+	filename := "/home/jack/src/github.com/foo/foo.go"
+
+	tests := []struct {
+		name string
+		want string
+	}{
+		{"", "foo/foo.go"},
+		{"nopath", "foo.go"},
+		{"fullpath", filename},
+		{"shortpath", "foo/foo.go"},
 	}
-	index := []string{
-		"int",
-		"short",
-		"long",
+
+	var out bytes.Buffer
+	r := &driver.Recorder{Source: filename}
+	e := NewCallerEncoder("")
+	for _, tt := range tests {
+		e = e.Open(tt.name)
+		e.Encode(&out, r)
+		if got := string(out.Bytes()); got != tt.want {
+			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
+		}
+		out.Reset()
+	}
+}
+
+func TestFieldsEncoder(t *testing.T) {
+	r := &driver.Recorder{
+		Data: map[string]interface{}{
+			"int":   3,
+			"short": "abcdefghijk",
+			"long":  "0123456789abcdefg",
+		},
+		Index: []string{
+			"int",
+			"short",
+			"long",
+		},
 	}
 
 	out := new(bytes.Buffer)
-	enc := testEncoders.Fields.Encoding("std")
-	enc(out, data, index)
+	e := NewFieldsEncoder("")
+	e.Encode(out, r)
 
 	want := " int=3 short=abcdefghijk long=0123456789abcdefg"
 	if got := out.String(); got != want {
@@ -132,4 +133,26 @@ func BenchmarkItoa(b *testing.B) {
 		itoa(&dst, 0, 2)      // second
 		itoa(&dst, 987654, 6) // microsecond
 	}
+}
+
+func BenchmarkRFC3339Nano(b *testing.B) {
+	e := NewTimeEncoder("rfc3339nano")
+	out := new(bytes.Buffer)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		r := &driver.Recorder{Created: time.Now()}
+		e.Encode(out, r)
+		out.Reset()
+	}
+	b.StopTimer()
+}
+
+func BenchmarkTimeFormat(b *testing.B) {
+	out := new(bytes.Buffer)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		out.WriteString(time.Now().Format(time.RFC3339Nano))
+		out.Reset()
+	}
+	b.StopTimer()
 }

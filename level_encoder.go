@@ -7,15 +7,16 @@ import (
 	"strings"
 
 	"github.com/ccpaging/nxlog4go/color"
+	"github.com/ccpaging/nxlog4go/driver"
 	"github.com/ccpaging/nxlog4go/patt"
 )
 
 /** Cached Level Encoder ***/
 
 func init() {
-	stde := patt.GetEncoders()
-	stde.Level = &cacheLevel{}
-	patt.SetEncoders(stde)
+	patt.DefaultEncoders.LevelEncoder = NewLevelEncoder("")
+	patt.DefaultEncoders.BeginColorizer = NewBeginColorizer("nocolor")
+	patt.DefaultEncoders.EndColorizer = NewEndColorizer("nocolor")
 }
 
 type cacheLevel struct {
@@ -26,7 +27,33 @@ type cacheLevel struct {
 	short bool
 }
 
-func (e *cacheLevel) enco(out *bytes.Buffer, n int) {
+// NewLevelEncoder creates a new level encoder.
+func NewLevelEncoder(typ string) patt.Encoder {
+	e := &cacheLevel{}
+	return e.Open(typ)
+}
+
+func (*cacheLevel) Open(typ string) patt.Encoder {
+	e := &cacheLevel{}
+	switch typ {
+	case "upper":
+		e.upper = true
+	case "upperColor":
+		e.upper = true
+		e.color = true
+	case "lower":
+	case "lowerColor":
+		e.color = true
+	case "std":
+		fallthrough
+	default:
+		e.short = true
+	}
+	return e
+}
+
+func (e *cacheLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
+	n := r.Level
 	if e.cache == nil {
 		e.cache = make(map[int][]byte, len(levelMap))
 		for i, ls := range levelMap {
@@ -57,34 +84,53 @@ func (e *cacheLevel) enco(out *bytes.Buffer, n int) {
 	}
 }
 
-// Open creates cached level encoding by name.
-// Name includes(case sensitive): upper, upperColor, lower, lowerColor, std.
-//
-// Default: std.
-func (*cacheLevel) Encoding(s string) patt.LevelEncoding {
-	// make a new one
-	e := new(cacheLevel)
-	switch s {
-	case "upper":
-		e.upper = true
-	case "upperColor":
-		e.upper = true
-		e.color = true
-	case "lower":
-	case "lowerColor":
-		e.color = true
-	case "std":
-		fallthrough
-	default:
-		e.short = true
+type colorLevel struct {
+	color  bool
+	encode func(out *bytes.Buffer, n int)
+}
+
+// NewBeginColorizer creates a new color begin encoder.
+func NewBeginColorizer(typ string) patt.Encoder {
+	e := &colorLevel{}
+	e.encode = e.Begin
+	return e.Open(typ)
+}
+
+// NewEndColorizer creates a new color reset encoder.
+func NewEndColorizer(typ string) patt.Encoder {
+	e := &colorLevel{}
+	e.encode = e.End
+	return e.Open(typ)
+}
+
+func (e *colorLevel) Open(typ string) patt.Encoder {
+	ne := &colorLevel{
+		encode: e.encode,
 	}
-	return e.enco
+
+	switch typ {
+	case "color":
+		ne.color = true
+	case "nocolor":
+		ne.color = false
+	default:
+		ne.color = color.IsTerminal()
+	}
+	return ne
 }
 
-func (*cacheLevel) Begin(n int) []byte {
-	return Level(n).colorBytes(n)
+func (e *colorLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
+	e.encode(out, r.Level)
 }
 
-func (*cacheLevel) End(n int) []byte {
-	return color.Reset.Bytes()
+func (e *colorLevel) Begin(out *bytes.Buffer, n int) {
+	if e.color {
+		out.Write(Level(n).colorBytes(n))
+	}
+}
+
+func (e *colorLevel) End(out *bytes.Buffer, n int) {
+	if e.color {
+		out.Write(color.Reset.Bytes())
+	}
 }

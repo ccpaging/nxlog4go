@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/ccpaging/nxlog4go/cast"
-	"github.com/ccpaging/nxlog4go/color"
 	"github.com/ccpaging/nxlog4go/driver"
 )
 
@@ -27,25 +26,42 @@ var (
 	FormatAbbrev = "[%L] %M%F"
 )
 
+// Encoders includes all log recorder field encoder.
+type Encoders struct {
+	BeginColorizer Encoder
+	EndColorizer   Encoder
+	LevelEncoder   Encoder
+	DateEncoder    Encoder
+	TimeEncoder    Encoder
+	ZoneEncoder    Encoder
+	CallerEncoder  Encoder
+	FieldsEncoder  Encoder
+}
+
+// DefaultEncoders allows users to configure the concrete encoders.
+var DefaultEncoders Encoders = Encoders{
+	BeginColorizer: NewNopEncoder(),
+	EndColorizer:   NewNopEncoder(),
+	LevelEncoder:   NewNopEncoder(),
+	DateEncoder:    NewDateEncoder(""),
+	TimeEncoder:    NewTimeEncoder(""),
+	ZoneEncoder:    NewZoneEncoder(""),
+	CallerEncoder:  NewCallerEncoder(""),
+	FieldsEncoder:  NewFieldsEncoder(""),
+}
+
 // PatternLayout formats log Recorder.
 type PatternLayout struct {
-	verbs   [][]byte // Split the format string into pieces by % signs
+	verbs [][]byte // Split the format string into pieces by % signs
+
 	lineEnd []byte
+	utc     bool
 
-	utc   bool
-	color bool
-
-	LevelEncoding
-
-	CallerEncoding
-	DateEncoding TimeEncoding
-	TimeEncoding
-	ZoneEncoding TimeEncoding
-	FieldsEncoding
+	Encoders
 
 	// DEPRECATED. Compatible with log4go
-	_encodeDate TimeEncoding
-	_encodeTime TimeEncoding // DEPRECATED
+	_encodeDate Encoder
+	_encodeTime Encoder // DEPRECATED
 }
 
 func formatToVerbs(format string) [][]byte {
@@ -61,22 +77,16 @@ func formatToVerbs(format string) [][]byte {
 // NewLayout creates a new layout encoding log Recorder.
 func NewLayout(format string, args ...interface{}) *PatternLayout {
 	lo := &PatternLayout{
-		verbs:   formatToVerbs(format),
+		verbs: formatToVerbs(format),
+
 		lineEnd: DefaultLineEnd,
+		utc:     false,
 
-		utc:   false,
-		color: false,
-
-		LevelEncoding:  stde.Level.Encoding(""),
-		CallerEncoding: stde.Caller.Encoding("shortpath"),
-		DateEncoding:   stde.Time.DateEncoding("cymdSlash"),
-		TimeEncoding:   stde.Time.TimeEncoding("hms"),
-		ZoneEncoding:   stde.Time.ZoneEncoding("mst"),
-		FieldsEncoding: stde.Fields.Encoding("std"),
+		Encoders: DefaultEncoders,
 
 		// DEPRECATED. Compatible with log4go
-		_encodeDate: stde.Time.DateEncoding("mdy"),
-		_encodeTime: stde.Time.TimeEncoding("hhmm"),
+		_encodeDate: NewDateEncoder("mdy"),
+		_encodeTime: NewTimeEncoder("hhmm"),
 	}
 	lo.SetOptions(args...)
 	return lo
@@ -93,44 +103,35 @@ func (lo *PatternLayout) SetOptions(args ...interface{}) driver.Layout {
 	return lo
 }
 
-func (lo *PatternLayout) setEncoder(k string, v interface{}) (err error) {
-	var s string
+func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
+	s, err := cast.ToString(v)
+	if err != nil {
+		return err
+	}
 	switch k {
 	case "levelEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.LevelEncoding = stde.Level.Encoding(s)
-		}
+		lo.LevelEncoder = lo.LevelEncoder.Open(s)
 	case "callerEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.CallerEncoding = stde.Caller.Encoding(s)
-		}
+		lo.CallerEncoder = lo.CallerEncoder.Open(s)
 	case "dateEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.DateEncoding = stde.Time.DateEncoding(s)
-		}
+		lo.DateEncoder = lo.DateEncoder.Open(s)
 	case "timeEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.TimeEncoding = stde.Time.TimeEncoding(s)
-		}
+		lo.TimeEncoder = lo.TimeEncoder.Open(s)
 	case "zoneEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.ZoneEncoding = stde.Time.ZoneEncoding(s)
-		}
+		lo.ZoneEncoder = lo.ZoneEncoder.Open(s)
 	case "fieldsEncoder":
-		if s, err = cast.ToString(v); err == nil {
-			lo.FieldsEncoding = stde.Fields.Encoding(s)
-		}
+		lo.FieldsEncoder = lo.FieldsEncoder.Open(s)
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
 
-	return
+	return nil
 }
 
 // Set sets name-value option with:
 //  format  - Layout format string. Auto-detecting quote string.
 //  lineEnd - Line end string. Auto-detecting quote string.
-//	color   - Set ansi color true or false, "auto".
+//	color   - Set ansi color true, false, or "auto".
 //  utc     - Log record time zone: local or utc.
 //
 // Known encoder types are (The option's name and value are case-sensitive):
@@ -178,9 +179,16 @@ func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 		}
 	case "color":
 		if ok, err = cast.ToBool(v); err == nil {
-			lo.color = ok
+			if ok {
+				lo.BeginColorizer = lo.BeginColorizer.Open("color")
+				lo.EndColorizer = lo.EndColorizer.Open("color")
+			} else {
+				lo.BeginColorizer = lo.BeginColorizer.Open("nocolor")
+				lo.EndColorizer = lo.EndColorizer.Open("nocolor")
+			}
 		} else {
-			lo.color = color.IsTermianl()
+			lo.BeginColorizer = lo.BeginColorizer.Open("auto")
+			lo.EndColorizer = lo.EndColorizer.Open("auto")
 		}
 	case "utc":
 		if ok, err = cast.ToBool(v); err == nil {
@@ -198,6 +206,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 	if lo.utc {
 		t = t.UTC()
 	}
+	tr := &driver.Recorder{Created: t}
 
 	// Iterate over the pieces, replacing known formats
 	// Split the string into pieces by % signs
@@ -212,17 +221,17 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 		}
 		switch piece[0] {
 		case 'D':
-			lo.DateEncoding(out, &t)
+			lo.DateEncoder.Encode(out, tr)
 		case 'd':
-			lo._encodeDate(out, &t)
+			lo._encodeDate.Encode(out, tr)
 		case 'T':
-			lo.TimeEncoding(out, &t)
+			lo.TimeEncoder.Encode(out, tr)
 		case 't':
-			lo._encodeTime(out, &t)
+			lo._encodeTime.Encode(out, tr)
 		case 'Z':
-			lo.ZoneEncoding(out, &t)
+			lo.ZoneEncoder.Encode(out, tr)
 		case 'L':
-			lo.LevelEncoding(out, r.Level)
+			lo.LevelEncoder.Encode(out, r)
 		case 'l':
 			var b []byte
 			itoa(&b, int(r.Level), -1)
@@ -230,7 +239,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 		case 'P':
 			out.WriteString(r.Prefix)
 		case 'S':
-			lo.CallerEncoding(out, r.Source)
+			lo.CallerEncoder.Encode(out, r)
 		case 'N':
 			var b []byte
 			itoa(&b, r.Line, -1)
@@ -238,7 +247,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 		case 'M':
 			out.WriteString(r.Message)
 		case 'F':
-			lo.FieldsEncoding(out, r.Data, r.Index)
+			lo.FieldsEncoder.Encode(out, r)
 		default:
 			// unknown format code. Ignored.
 		}
@@ -257,16 +266,10 @@ func (lo *PatternLayout) Encode(out *bytes.Buffer, r *driver.Recorder) int {
 		return out.Len()
 	}
 
-	if lo.color {
-		out.Write(stde.Level.Begin(r.Level))
-	}
-
+	lo.BeginColorizer.Encode(out, r)
 	lo.encode(out, r)
+	lo.EndColorizer.Encode(out, r)
 
 	out.Write(lo.lineEnd)
-
-	if lo.color {
-		out.Write(stde.Level.End(r.Level))
-	}
 	return out.Len()
 }

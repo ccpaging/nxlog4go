@@ -36,12 +36,14 @@ func TestLevelEncoder(t *testing.T) {
 		{"std", CRITICAL + 1, "Level(8)"},
 	}
 
-	li := &cacheLevel{}
+	e := NewLevelEncoder("")
 
-	var out bytes.Buffer
+	out := new(bytes.Buffer)
+	r := &driver.Recorder{}
 	for _, tt := range tests {
-		enc := li.Encoding(tt.name)
-		enc(&out, tt.level)
+		e = e.Open(tt.name)
+		r.Level = tt.level
+		e.Encode(out, r)
 		if got := string(out.Bytes()); got != tt.want {
 			t.Errorf("Incorrect level format of [%s]: %q should be %q", tt.name, got, tt.want)
 		}
