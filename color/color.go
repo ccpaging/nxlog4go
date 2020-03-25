@@ -52,6 +52,7 @@ var colorBytes = map[Color][]byte{
 	Reset:        []byte("\033[0m"),
 }
 
+// IsTerminal return true if current system support ansi color.
 func IsTerminal() bool {
 	return (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb") || os.Getenv("ConEmuANSI") == "ON"
 }
