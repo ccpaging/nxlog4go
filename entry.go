@@ -21,7 +21,7 @@ type Entry struct {
 	addSkip int
 }
 
-// NewEntry creates a new logging entry with a logger
+// NewEntry creates a logging entry with a logger
 func NewEntry(l *Logger) *Entry {
 	return &Entry{
 		rec: &driver.Recorder{
@@ -42,6 +42,19 @@ func (e *Entry) SetPrefix(prefix string) *Entry {
 // to reporting the caller's caller information of the wrapper code.
 func (e *Entry) AddCallerSkip(addSkip int) *Entry {
 	e.addSkip = addSkip
+	return e
+}
+
+// WithValues creates a child logger and adds structured context to it. Values added
+// to the child don't affect the parent, and vice versa.
+func (e *Entry) WithValues(args ...interface{}) *Entry {
+	e.rec.With(args...)
+	return e
+}
+
+// WithMoreValues appends values to the log entry.
+func (e *Entry) WithMoreValues(args ...interface{}) *Entry {
+	e.rec.WithMore(args...)
 	return e
 }
 
@@ -73,10 +86,10 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 		Level:   level,
 		Message: driver.ArgsToString(arg0),
 		Created: time.Now(),
-		Data:    make(map[string]interface{}, len(e.rec.Data)+len(args)/2),
+		Fields:  make(map[string]interface{}, len(e.rec.Fields)+len(args)/2),
 	}
-	for k, v := range e.rec.Data {
-		r.Data[k] = v
+	for k, v := range e.rec.Fields {
+		r.Fields[k] = v
 	}
 	r.Index = append(r.Index, e.rec.Index...)
 	r.WithMore(args...)

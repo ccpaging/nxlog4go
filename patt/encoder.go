@@ -424,16 +424,15 @@ func (e *callerEncoder) Encode(buf *bytes.Buffer, r *driver.Recorder) {
 }
 
 /* Fields Encoder */
-
 type fieldsEncoder struct {
 	sep   string
 	deli  string
 	quote bool
 
-	encode func(out *bytes.Buffer, data map[string]interface{}, index []string)
+	encode func(out *bytes.Buffer, fields map[string]interface{}, index []string)
 }
 
-// NewFieldsEncoder creates a new data fields encoder.
+// NewFieldsEncoder creates a new fields encoder.
 func NewFieldsEncoder(typ string) Encoder {
 	e := &fieldsEncoder{}
 	return e.Open(typ)
@@ -463,7 +462,7 @@ func (*fieldsEncoder) Open(typ string) Encoder {
 }
 
 func (e *fieldsEncoder) Encode(out *bytes.Buffer, r *driver.Recorder) {
-	e.encode(out, r.Data, r.Index)
+	e.encode(out, r.Fields, r.Index)
 }
 
 func (e *fieldsEncoder) encoKeyValue(out *bytes.Buffer, k string, v interface{}) {
@@ -481,31 +480,59 @@ func (e *fieldsEncoder) encoKeyValue(out *bytes.Buffer, k string, v interface{})
 	out.WriteString(s)
 }
 
-func (e *fieldsEncoder) encoStd(out *bytes.Buffer, data map[string]interface{}, index []string) {
-	if len(data) <= 0 {
+func (e *fieldsEncoder) encoStd(out *bytes.Buffer, fields map[string]interface{}, index []string) {
+	if len(fields) <= 0 {
 		return
 	}
 
 	if len(index) > 1 {
 		for _, k := range index {
 			out.WriteString(e.sep)
-			e.encoKeyValue(out, k, data[k])
+			e.encoKeyValue(out, k, fields[k])
 		}
 		return
 	}
 
-	for k, v := range data {
+	for k, v := range fields {
 		out.WriteString(e.sep)
 		e.encoKeyValue(out, k, v)
 	}
 }
 
-func (e *fieldsEncoder) encoJSON(out *bytes.Buffer, data map[string]interface{}, index []string) {
-	if len(data) <= 0 {
+func (e *fieldsEncoder) encoJSON(out *bytes.Buffer, fields map[string]interface{}, index []string) {
+	if len(fields) <= 0 {
 		return
 	}
 
-	out.WriteString(",\"Data\":")
+	out.WriteString(",\"Fields\":")
 	encoder := json.NewEncoder(out)
-	encoder.Encode(data)
+	encoder.Encode(fields)
+}
+
+/* Values Encoder */
+type valuesEncoder struct {
+	encode func(out *bytes.Buffer, values []interface{})
+}
+
+// NewValuesEncoder creates a new data fields encoder.
+func NewValuesEncoder(typ string) Encoder {
+	e := &valuesEncoder{}
+	return e.Open(typ)
+}
+
+func (e *valuesEncoder) Encode(out *bytes.Buffer, r *driver.Recorder) {
+	e.encode(out, r.Values)
+}
+
+func (*valuesEncoder) Open(typ string) Encoder {
+	e := &valuesEncoder{}
+	e.encode = e.encoStd
+	return e
+}
+
+func (e *valuesEncoder) encoStd(out *bytes.Buffer, values []interface{}) {
+	if len(values) <= 0 {
+		return
+	}
+	out.WriteString(fmt.Sprint(values...))
 }

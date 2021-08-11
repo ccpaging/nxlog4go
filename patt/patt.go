@@ -36,6 +36,7 @@ type Encoders struct {
 	ZoneEncoder    Encoder
 	CallerEncoder  Encoder
 	FieldsEncoder  Encoder
+	ValuesEncoder  Encoder
 }
 
 // DefaultEncoders allows users to configure the concrete encoders.
@@ -48,6 +49,7 @@ var DefaultEncoders Encoders = Encoders{
 	ZoneEncoder:    NewZoneEncoder(""),
 	CallerEncoder:  NewCallerEncoder(""),
 	FieldsEncoder:  NewFieldsEncoder(""),
+	ValuesEncoder:  NewValuesEncoder(""),
 }
 
 // PatternLayout formats log Recorder.
@@ -121,6 +123,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 		lo.ZoneEncoder = lo.ZoneEncoder.Open(s)
 	case "fieldsEncoder":
 		lo.FieldsEncoder = lo.FieldsEncoder.Open(s)
+	case "valuesEncoder":
+		lo.ValuesEncoder = lo.ValuesEncoder.Open(s)
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
@@ -152,7 +156,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 //  %S - Source
 //  %N - Line number
 //  %M - Message
-//  %F - Data fields in "key=value" format
+//  %F - Fields in "key=value" format
+//  %V - Values
 //
 // DEPRECATED:
 //  %d - Date (01/02/06). Replacing with setting "dateEncoder" as "mdy".
@@ -248,6 +253,8 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 			out.WriteString(r.Message)
 		case 'F':
 			lo.FieldsEncoder.Encode(out, r)
+		case 'V':
+			lo.ValuesEncoder.Encode(out, r)
 		default:
 			// unknown format code. Ignored.
 		}

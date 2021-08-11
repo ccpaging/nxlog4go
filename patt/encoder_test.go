@@ -98,7 +98,7 @@ func TestCallerEncoder(t *testing.T) {
 
 func TestFieldsEncoder(t *testing.T) {
 	r := &driver.Recorder{
-		Data: map[string]interface{}{
+		Fields: map[string]interface{}{
 			"int":   3,
 			"short": "abcdefghijk",
 			"long":  "0123456789abcdefg",

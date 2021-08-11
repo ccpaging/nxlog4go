@@ -17,7 +17,7 @@ func TestEntryArgs(t *testing.T) {
 	l := NewLogger(FINEST).SetOptions("format", "%L %S %M.%F").SetOutput(buf)
 	e := NewEntry(l).With("k1", "v1", "k2", "v2")
 	want := 2
-	if got := len(e.rec.Data); got != want {
+	if got := len(e.rec.Fields); got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
 	} else if got = len(e.rec.Index); got != want {
@@ -89,14 +89,14 @@ func TestEntryFormatJson(t *testing.T) {
 		t.Errorf("  want %v", want)
 	}
 
-	if len(um.Data) < 1 {
+	if len(um.Fields) < 1 {
 		t.Errorf("   got %s", b)
-		t.Errorf("Missing Data %v", um.Data)
-	} else if want, ok := r.Data["source"]; !ok {
+		t.Errorf("Missing Fields %v", um.Fields)
+	} else if want, ok := r.Fields["source"]; !ok {
 		t.Errorf("Missing want field %q", "error")
 	} else if wantStr, ok := want.(string); !ok {
 		t.Errorf("Missing want type [%T]", want)
-	} else if got, ok := um.Data["source"]; !ok {
+	} else if got, ok := um.Fields["source"]; !ok {
 		t.Errorf("Missing got field %q", "error")
 	} else if gotStr, ok := got.(string); !ok {
 		t.Errorf("Missing got type [%T]", got)

@@ -16,13 +16,28 @@ type Recorder struct {
 	Message string    // The log message
 	Created time.Time // The time at which the log message was created (nanoseconds)
 
-	Data  map[string]interface{} // Contains all the fields set by the user.
-	Index []string
+	Fields map[string]interface{} // Contains all the fields set by the user.
+	Index  []string
+
+	Values []interface{}
+}
+
+// Values sets values to the log record.
+func (r *Recorder) WithValues(vals ...interface{}) *Recorder {
+	r.Values = nil
+	r.Values = append(r.Values, vals...)
+	return r
+}
+
+// MoreValues appends more values to the log record.
+func (r *Recorder) WithMoreValues(vals ...interface{}) *Recorder {
+	r.Values = append(r.Values, vals...)
+	return r
 }
 
 // With sets name-value pairs to the log record.
 func (r *Recorder) With(args ...interface{}) *Recorder {
-	r.Data, r.Index, _ = ArgsToMap(args)
+	r.Fields, r.Index, _ = ArgsToMap(args)
 	return r
 }
 
@@ -32,16 +47,16 @@ func (r *Recorder) WithMore(args ...interface{}) *Recorder {
 		return r
 	}
 
-	data, index, _ := ArgsToMap(args)
-	if len(data) <= 0 {
+	fields, index, _ := ArgsToMap(args)
+	if len(fields) <= 0 {
 		return r
 	}
 
-	if r.Data == nil {
-		r.Data = make(map[string]interface{}, len(args)/2)
+	if r.Fields == nil {
+		r.Fields = make(map[string]interface{}, len(args)/2)
 	}
-	for k, v := range data {
-		r.Data[k] = v
+	for k, v := range fields {
+		r.Fields[k] = v
 	}
 	r.Index = append(r.Index, index...)
 	return r
