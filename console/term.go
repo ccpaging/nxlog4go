@@ -111,7 +111,7 @@ func (ca *Appender) SetLayout(layout driver.Layout) *Appender {
 //
 // Return the appender.
 func (ca *Appender) SetOptions(args ...interface{}) *Appender {
-	ops, idx, _ := driver.ArgsToMap(args)
+	ops, idx, _ := driver.ArgsToMap(args...)
 	for _, k := range idx {
 		ca.Set(k, ops[k])
 	}

@@ -6,6 +6,6 @@ package patt
 func NewJSONLayout(args ...interface{}) *PatternLayout {
 	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
 	lo := NewLayout(jsonFormat, args...)
-	lo.SetOptions("timeEncoder", "rfc3339nano", "fieldsEncoder", "json")
+	lo.SetOptions("timeEncoder", "rfc3339nano", "fieldsEncoder", "json", "valuesEncoder", "json")
 	return lo
 }

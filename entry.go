@@ -45,29 +45,24 @@ func (e *Entry) AddCallerSkip(addSkip int) *Entry {
 	return e
 }
 
-// WithValues creates a child logger and adds structured context to it. Values added
-// to the child don't affect the parent, and vice versa.
-func (e *Entry) WithValues(args ...interface{}) *Entry {
-	e.rec.With(args...)
-	return e
-}
-
-// WithMoreValues appends values to the log entry.
-func (e *Entry) WithMoreValues(args ...interface{}) *Entry {
-	e.rec.WithMore(args...)
-	return e
-}
-
-// With creates a child logger and adds structured context to it. Fields added
-// to the child don't affect the parent, and vice versa.
+// With creates a child logger and adds structured context to it.
+// Field pairs or values added to the child don't affect the parent, and vice versa.
 func (e *Entry) With(args ...interface{}) *Entry {
-	e.rec.With(args...)
+	if e.log.fields {
+		e.rec.With(args...)
+	} else {
+		e.rec.WithValues(args...)
+	}
 	return e
 }
 
 // WithMore appends name-value pairs to the log entry.
 func (e *Entry) WithMore(args ...interface{}) *Entry {
-	e.rec.WithMore(args...)
+	if e.log.fields {
+		e.rec.WithMore(args...)
+	} else {
+		e.rec.WithMoreValues(args...)
+	}
 	return e
 }
 
@@ -88,11 +83,18 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 		Created: time.Now(),
 		Fields:  make(map[string]interface{}, len(e.rec.Fields)+len(args)/2),
 	}
+	// copy e.rec
 	for k, v := range e.rec.Fields {
 		r.Fields[k] = v
 	}
 	r.Index = append(r.Index, e.rec.Index...)
-	r.WithMore(args...)
+	r.WithValues(e.rec.Values...)
+
+	if l.fields {
+		r.WithMore(args...)
+	} else {
+		r.WithMoreValues(args...)
+	}
 
 	if l.caller {
 		// Determine caller func - it's expensive.

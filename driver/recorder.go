@@ -24,36 +24,36 @@ type Recorder struct {
 
 // Values sets values to the log record.
 func (r *Recorder) WithValues(vals ...interface{}) *Recorder {
-	r.Values = nil
-	r.Values = append(r.Values, vals...)
+	r.Values = ArgsToValues(vals...)
 	return r
 }
 
 // MoreValues appends more values to the log record.
 func (r *Recorder) WithMoreValues(vals ...interface{}) *Recorder {
-	r.Values = append(r.Values, vals...)
+	values := ArgsToValues(vals...)
+	r.Values = append(r.Values, values...)
 	return r
 }
 
 // With sets name-value pairs to the log record.
 func (r *Recorder) With(args ...interface{}) *Recorder {
-	r.Fields, r.Index, _ = ArgsToMap(args)
+	r.Fields, r.Index, _ = ArgsToMap(args...)
 	return r
 }
 
 // WithMore appends name-value pairs to the log record.
 func (r *Recorder) WithMore(args ...interface{}) *Recorder {
+	if r.Fields == nil {
+		r.Fields = make(map[string]interface{}, len(args)/2)
+	}
+
 	if len(args) == 0 {
 		return r
 	}
 
-	fields, index, _ := ArgsToMap(args)
+	fields, index, _ := ArgsToMap(args...)
 	if len(fields) <= 0 {
 		return r
-	}
-
-	if r.Fields == nil {
-		r.Fields = make(map[string]interface{}, len(args)/2)
 	}
 	for k, v := range fields {
 		r.Fields[k] = v

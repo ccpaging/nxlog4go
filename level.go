@@ -27,15 +27,18 @@ type levelString struct {
 	color color.Color
 }
 
-var levelMap = map[int]*levelString{
-	FINEST:   &levelString{"FNST", "finest", color.Gray},
-	FINE:     &levelString{"FINE", "fine", color.Green},
-	DEBUG:    &levelString{"DEBG", "debug", color.Magenta},
-	TRACE:    &levelString{"TRAC", "trace", color.Cyan},
-	INFO:     &levelString{"INFO", "info", color.White},
-	WARN:     &levelString{"WARN", "warn", color.LightYellow},
-	ERROR:    &levelString{"EROR", "error", color.Red},
-	CRITICAL: &levelString{"CRIT", "critical", color.LightRed},
+var levelMap map[int]*levelString
+
+func init() {
+	levelMap = make(map[int]*levelString)
+	levelMap[FINEST] = &levelString{"FNST", "finest", color.Gray}
+	levelMap[FINE] = &levelString{"FINE", "fine", color.Green}
+	levelMap[DEBUG] = &levelString{"DEBG", "debug", color.Magenta}
+	levelMap[TRACE] = &levelString{"TRAC", "trace", color.Cyan}
+	levelMap[INFO] = &levelString{"INFO", "info", color.White}
+	levelMap[WARN] = &levelString{"WARN", "warn", color.LightYellow}
+	levelMap[ERROR] = &levelString{"EROR", "error", color.Red}
+	levelMap[CRITICAL] = &levelString{"CRIT", "critical", color.LightRed}
 }
 
 // Level is the integer logging levels

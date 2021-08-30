@@ -98,7 +98,7 @@ func NewLayout(format string, args ...interface{}) *PatternLayout {
 //
 // Return Layout interface.
 func (lo *PatternLayout) SetOptions(args ...interface{}) driver.Layout {
-	ops, idx, _ := driver.ArgsToMap(args)
+	ops, idx, _ := driver.ArgsToMap(args...)
 	for _, k := range idx {
 		lo.Set(k, ops[k])
 	}
@@ -121,9 +121,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 		lo.TimeEncoder = lo.TimeEncoder.Open(s)
 	case "zoneEncoder":
 		lo.ZoneEncoder = lo.ZoneEncoder.Open(s)
-	case "fieldsEncoder":
+	case "fieldsEncoder", "valuesEncoder":
 		lo.FieldsEncoder = lo.FieldsEncoder.Open(s)
-	case "valuesEncoder":
 		lo.ValuesEncoder = lo.ValuesEncoder.Open(s)
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
@@ -144,7 +143,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 //  dateEncoder   - "dmy", "mdy", "cymdDash", "cymdDot", "cymdSlash" is default.
 //  timeEncoder   - "hhmm",  "hms.us", "iso8601", "rfc3339nano", "hms" is default.
 //  zoneEncoder   - "rfc3339", "iso8601", "mst" is default.
-//  fieldsEncoder - "quote", "csv", "json", "quote", "std" is default.
+//  fieldsEncoder - "quote", "csv", "json", "std" is default.
+//  valuesEncoder - "quote", "csv", "json", "std" is default.
 //
 // Known format codes are:
 //  %D - Date (2006/01/02)
@@ -156,8 +156,7 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 //  %S - Source
 //  %N - Line number
 //  %M - Message
-//  %F - Fields in "key=value" format
-//  %V - Values
+//  %F - Fields in "key=value" format or Values in "v1 v2 v3..." format
 //
 // DEPRECATED:
 //  %d - Date (01/02/06). Replacing with setting "dateEncoder" as "mdy".
@@ -253,7 +252,6 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 			out.WriteString(r.Message)
 		case 'F':
 			lo.FieldsEncoder.Encode(out, r)
-		case 'V':
 			lo.ValuesEncoder.Encode(out, r)
 		default:
 			// unknown format code. Ignored.

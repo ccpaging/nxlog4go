@@ -121,6 +121,26 @@ func TestFieldsEncoder(t *testing.T) {
 	}
 }
 
+func TestValuesEncoder(t *testing.T) {
+	r := &driver.Recorder{
+		Values: []interface{}{
+			"int", 3,
+			"short", "abcdefghijk",
+			"long", "0123456789abcdefg",
+		},
+	}
+
+	out := new(bytes.Buffer)
+	e := NewValuesEncoder("")
+	e.Encode(out, r)
+
+	want := " int 3 short abcdefghijk long 0123456789abcdefg"
+	if got := out.String(); got != want {
+		t.Errorf("   got %q", got)
+		t.Errorf("  want %q", want)
+	}
+}
+
 func BenchmarkItoa(b *testing.B) {
 	dst := make([]byte, 0, 64)
 	for i := 0; i < b.N; i++ {

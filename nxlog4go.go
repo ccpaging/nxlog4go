@@ -104,6 +104,7 @@ type Logger struct {
 	mu      *sync.Mutex // ensures atomic writes; protects the following fields
 	prefix  string      // prefix to write at beginning of each line
 	caller  bool        // enable or disable calling runtime.Caller(...)
+	fields  bool        // select Entry with fields pairs or values.
 	stdf    *stdFilter
 	filters map[string]*driver.Filter // a collection of Filter
 }
@@ -118,6 +119,7 @@ func NewLogger(level int) *Logger {
 	return &Logger{
 		mu:      new(sync.Mutex),
 		caller:  true,
+		fields:  true,
 		stdf:    newStdFilter(level),
 		filters: make(map[string]*driver.Filter),
 	}
@@ -132,12 +134,13 @@ func (l *Logger) Clone() *Logger {
 		mu:      l.mu,
 		prefix:  l.prefix,
 		caller:  l.caller,
+		fields:  l.fields,
 		stdf:    l.stdf,
 		filters: l.filters,
 	}
 }
 
-// Copy copies a logger except prefix and caller switch.
+// Copy copies the all filters of a logger.
 func (l *Logger) Copy(src *Logger) {
 	l.mu = src.mu
 	l.stdf = src.stdf
@@ -148,7 +151,7 @@ func (l *Logger) Copy(src *Logger) {
 //
 // Return *Logger.
 func (l *Logger) SetOptions(args ...interface{}) *Logger {
-	ops, idx, _ := driver.ArgsToMap(args)
+	ops, idx, _ := driver.ArgsToMap(args...)
 	for _, k := range idx {
 		l.Set(k, ops[k])
 	}
@@ -158,6 +161,7 @@ func (l *Logger) SetOptions(args ...interface{}) *Logger {
 // Set sets name-value option with:
 //	prefix - The output prefix
 //	caller - Enable or disable the runtime caller function
+//	fields - Select Entry with field pairs or values
 //	level  - The output level
 //
 // layout options...
@@ -168,9 +172,9 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 	defer l.mu.Unlock()
 
 	var (
-		s  string
-		ok bool
-		n  int
+		s string
+		e bool
+		n int
 	)
 
 	switch k {
@@ -179,8 +183,12 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 			l.prefix = s
 		}
 	case "caller":
-		if ok, err = cast.ToBool(v); err == nil {
-			l.caller = ok
+		if e, err = cast.ToBool(v); err == nil {
+			l.caller = e
+		}
+	case "fields":
+		if e, err = cast.ToBool(v); err == nil {
+			l.fields = e
 		}
 	case "level":
 		if n, err = Level(INFO).IntE(v); err == nil {
@@ -226,6 +234,7 @@ func (l *Logger) Filters() map[string]*driver.Filter {
 // With creates a child logger and adds structured context to it. Args added
 // to the child don't affect the parent, and vice versa.
 func (l *Logger) With(args ...interface{}) *Entry {
+	// do not using with(args) which may creat a slicer
 	return NewEntry(l).With(args...)
 }
 

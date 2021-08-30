@@ -511,6 +511,9 @@ func (e *fieldsEncoder) encoJSON(out *bytes.Buffer, fields map[string]interface{
 
 /* Values Encoder */
 type valuesEncoder struct {
+	sep   string
+	quote bool
+
 	encode func(out *bytes.Buffer, values []interface{})
 }
 
@@ -526,6 +529,20 @@ func (e *valuesEncoder) Encode(out *bytes.Buffer, r *driver.Recorder) {
 
 func (*valuesEncoder) Open(typ string) Encoder {
 	e := &valuesEncoder{}
+	switch typ {
+	case "json":
+		e.encode = e.encoJSON
+		return e
+	case "csv":
+		e.sep = "|"
+	case "quote":
+		e.sep = " "
+		e.quote = true
+	case "std":
+		fallthrough
+	default:
+		e.sep = " "
+	}
 	e.encode = e.encoStd
 	return e
 }
@@ -534,5 +551,29 @@ func (e *valuesEncoder) encoStd(out *bytes.Buffer, values []interface{}) {
 	if len(values) <= 0 {
 		return
 	}
-	out.WriteString(fmt.Sprint(values...))
+	var s string
+	for _, v := range values {
+		out.WriteString(e.sep)
+		if e.quote {
+			s = fmt.Sprintf("%q", v)
+		} else {
+
+			if _, ok := v.(string); ok {
+				s = v.(string)
+			} else {
+				s = fmt.Sprint(v)
+			}
+		}
+		out.WriteString(s)
+	}
+}
+
+func (e *valuesEncoder) encoJSON(out *bytes.Buffer, values []interface{}) {
+	if len(values) <= 0 {
+		return
+	}
+
+	out.WriteString(",\"Values\":")
+	encoder := json.NewEncoder(out)
+	encoder.Encode(values)
 }
