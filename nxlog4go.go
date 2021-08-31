@@ -234,7 +234,7 @@ func (l *Logger) Filters() map[string]*driver.Filter {
 // With creates a child logger and adds structured context to it. Args added
 // to the child don't affect the parent, and vice versa.
 func (l *Logger) With(args ...interface{}) *Entry {
-	// do not using with(args) which may creat a slicer
+	// do not using with(args) which may create a slicer
 	return NewEntry(l).With(args...)
 }
 
