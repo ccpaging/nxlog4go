@@ -104,19 +104,15 @@ func NewEndColorizer(typ string) patt.Encoder {
 }
 
 func (e *colorLevel) Open(typ string) patt.Encoder {
-	ne := &colorLevel{
-		encode: e.encode,
-	}
-
 	switch typ {
 	case "color":
-		ne.color = true
+		e.color = true
 	case "nocolor":
-		ne.color = false
+		e.color = false
 	default:
-		ne.color = color.IsTerminal()
+		e.color = color.IsTerminal()
 	}
-	return ne
+	return e
 }
 
 func (e *colorLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {

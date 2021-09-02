@@ -1,6 +1,8 @@
 package main
 
 import (
+	"testing"
+
 	"fmt"
 	"io"
 	"os"
@@ -11,12 +13,10 @@ import (
 	"github.com/ccpaging/nxlog4go/rolling"
 )
 
-const (
-	filename = "_rfw.log"
-	backups  = "_rfw*.log"
-)
+func TestRollingFile(t *testing.T) {
+	var filename string = "_rfw.log"
+	var backups string = "_rfw*.log"
 
-func main() {
 	// Enable internal logger
 	l4g.GetLogLog().Set("level", l4g.TRACE)
 

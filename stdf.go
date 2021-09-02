@@ -21,7 +21,7 @@ func newStdFilter(level int) *stdFilter {
 	return &stdFilter{
 		level: level,
 		enb:   true,
-		lo:    patt.NewLayout(""),
+		lo:    patt.NewLayout("").SetOptions("color", false),
 		out:   os.Stderr,
 	}
 }

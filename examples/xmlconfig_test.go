@@ -1,21 +1,23 @@
 package main
 
 import (
+	"testing"
+
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/console"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
-	"io/ioutil"
-	"os"
 )
 
-var fname = "example.xml"
+func TestXMLConfig(t *testing.T) {
+	var fname string = "example.xml"
+	var log = l4g.GetLogger()
 
-var log = l4g.GetLogger()
-
-func main() {
 	// Enable internal logger
 	l4g.GetLogLog().Set("level", l4g.TRACE)
 

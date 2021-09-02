@@ -1,17 +1,14 @@
 package main
 
 import (
+	"testing"
+
 	"io/ioutil"
 	"os"
 	"time"
 
 	l4g "github.com/ccpaging/nxlog4go"
 )
-
-var glog = l4g.NewLogger(l4g.DEBUG).SetOptions("prefix", "example", "format", "[%T %D %Z] [%L] (%P:%S) %M")
-
-var isTTY bool
-var out = os.Stderr
 
 func isatty(file *os.File) bool {
 	// This is sort of cheating: if stdout is a character device, we assume
@@ -31,13 +28,14 @@ func isatty(file *os.File) bool {
 	return false
 }
 
-func init() {
-	isTTY = isatty(out)
+func TestConsole(t *testing.T) {
+	var glog = l4g.NewLogger(l4g.DEBUG).SetOptions("prefix", "example", "format", "[%T %D %Z] [%L] (%P:%S) %M")
+	var out = os.Stderr
+
+	var isTTY = isatty(out)
 	isTTY = isTTY || (os.Getenv("TERM") != "" && os.Getenv("TERM") != "dumb")
 	isTTY = isTTY || (os.Getenv("ConEmuANSI") == "ON")
-}
 
-func main() {
 	glog.SetOutput(out).SetOptions("color", isTTY)
 	glog.Debug("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))
 	glog.Trace("The time is now: %s", time.Now().Format("15:04:05 MST 2006/01/02"))

@@ -1,31 +1,27 @@
 package main
 
 import (
+	"testing"
+
 	"encoding/json"
-	"flag"
 	"fmt"
+	"os"
+
 	l4g "github.com/ccpaging/nxlog4go"
 	_ "github.com/ccpaging/nxlog4go/console"
 	_ "github.com/ccpaging/nxlog4go/file"
 	_ "github.com/ccpaging/nxlog4go/socket"
-	"os"
 )
 
-var (
-	debug = flag.Bool("debug", false, "")
-	fname = flag.String("conf", "example.json", "config file")
-)
-
-var log = l4g.GetLogger().SetOptions("caller", true, "format", "[%T] [%P] [%L] (%S) %M\n")
-
-func main() {
-	flag.Parse()
+func TesJSONConfig(t *testing.T) {
+	var fname string = "example.json"
+	var log = l4g.GetLogger().SetOptions("caller", true, "format", "[%T] [%P] [%L] (%S) %M\n")
 
 	// Enable internal logger
 	l4g.GetLogLog().Set("level", l4g.TRACE)
 
 	// Open config file
-	fd, err := os.Open(*fname)
+	fd, err := os.Open(fname)
 	if err != nil {
 		panic(fmt.Sprintf("Can't load json config file: %s %v", fname, err))
 	}

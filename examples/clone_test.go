@@ -1,6 +1,8 @@
 package main
 
 import (
+	"testing"
+
 	"context"
 	"sync"
 	"time"
@@ -8,12 +10,10 @@ import (
 	l4g "github.com/ccpaging/nxlog4go"
 )
 
-var (
-	log1 = l4g.NewLogger(l4g.DEBUG).SetOptions("prefix", "samp", "format", "[%P] %T %D %Z] [%L] (%S:%N) %M")
-	log2 = log1.Clone().SetOptions("prefix", "exp2", "color", true)
-)
+func TestClone(t *testing.T) {
+	var log1 = l4g.NewLogger(l4g.DEBUG).SetOptions("prefix", "samp", "format", "[%P] %T %D %Z] [%L] (%S:%N) %M")
+	var log2 = log1.Clone().SetOptions("prefix", "exp2", "color", true)
 
-func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 

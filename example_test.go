@@ -7,6 +7,7 @@ package nxlog4go_test
 import (
 	"bytes"
 	"fmt"
+
 	log "github.com/ccpaging/nxlog4go"
 )
 
@@ -20,7 +21,7 @@ func ExampleLogger() {
 
 	fmt.Print(&buf)
 	// Output:
-	// logger: example_test.go:19: Hello, log file!
+	// logger: example_test.go:20: Hello, log file!
 }
 
 func ExampleLogger_Output() {
@@ -37,5 +38,5 @@ func ExampleLogger_Output() {
 
 	fmt.Print(&buf)
 	// Output:
-	// INFO: example_test.go:36: Hello world
+	// INFO: example_test.go:37: Hello world
 }
