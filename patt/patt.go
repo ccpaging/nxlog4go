@@ -187,8 +187,8 @@ func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 				lo.BeginColorizer = lo.BeginColorizer.Open("color")
 				lo.EndColorizer = lo.EndColorizer.Open("color")
 			} else {
-				lo.BeginColorizer = lo.BeginColorizer.Open("nocolor")
-				lo.EndColorizer = lo.EndColorizer.Open("nocolor")
+				lo.BeginColorizer = lo.BeginColorizer.Open("")
+				lo.EndColorizer = lo.EndColorizer.Open("")
 			}
 		} else {
 			lo.BeginColorizer = lo.BeginColorizer.Open("auto")

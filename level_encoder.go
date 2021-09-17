@@ -15,8 +15,8 @@ import (
 
 func init() {
 	patt.DefaultEncoders.LevelEncoder = NewLevelEncoder("")
-	patt.DefaultEncoders.BeginColorizer = NewBeginColorizer("nocolor")
-	patt.DefaultEncoders.EndColorizer = NewEndColorizer("nocolor")
+	patt.DefaultEncoders.BeginColorizer = NewBeginColorizer("")
+	patt.DefaultEncoders.EndColorizer = NewEndColorizer("")
 }
 
 type cacheLevel struct {
@@ -85,32 +85,46 @@ func (e *cacheLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
 }
 
 type colorLevel struct {
-	color  bool
-	encode func(out *bytes.Buffer, n int)
+	isBegin bool
+	encode  func(out *bytes.Buffer, n int)
 }
 
 // NewBeginColorizer creates a new color begin encoder.
 func NewBeginColorizer(typ string) patt.Encoder {
-	e := &colorLevel{}
-	e.encode = e.Begin
+	e := &colorLevel{isBegin: true}
 	return e.Open(typ)
 }
 
 // NewEndColorizer creates a new color reset encoder.
 func NewEndColorizer(typ string) patt.Encoder {
-	e := &colorLevel{}
-	e.encode = e.End
+	e := &colorLevel{isBegin: false}
 	return e.Open(typ)
 }
 
-func (e *colorLevel) Open(typ string) patt.Encoder {
+func (e0 *colorLevel) Open(typ string) patt.Encoder {
+	// Clear cache and remember mode
+	e := &colorLevel{isBegin: e0.isBegin}
+
+	isColor := false
 	switch typ {
 	case "color":
-		e.color = true
-	case "nocolor":
-		e.color = false
+		isColor = true
+	case "auto":
+		isColor = color.IsTerminal()
+	case "std":
+		fallthrough
 	default:
-		e.color = color.IsTerminal()
+	}
+
+	if !isColor {
+		e.encode = e.Nop
+		return e
+	}
+
+	if e.isBegin {
+		e.encode = e.Begin
+	} else {
+		e.encode = e.End
 	}
 	return e
 }
@@ -120,13 +134,12 @@ func (e *colorLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
 }
 
 func (e *colorLevel) Begin(out *bytes.Buffer, n int) {
-	if e.color {
-		out.Write(Level(n).colorBytes(n))
-	}
+	out.Write(Level(n).colorBytes(n))
 }
 
 func (e *colorLevel) End(out *bytes.Buffer, n int) {
-	if e.color {
-		out.Write(color.Reset.Bytes())
-	}
+	out.Write(color.Reset.Bytes())
+}
+
+func (e *colorLevel) Nop(out *bytes.Buffer, n int) {
 }
