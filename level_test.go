@@ -36,12 +36,64 @@ func TestLevelEncoder(t *testing.T) {
 		{"std", CRITICAL + 1, "Level(8)"},
 	}
 
-	e := NewLevelEncoder("")
+	e0 := NewLevelEncoder("")
 
 	out := new(bytes.Buffer)
 	r := &driver.Recorder{}
 	for _, tt := range tests {
-		e = e.Open(tt.name)
+		e := e0.NewEncoder(tt.name)
+		r.Level = tt.level
+		e.Encode(out, r)
+		if got := string(out.Bytes()); got != tt.want {
+			t.Errorf("Incorrect level format of [%s]: %q should be %q", tt.name, got, tt.want)
+		}
+		out.Reset()
+	}
+}
+
+func TestColorLevelBegin(t *testing.T) {
+	tests := []struct {
+		name  string
+		level int
+		want  string
+	}{
+		{"", DEBUG, ""},
+		{"color", TRACE, "\x1b[36m"},
+		{"std", CRITICAL + 1, ""},
+	}
+
+	e0 := NewBeginColorizer("")
+
+	out := new(bytes.Buffer)
+	r := &driver.Recorder{}
+	for _, tt := range tests {
+		e := e0.NewEncoder(tt.name)
+		r.Level = tt.level
+		e.Encode(out, r)
+		if got := string(out.Bytes()); got != tt.want {
+			t.Errorf("Incorrect level format of [%s]: %q should be %q", tt.name, got, tt.want)
+		}
+		out.Reset()
+	}
+}
+
+func TestColorLevelEnd(t *testing.T) {
+	tests := []struct {
+		name  string
+		level int
+		want  string
+	}{
+		{"", DEBUG, ""},
+		{"color", TRACE, "\x1b[0m"},
+		{"std", CRITICAL + 1, ""},
+	}
+
+	e0 := NewEndColorizer("")
+
+	out := new(bytes.Buffer)
+	r := &driver.Recorder{}
+	for _, tt := range tests {
+		e := e0.NewEncoder(tt.name)
 		r.Level = tt.level
 		e.Encode(out, r)
 		if got := string(out.Bytes()); got != tt.want {

@@ -112,18 +112,18 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 	}
 	switch k {
 	case "levelEncoder":
-		lo.LevelEncoder = lo.LevelEncoder.Open(s)
+		lo.LevelEncoder = lo.LevelEncoder.NewEncoder(s)
 	case "callerEncoder":
-		lo.CallerEncoder = lo.CallerEncoder.Open(s)
+		lo.CallerEncoder = lo.CallerEncoder.NewEncoder(s)
 	case "dateEncoder":
-		lo.DateEncoder = lo.DateEncoder.Open(s)
+		lo.DateEncoder = lo.DateEncoder.NewEncoder(s)
 	case "timeEncoder":
-		lo.TimeEncoder = lo.TimeEncoder.Open(s)
+		lo.TimeEncoder = lo.TimeEncoder.NewEncoder(s)
 	case "zoneEncoder":
-		lo.ZoneEncoder = lo.ZoneEncoder.Open(s)
+		lo.ZoneEncoder = lo.ZoneEncoder.NewEncoder(s)
 	case "fieldsEncoder", "valuesEncoder":
-		lo.FieldsEncoder = lo.FieldsEncoder.Open(s)
-		lo.ValuesEncoder = lo.ValuesEncoder.Open(s)
+		lo.FieldsEncoder = lo.FieldsEncoder.NewEncoder(s)
+		lo.ValuesEncoder = lo.ValuesEncoder.NewEncoder(s)
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
 	}
@@ -184,15 +184,15 @@ func (lo *PatternLayout) Set(k string, v interface{}) (err error) {
 	case "color":
 		if ok, err = cast.ToBool(v); err == nil {
 			if ok {
-				lo.BeginColorizer = lo.BeginColorizer.Open("color")
-				lo.EndColorizer = lo.EndColorizer.Open("color")
+				lo.BeginColorizer = lo.BeginColorizer.NewEncoder("color")
+				lo.EndColorizer = lo.EndColorizer.NewEncoder("color")
 			} else {
-				lo.BeginColorizer = lo.BeginColorizer.Open("")
-				lo.EndColorizer = lo.EndColorizer.Open("")
+				lo.BeginColorizer = lo.BeginColorizer.NewEncoder("")
+				lo.EndColorizer = lo.EndColorizer.NewEncoder("")
 			}
 		} else {
-			lo.BeginColorizer = lo.BeginColorizer.Open("auto")
-			lo.EndColorizer = lo.EndColorizer.Open("auto")
+			lo.BeginColorizer = lo.BeginColorizer.NewEncoder("auto")
+			lo.EndColorizer = lo.EndColorizer.NewEncoder("auto")
 		}
 	case "utc":
 		if ok, err = cast.ToBool(v); err == nil {

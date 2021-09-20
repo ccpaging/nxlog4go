@@ -35,7 +35,7 @@ func itoa(buf *[]byte, i int, wid int) {
 // Encoder defines log recorder field encoder interface for external packages extending.
 type Encoder interface {
 	// Open opens a new Encoder according type.
-	Open(typ string) Encoder
+	NewEncoder(typ string) Encoder
 	// Encode serializes log recorder field to the bytes buffer.
 	Encode(out *bytes.Buffer, r *driver.Recorder)
 }
@@ -44,7 +44,7 @@ type nopEncoder struct{}
 
 // NewNopEncoder creates no-op encoder.
 func NewNopEncoder() Encoder                                 { return &nopEncoder{} }
-func (e *nopEncoder) Open(string) Encoder                    { return e }
+func (e *nopEncoder) NewEncoder(string) Encoder              { return e }
 func (e *nopEncoder) Encode(*bytes.Buffer, *driver.Recorder) {}
 
 /** cached Time Encoder **/
@@ -78,22 +78,22 @@ type cacheTime struct {
 // NewDateEncoder creates a new date encoder.
 func NewDateEncoder(typ string) Encoder {
 	e := &cacheTime{mode: modeDate}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
 // NewTimeEncoder creates a new time encoder.
 func NewTimeEncoder(typ string) Encoder {
 	e := &cacheTime{mode: modeTime}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
 // NewZoneEncoder creates a new time zone encoder.
 func NewZoneEncoder(typ string) Encoder {
 	e := &cacheTime{mode: modeZone}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
-func (e0 *cacheTime) Open(typ string) Encoder {
+func (e0 *cacheTime) NewEncoder(typ string) Encoder {
 	// Clear cache and remember mode
 	e := &cacheTime{mode: e0.mode}
 	switch e.mode {
@@ -363,10 +363,10 @@ const (
 // NewCallerEncoder creates a new caller path encoder.
 func NewCallerEncoder(typ string) Encoder {
 	e := &callerEncoder{}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
-func (*callerEncoder) Open(typ string) Encoder {
+func (*callerEncoder) NewEncoder(typ string) Encoder {
 	e := &callerEncoder{}
 	switch typ {
 	case "nopath":
@@ -435,10 +435,10 @@ type fieldsEncoder struct {
 // NewFieldsEncoder creates a new fields encoder.
 func NewFieldsEncoder(typ string) Encoder {
 	e := &fieldsEncoder{}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
-func (*fieldsEncoder) Open(typ string) Encoder {
+func (*fieldsEncoder) NewEncoder(typ string) Encoder {
 	e := &fieldsEncoder{}
 	switch typ {
 	case "json":
@@ -520,14 +520,14 @@ type valuesEncoder struct {
 // NewValuesEncoder creates a new data fields encoder.
 func NewValuesEncoder(typ string) Encoder {
 	e := &valuesEncoder{}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
 func (e *valuesEncoder) Encode(out *bytes.Buffer, r *driver.Recorder) {
 	e.encode(out, r.Values)
 }
 
-func (*valuesEncoder) Open(typ string) Encoder {
+func (*valuesEncoder) NewEncoder(typ string) Encoder {
 	e := &valuesEncoder{}
 	switch typ {
 	case "json":

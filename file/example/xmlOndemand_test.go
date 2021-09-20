@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	log "github.com/ccpaging/nxlog4go"
@@ -12,10 +13,10 @@ import (
 	_ "github.com/ccpaging/nxlog4go/file"
 )
 
-var logFile = "_test.xml"
-var removeFiles = "_test*.xml"
+func TestXMLOndemand(t *testing.T) {
+	var logFile = "_test.xml"
+	var removeFiles = "_test*.xml"
 
-func main() {
 	// Enable internal logger
 	log.GetLogLog().SetOptions("level", log.TRACE, "caller", true, "format", "[%D %T] [%L] (%S:%N) \t%M")
 	defer log.GetLogLog().SetOptions("level", log.CRITICAL+1)

@@ -30,10 +30,10 @@ type cacheLevel struct {
 // NewLevelEncoder creates a new level encoder.
 func NewLevelEncoder(typ string) patt.Encoder {
 	e := &cacheLevel{}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
-func (*cacheLevel) Open(typ string) patt.Encoder {
+func (*cacheLevel) NewEncoder(typ string) patt.Encoder {
 	e := &cacheLevel{}
 	switch typ {
 	case "upper":
@@ -92,16 +92,16 @@ type colorLevel struct {
 // NewBeginColorizer creates a new color begin encoder.
 func NewBeginColorizer(typ string) patt.Encoder {
 	e := &colorLevel{isBegin: true}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
 // NewEndColorizer creates a new color reset encoder.
 func NewEndColorizer(typ string) patt.Encoder {
 	e := &colorLevel{isBegin: false}
-	return e.Open(typ)
+	return e.NewEncoder(typ)
 }
 
-func (e0 *colorLevel) Open(typ string) patt.Encoder {
+func (e0 *colorLevel) NewEncoder(typ string) patt.Encoder {
 	// Clear cache and remember mode
 	e := &colorLevel{isBegin: e0.isBegin}
 

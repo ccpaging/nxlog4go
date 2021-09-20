@@ -85,9 +85,9 @@ func TestCallerEncoder(t *testing.T) {
 
 	var out bytes.Buffer
 	r := &driver.Recorder{Source: filename}
-	e := NewCallerEncoder("")
+	e0 := NewCallerEncoder("")
 	for _, tt := range tests {
-		e = e.Open(tt.name)
+		e := e0.NewEncoder(tt.name)
 		e.Encode(&out, r)
 		if got := string(out.Bytes()); got != tt.want {
 			t.Errorf("Incorrect caller format of [%s]: %q should be %q", tt.name, got, tt.want)
