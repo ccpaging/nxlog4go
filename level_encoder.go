@@ -101,9 +101,9 @@ func NewEndColorizer(typ string) patt.Encoder {
 	return e.NewEncoder(typ)
 }
 
-func (e0 *colorLevel) NewEncoder(typ string) patt.Encoder {
+func (e *colorLevel) NewEncoder(typ string) patt.Encoder {
 	// Clear cache and remember mode
-	e := &colorLevel{isBegin: e0.isBegin}
+	ne := &colorLevel{isBegin: e.isBegin}
 
 	isColor := false
 	switch typ {
@@ -117,16 +117,16 @@ func (e0 *colorLevel) NewEncoder(typ string) patt.Encoder {
 	}
 
 	if !isColor {
-		e.encode = e.Nop
+		ne.encode = e.Nop
 		return e
 	}
 
-	if e.isBegin {
-		e.encode = e.Begin
+	if ne.isBegin {
+		ne.encode = e.Begin
 	} else {
-		e.encode = e.End
+		ne.encode = e.End
 	}
-	return e
+	return ne
 }
 
 func (e *colorLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
