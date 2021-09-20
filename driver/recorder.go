@@ -22,13 +22,13 @@ type Recorder struct {
 	Values []interface{}
 }
 
-// Values sets values to the log record.
+// WithValues sets values to the log record.
 func (r *Recorder) WithValues(vals ...interface{}) *Recorder {
 	r.Values = ArgsToValues(vals...)
 	return r
 }
 
-// MoreValues appends more values to the log record.
+// WithMoreValues appends more values to the log record.
 func (r *Recorder) WithMoreValues(vals ...interface{}) *Recorder {
 	values := ArgsToValues(vals...)
 	r.Values = append(r.Values, values...)
