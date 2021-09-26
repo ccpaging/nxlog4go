@@ -130,10 +130,6 @@ func (e *colorLevel) NewEncoder(typ string) patt.Encoder {
 }
 
 func (e *colorLevel) Encode(out *bytes.Buffer, r *driver.Recorder) {
-	if e.encode == nil {
-		println("encode is nil")
-		return
-	}
 	e.encode(out, r.Level)
 }
 

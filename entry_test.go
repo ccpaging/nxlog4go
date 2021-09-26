@@ -16,21 +16,21 @@ func TestEntryWithFields(t *testing.T) {
 	buf := new(bytes.Buffer)
 	l := NewLogger(FINEST).SetOptions("format", "%L %S %M.%F").SetOutput(buf)
 	e := NewEntry(l).With()
-	want := 0
-	if got := len(e.rec.Fields); got != want {
+	fields, index := e.rec.Fields()
+	if got, want := len(fields), 0; got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
-	} else if got = len(e.rec.Index); got != want {
+	} else if got = len(index); got != want {
 		t.Errorf("   got index %d", got)
 		t.Errorf("  want index %d", want)
 	}
 
 	e = NewEntry(l).With("k1", "v1", "k2", "v2")
-	want = 2
-	if got := len(e.rec.Fields); got != want {
+	fields, index = e.rec.Fields()
+	if got, want := len(fields), 2; got != want {
 		t.Errorf("   got %d", got)
 		t.Errorf("  want %d", want)
-	} else if got = len(e.rec.Index); got != want {
+	} else if got = len(index); got != want {
 		t.Errorf("   got index %d", got)
 		t.Errorf("  want index %d", want)
 	}
@@ -60,9 +60,11 @@ func TestEntryFieldsJson(t *testing.T) {
 	errBoom := fmt.Errorf("boom")
 	e.Log(1, ERROR, "kaboom", "error", errBoom)
 
-	r := e.rec
 	b := buf.Bytes()
-	um := &driver.Recorder{}
+	um := &struct {
+		driver.Recorder
+		Fields map[string]interface{}
+	}{}
 
 	if err := json.Unmarshal(b, &um); err != nil {
 		t.Errorf("   got %q", b)
@@ -104,7 +106,7 @@ func TestEntryFieldsJson(t *testing.T) {
 		t.Errorf("Missing Fields %v", um.Fields)
 	}
 
-	if want, ok := r.Fields["source"]; !ok {
+	if want, ok := um.Fields["source"]; !ok {
 		t.Errorf("Missing want field %q", "source")
 	} else if wantStr, ok := want.(string); !ok {
 		t.Errorf("Missing want type [%T]", want)
@@ -138,7 +140,7 @@ func TestEntryWithValues(t *testing.T) {
 
 func TestEntryValuesJson(t *testing.T) {
 	buf := new(bytes.Buffer)
-	l := NewLogger(INFO).SetOptions("fields", false).SetOutput(buf).SetLayout(patt.NewJSONLayout("callerEncoder", "fullpath"))
+	l := NewLogger(INFO).SetOptions("fields", false).SetOutput(buf).SetLayout(patt.NewJSONValueLayout("callerEncoder", "fullpath"))
 	e := NewEntry(l).SetPrefix("test").With("source", "TestEntryValuesJson")
 
 	errBoom := fmt.Errorf("boom")

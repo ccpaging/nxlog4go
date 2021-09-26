@@ -34,7 +34,7 @@ var formatTests = []struct {
 			FormatAbbrev:  "[] message\n",
 		},
 		Args: map[string][]interface{}{
-			FormatShort: []interface{}{"timeEncoder", "hhmm", "dateEncoder", "dmy"},
+			FormatShort: {"timeEncoder", "hhmm", "dateEncoder", "dmy"},
 		},
 	},
 }

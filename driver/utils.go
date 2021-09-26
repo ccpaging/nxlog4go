@@ -41,6 +41,44 @@ func ArgsToMap(args ...interface{}) (map[string]interface{}, []string, error) {
 	return d, o, nil
 }
 
+// LazyArgsToMap turn args...interface{} to map dictionary and strings array index.
+// Return: map[string]interface{}, []string
+func LazyArgsToMap(args ...interface{}) (map[string]interface{}, []string) {
+	out := make(map[string]interface{}, len(args)/2)
+	var index []string
+
+	for i, j := 0, 0; i < len(args); i++ {
+		value := args[i]
+		k, ok := value.(string)
+		if !ok {
+			// Not string
+			k = fmt.Sprintf("key%d", j)
+			j++
+		} else {
+			i++
+		}
+		if i == len(args) {
+			// this element is a dangling key.
+			value = "nil"
+		} else {
+			value = args[i]
+		}
+
+		switch v := value.(type) {
+		case string:
+			out[k] = v
+		case error:
+			out[k] = v.Error()
+		case func() string:
+			out[k] = v()
+		default:
+			out[k] = value
+		}
+		index = append(index, k)
+	}
+	return out, index
+}
+
 // ArgsToValues turn args []interface{} to interface{} array.
 // Return: []interface{}
 func ArgsToValues(args ...interface{}) []interface{} {

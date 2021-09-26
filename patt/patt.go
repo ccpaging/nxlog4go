@@ -121,8 +121,9 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 		lo.TimeEncoder = lo.TimeEncoder.NewEncoder(s)
 	case "zoneEncoder":
 		lo.ZoneEncoder = lo.ZoneEncoder.NewEncoder(s)
-	case "fieldsEncoder", "valuesEncoder":
+	case "fieldsEncoder":
 		lo.FieldsEncoder = lo.FieldsEncoder.NewEncoder(s)
+	case "valuesEncoder":
 		lo.ValuesEncoder = lo.ValuesEncoder.NewEncoder(s)
 	default:
 		return fmt.Errorf("unknown option name %s, value %#v of type %T", k, v, v)
@@ -156,7 +157,8 @@ func (lo *PatternLayout) setEncoder(k string, v interface{}) error {
 //  %S - Source
 //  %N - Line number
 //  %M - Message
-//  %F - Fields in "key=value" format or Values in "v1 v2 v3..." format
+//  %F - Fields in "key=value" format
+//  %V - Values in "v1 v2 v3..." format
 //
 // DEPRECATED:
 //  %d - Date (01/02/06). Replacing with setting "dateEncoder" as "mdy".
@@ -252,6 +254,7 @@ func (lo *PatternLayout) encode(out *bytes.Buffer, r *driver.Recorder) {
 			out.WriteString(r.Message)
 		case 'F':
 			lo.FieldsEncoder.Encode(out, r)
+		case 'V':
 			lo.ValuesEncoder.Encode(out, r)
 		default:
 			// unknown format code. Ignored.

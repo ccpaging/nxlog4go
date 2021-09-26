@@ -462,7 +462,8 @@ func (*fieldsEncoder) NewEncoder(typ string) Encoder {
 }
 
 func (e *fieldsEncoder) Encode(out *bytes.Buffer, r *driver.Recorder) {
-	e.encode(out, r.Fields, r.Index)
+	fields, index := r.Fields()
+	e.encode(out, fields, index)
 }
 
 func (e *fieldsEncoder) encoKeyValue(out *bytes.Buffer, k string, v interface{}) {

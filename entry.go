@@ -48,21 +48,13 @@ func (e *Entry) AddCallerSkip(addSkip int) *Entry {
 // With creates a child logger and adds structured context to it.
 // Field pairs or values added to the child don't affect the parent, and vice versa.
 func (e *Entry) With(args ...interface{}) *Entry {
-	if e.log.fields {
-		e.rec.With(args...)
-	} else {
-		e.rec.WithValues(args...)
-	}
+	e.rec.With(args...)
 	return e
 }
 
 // WithMore appends name-value pairs to the log entry.
 func (e *Entry) WithMore(args ...interface{}) *Entry {
-	if e.log.fields {
-		e.rec.WithMore(args...)
-	} else {
-		e.rec.WithMoreValues(args...)
-	}
+	e.rec.WithMore(args...)
 	return e
 }
 
@@ -81,20 +73,9 @@ func (e *Entry) Log(calldepth int, level int, arg0 interface{}, args ...interfac
 		Level:   level,
 		Message: driver.ArgsToString(arg0),
 		Created: time.Now(),
-		Fields:  make(map[string]interface{}, len(e.rec.Fields)+len(args)/2),
 	}
-	// copy e.rec
-	for k, v := range e.rec.Fields {
-		r.Fields[k] = v
-	}
-	r.Index = append(r.Index, e.rec.Index...)
-	r.WithValues(e.rec.Values...)
-
-	if l.fields {
-		r.WithMore(args...)
-	} else {
-		r.WithMoreValues(args...)
-	}
+	r.With(e.rec.Values...)
+	r.WithMore(args...)
 
 	if l.caller {
 		// Determine caller func - it's expensive.

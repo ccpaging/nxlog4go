@@ -104,7 +104,6 @@ type Logger struct {
 	mu      *sync.Mutex // ensures atomic writes; protects the following fields
 	prefix  string      // prefix to write at beginning of each line
 	caller  bool        // enable or disable calling runtime.Caller(...)
-	fields  bool        // select Entry with fields pairs or values.
 	stdf    *stdFilter
 	filters map[string]*driver.Filter // a collection of Filter
 }
@@ -119,7 +118,6 @@ func NewLogger(level int) *Logger {
 	return &Logger{
 		mu:      new(sync.Mutex),
 		caller:  true,
-		fields:  true,
 		stdf:    newStdFilter(level),
 		filters: make(map[string]*driver.Filter),
 	}
@@ -134,7 +132,6 @@ func (l *Logger) Clone() *Logger {
 		mu:      l.mu,
 		prefix:  l.prefix,
 		caller:  l.caller,
-		fields:  l.fields,
 		stdf:    l.stdf,
 		filters: l.filters,
 	}
@@ -185,10 +182,6 @@ func (l *Logger) Set(k string, v interface{}) (err error) {
 	case "caller":
 		if e, err = cast.ToBool(v); err == nil {
 			l.caller = e
-		}
-	case "fields":
-		if e, err = cast.ToBool(v); err == nil {
-			l.fields = e
 		}
 	case "level":
 		if n, err = Level(INFO).IntE(v); err == nil {

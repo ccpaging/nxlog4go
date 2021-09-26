@@ -15,49 +15,23 @@ type Recorder struct {
 	Level   int       // The log level
 	Message string    // The log message
 	Created time.Time // The time at which the log message was created (nanoseconds)
-
-	Fields map[string]interface{} // Contains all the fields set by the user.
-	Index  []string
-
-	Values []interface{}
+	Values  []interface{}
 }
 
-// WithValues sets values to the log record.
-func (r *Recorder) WithValues(vals ...interface{}) *Recorder {
-	r.Values = ArgsToValues(vals...)
+// With sets sets values to the log record.
+func (r *Recorder) With(args ...interface{}) *Recorder {
+	r.Values = ArgsToValues(args...)
 	return r
 }
 
-// WithMoreValues appends more values to the log record.
-func (r *Recorder) WithMoreValues(vals ...interface{}) *Recorder {
-	values := ArgsToValues(vals...)
+// WithMore appends more values to the log record.
+func (r *Recorder) WithMore(args ...interface{}) *Recorder {
+	values := ArgsToValues(args...)
 	r.Values = append(r.Values, values...)
 	return r
 }
 
-// With sets name-value pairs to the log record.
-func (r *Recorder) With(args ...interface{}) *Recorder {
-	r.Fields, r.Index, _ = ArgsToMap(args...)
-	return r
-}
-
-// WithMore appends name-value pairs to the log record.
-func (r *Recorder) WithMore(args ...interface{}) *Recorder {
-	if r.Fields == nil {
-		r.Fields = make(map[string]interface{}, len(args)/2)
-	}
-
-	if len(args) == 0 {
-		return r
-	}
-
-	fields, index, _ := ArgsToMap(args...)
-	if len(fields) <= 0 {
-		return r
-	}
-	for k, v := range fields {
-		r.Fields[k] = v
-	}
-	r.Index = append(r.Index, index...)
-	return r
+// Fields return the fields and index of the log record.
+func (r *Recorder) Fields() (map[string]interface{}, []string) {
+	return LazyArgsToMap(r.Values...)
 }
