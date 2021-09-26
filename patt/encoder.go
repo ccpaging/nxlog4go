@@ -94,19 +94,19 @@ func NewZoneEncoder(typ string) Encoder {
 }
 
 func (e *cacheTime) NewEncoder(typ string) Encoder {
-	// Clear cache and remember mode
-	ne := &cacheTime{mode: e.mode}
-	switch ne.mode {
+	// Build a new encoder, clear cache and remember mode
+	e = &cacheTime{mode: e.mode}
+	switch e.mode {
 	case modeDate:
-		ne.setDate(typ)
+		e.setDate(typ)
 	case modeZone:
-		ne.setZone(typ)
+		e.setZone(typ)
 	case modeTime:
 		fallthrough
 	default:
-		ne.setTime(typ)
+		e.setTime(typ)
 	}
-	return ne
+	return e
 }
 
 func (e *cacheTime) Encode(out *bytes.Buffer, r *driver.Recorder) {

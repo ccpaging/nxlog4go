@@ -66,7 +66,7 @@ func TestRedirectStdLog(t *testing.T) {
 		"format", "[%L] [%P] (%S) %M%F")
 	elog := logger.With("source", "testing")
 
-	restore := RedirectStdLogAt(elog, "debug")
+	restoreFunc := RedirectStdLogAt(elog.AddCallerSkip(3), "debug")
 	log.Println("redirected.")
 	want := "[DEBG] [redirected] (stdlog_test.go) redirected. source=testing\n"
 	if got := buf.String(); got != want {
@@ -75,6 +75,6 @@ func TestRedirectStdLog(t *testing.T) {
 	}
 	buf.Reset()
 
-	restore()
+	restoreFunc()
 	testStdlog()
 }
