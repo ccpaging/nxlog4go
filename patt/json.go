@@ -7,7 +7,7 @@ func NewJSONLayout(args ...interface{}) *PatternLayout {
 	return NewJSONFieldsLayout(args...)
 }
 
-// NewJSONValueLayout creates a new layout encoding log Recorder as JSON format with Feilds map[string]interface{}.
+// NewJSONFieldsLayout creates a new layout encoding log Recorder as JSON format with Feilds map[string]interface{}.
 func NewJSONFieldsLayout(args ...interface{}) *PatternLayout {
 	jsonFormat := "{\"Level\":%l,\"Created\":\"%T\",\"Prefix\":\"%P\",\"Source\":\"%S\",\"Line\":%N,\"Message\":\"%M\"%F}"
 	lo := NewLayout(jsonFormat, args...)
